@@ -47,20 +47,36 @@ class Faculty(models.Model):
 # =============================================================================
 class ProjectGroup(models.Model):
     STATUS_CHOICES = [
+        ('pending_approval', 'Pending Admin Approval'),  
         ('idea_pitch', 'Idea Pitch Submitted'),
         ('proposal_pending', 'Proposal Pending'),
         ('proposal_approved', 'Proposal Approved'),
         ('in_progress', 'In Progress'),
         ('completed', 'Completed'),
-        ('rejected', 'Rejected'),
+        ('rejected', 'Rejected'),  
     ]
     
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending_approval'
+    )
     group_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    group_number = models.CharField(max_length=20, unique=True, blank=True)
+    group_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
     project_title = models.CharField(max_length=300, blank=True)
     domain = models.CharField(max_length=100, blank=True)
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='idea_pitch')
-    
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_project_groups',
+        limit_choices_to={'user_type': 'admin'}
+    )
+    rejection_reason = models.TextField(blank=True, null=True)
+
+
     supervisor = models.ForeignKey(
         Faculty,
         on_delete=models.SET_NULL,
@@ -92,6 +108,45 @@ class ProjectGroup(models.Model):
     
     def __str__(self):
         return f"{self.group_number or self.group_id} - {self.project_title or 'Untitled'}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-generate group_number only on approval"""
+        if self.status == 'idea_pitch' and not self.group_number:
+            # Generate group number
+            semester = self.semester or '2026'
+            last_group = ProjectGroup.objects.filter(
+                semester=semester,
+                group_number__isnull=False
+            ).order_by('-group_number').first()
+            
+            if last_group and last_group.group_number:
+                try:
+                    last_num = int(last_group.group_number.split('-')[-1])
+                    new_num = f"GRP-{semester.split()[0]}-{last_num + 1:03d}"
+                except:
+                    new_num = f"GRP-{semester.split()[0]}-001"
+            else:
+                new_num = f"GRP-{semester.split()[0]}-001"
+            
+            self.group_number = new_num
+            self.approved_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+    
+    def approve(self, admin_user):
+        """Admin approval method"""
+        self.status = 'idea_pitch'
+        self.approved_by = admin_user
+        self.approved_at = timezone.now()
+        self.rejection_reason = None
+        self.save()
+    
+    def reject(self, admin_user, reason):
+        """Admin rejection method"""
+        self.status = 'rejected'
+        self.approved_by = admin_user
+        self.rejection_reason = reason
+        self.save()
 
 
 # =============================================================================

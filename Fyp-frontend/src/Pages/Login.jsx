@@ -26,6 +26,9 @@ function Login() {
     localStorage.setItem('refresh_token', data.tokens.refresh);
     localStorage.setItem('user', JSON.stringify(data.user));
     
+    // ✅ ADD THESE 2 LINES:
+    localStorage.setItem('user_type', data.user.user_type);  // Ensure user_type is saved
+    window.dispatchEvent(new Event('authChanged'));           // Notify Navbar
     const userType = data.user.user_type;
     
     if (userType === 'student') {

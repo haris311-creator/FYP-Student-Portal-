@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// fyp-frontend/src/pages/SupervisorDashboard.jsx
+import React, { useState, useEffect } from 'react';
 import './Supervisordashboard.css';
 
 const assignedGroups = [
@@ -35,6 +36,29 @@ function SupervisorDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // 👤 User Profile State
+  const [userInfo, setUserInfo] = useState({ name: '', role: '', email: '' });
+
+  useEffect(() => {
+    const loadUser = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+          setUserInfo({
+            name: fullName || user.email || 'User',
+            role: user.user_type || 'supervisor',
+            email: user.email || ''
+          });
+        }
+      } catch (e) {
+        console.log('User info not found');
+      }
+    };
+    loadUser();
+  }, []);
 
   const renderOverview = () => (
     <div>
@@ -255,13 +279,48 @@ function SupervisorDashboard() {
 
   return (
     <div className="dashboard-page">
-
-      
       <div className={`dashboard-sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h2 className="sidebar-title">Supervisor</h2>
+          <h2 className="sidebar-title">Supervisor Panel</h2>
           <button className="sidebar-close" onClick={() => setMenuOpen(false)}>✕</button>
         </div>
+        
+        {/* 👤 User Profile Card - TOP POSITION */}
+        <div style={{ 
+          padding: '1rem',
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+          borderRadius: '12px',
+          margin: '0 0.75rem 1rem 0.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          color: 'white'
+        }}>
+          <div style={{
+            width: '44px', height: '44px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.2)', color: 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: '700', fontSize: '1.1rem', flexShrink: 0,
+            backdropFilter: 'blur(10px)'
+          }}>
+            {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
+          </div>
+          
+          <div style={{ overflow: 'visible', flex: 1, minWidth: 0 }}>
+            <p style={{ 
+              margin: 0, fontSize: '0.9rem', fontWeight: '600', color: 'white',
+              whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2', overflowWrap: 'break-word'
+            }}>
+              {userInfo.name}
+            </p>
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', textTransform: 'capitalize' }}>
+              {userInfo.role === 'admin' ? 'Administrator' : 
+               userInfo.role === 'supervisor' ? 'Supervisor' : 'User'}
+            </p>
+          </div>
+        </div>
+        
         <button
           className={`sidebar-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => { setActiveTab('overview'); setMenuOpen(false); }}
@@ -276,12 +335,10 @@ function SupervisorDashboard() {
         </button>
       </div>
 
-
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
         ☰ Menu
       </button>
 
-    
       <div className="dashboard-content">
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'groupDetail' && renderGroupDetail()}

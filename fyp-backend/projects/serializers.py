@@ -110,30 +110,21 @@ class ProjectGroupSerializer(serializers.ModelSerializer):
             'id', 'group_id', 'group_number', 'project_title', 'domain', 
             'status', 'supervisor', 'supervisor_name', 'co_supervisor',
             'semester', 'fydp_phase', 'members', 'member_count',
-            'sdg_goals', 'acm_knowledge_areas', 'created_at', 'updated_at'
+            'sdg_goals', 'acm_knowledge_areas', 'created_at', 'updated_at',
+            'rejection_reason'  # ✅ ADDED: Rejection reason field
         ]
-        read_only_fields = ['group_id', 'group_number', 'member_count', 'status']
+        read_only_fields = ['group_id', 'group_number', 'member_count', 'status', 'rejection_reason']
     
     def get_member_count(self, obj):
         return obj.members.count()
     
     def create(self, validated_data):
-        """Create group with auto-generated group number"""
-        # Generate group number (coordinator can change later)
-        semester = validated_data.get('semester', '2026')
-        last_group = ProjectGroup.objects.filter(semester=semester).order_by('-id').first()
+        """Create group with status pending_approval"""
+        # Status ko pending_approval set karein
+        validated_data['status'] = 'pending_approval'
         
-        if last_group and last_group.group_number:
-            try:
-                last_num = int(last_group.group_number.split('-')[-1])
-                new_num = f"GRP-{semester.split()[0]}-{last_num + 1:03d}"
-            except:
-                new_num = f"GRP-{semester.split()[0]}-001"
-        else:
-            new_num = f"GRP-{semester.split()[0]}-001"
-        
-        validated_data['group_number'] = new_num
-        validated_data['status'] = 'idea_pitch'
+        # group_number remove karein (approval par auto-generate hoga)
+        validated_data.pop('group_number', None)
         
         return super().create(validated_data)
 
@@ -181,8 +172,8 @@ class GroupCreateSerializer(serializers.Serializer):
         
         return members
     
-    @transaction.atomic
-    def create(self, validated_data):
+    @transaction.atomic  
+    def create(self, validated_data):  
         """Create group and all members"""
         members_data = validated_data.pop('members')
         
@@ -200,7 +191,7 @@ class GroupCreateSerializer(serializers.Serializer):
                 **member_data
             )
         
-        return group
+        return group 
 
 
 # =============================================================================
@@ -341,3 +332,93 @@ class EligibilityCheckSerializer(serializers.Serializer):
             'warnings': warnings,
             'can_register': instance['earned_credit_hours'] >= 94
         }
+    
+
+
+# =============================================================================
+# ADMIN APPROVAL SERIALIZERS
+# =============================================================================
+
+class AdminProjectGroupSerializer(serializers.ModelSerializer):
+    """Admin ke liye detailed group view with approval controls"""
+    members_details = serializers.SerializerMethodField()
+    supervisor_details = serializers.SerializerMethodField()
+    co_supervisor_details = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ProjectGroup
+        fields = '__all__'
+        read_only_fields = ['group_id', 'group_number', 'approved_at', 'approved_by']
+    
+    def get_members_details(self, obj):
+        """Return detailed member information"""
+        members = obj.members.select_related('student').all()
+        return [
+            {
+                'id': m.student.id,
+                'email': m.student.email,
+                'full_name': m.student.get_full_name() if hasattr(m.student, 'get_full_name') else m.student.email,
+                'student_id': m.student.student_id,
+                'role': m.role,
+                'cgpa': m.cgpa,
+                'credit_hours': m.earned_credit_hours,
+            }
+            for m in members
+        ]
+    
+    def get_supervisor_details(self, obj):
+        if obj.supervisor:
+            return {
+                'id': obj.supervisor.id,
+                'name': obj.supervisor.full_name,
+                'email': obj.supervisor.email,
+                'designation': obj.supervisor.designation,
+            }
+        return None
+    
+    def get_co_supervisor_details(self, obj):
+        if obj.co_supervisor:
+            return {
+                'id': obj.co_supervisor.id,
+                'name': obj.co_supervisor.full_name,
+                'email': obj.co_supervisor.email,
+            }
+        return None
+    
+    def get_created_by(self, obj):
+        """Return group creator (lead member)"""
+        lead = obj.members.filter(role='lead').first()
+        if lead:
+            return {
+                'id': lead.student.id,
+                'email': lead.student.email,
+            }
+        return None
+
+
+class AdminApprovalSerializer(serializers.Serializer):
+    """Admin approval/rejection actions"""
+    action = serializers.ChoiceField(choices=['approve', 'reject'])
+    rejection_reason = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=500,
+        help_text="Required if action is 'reject'"
+    )
+    group_number_override = serializers.CharField(
+        required=False,
+        max_length=20,
+        help_text="Optional: Override auto-generated group number"
+    )
+    
+    def validate(self, data):
+        action = data.get('action')
+        reason = data.get('rejection_reason', '')
+        
+        if action == 'reject' and not reason:
+            raise serializers.ValidationError({
+                'rejection_reason': 'Rejection reason is required when rejecting a group'
+            })
+        
+        return data

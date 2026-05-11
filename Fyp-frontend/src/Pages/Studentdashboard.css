@@ -478,3 +478,32 @@
     padding: 1.25rem;
   }
 }
+
+
+
+/* =========================================
+   10. CSS for rejected status
+   ========================================= */
+
+.status-card.rejected {
+  border-left: 4px solid #ef4444;
+  background: #fef2f2;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.status-card.approved {
+  border-left: 4px solid #22c55e;
+  background: #f0fdf4;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}

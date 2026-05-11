@@ -1,3 +1,5 @@
+/* fyp-frontend/src/pages/Admin/Admindashboard.css */
+
 .dashboard-page {
   display: flex;
   min-height: calc(100vh - 68px);
@@ -175,12 +177,12 @@
   overflow-x: auto;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
+  background: white;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
   font-size: 0.9rem;
 }
 
@@ -217,6 +219,11 @@
   color: #1e3a8a;
 }
 
+/* ✅ REVERTED: Simple Group Number Styling */
+.group-number-cell {
+  font-weight: 600;
+  color: #374151; /* Gray - simple and clean */
+}
 
 .phase-badge {
   font-size: 0.75rem;
@@ -240,23 +247,29 @@
   font-weight: 600;
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
+  display: inline-block;
 }
 
+/* ✅ REVERTED: Original Status Colors */
 .status-active {
-  background: #eff6ff;
+  background: #eff6ff; /* Blue */
   color: #1e40af;
 }
 
 .status-done {
-  background: #f0fdf4;
+  background: #f0fdf4; /* Green */
   color: #15803d;
 }
 
-.status-pending {
-  background: #fef9c3;
-  color: #92400e;
+.status-rejected {
+  background: #fee2e2; /* Red */
+  color: #991b1b;
 }
 
+.status-pending {
+  background: #fef9c3; /* Yellow */
+  color: #854d0e;
+}
 
 .action-btns {
   display: flex;
@@ -315,6 +328,30 @@
   background: #fef2f2;
 }
 
+/* ✅ NEW: Loading State & Refresh Button */
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+}
+
+.refresh-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
 
 .empty-state {
   text-align: center;

@@ -1,25 +1,44 @@
-import React from 'react';
+// fyp-frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './Pages/HomePage';        // ← Name match karein (HomePage)
-import Login from './Pages/Login';
-import StudentDashboard from './Pages/StudentDashboard';
-import SupervisorDashboard from './Pages/SupervisorDashboard';
-import AdminDashboard from './Pages/AdminDashboard';
-import Navbar from './Components/Navbar';
-import Footer from './Components/Footer';
-import ProtectedRoute from './Components/ProtectedRoute';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Components
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import HomePage from './pages/HomePage';
+import Login from './pages/Login';
+import StudentDashboard from './pages/StudentDashboard';
+import SupervisorDashboard from './pages/SupervisorDashboard';
+import AdminDashboard from "./Pages/AdminDashboard";
+import GroupApprovals from './pages/Admin/GroupApprovals';
+
+// Route Guards
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
     <Router>
       {/* Navbar sabhi pages pe dikhayega */}
       <Navbar />
+      
       <Routes>
-        {/* Home Route - Navbar ka "Home" button yahan aayega */}
+        {/* Home Route */}
         <Route path="/" element={<HomePage />} />
         
         {/* Login Route */}
         <Route path="/login" element={<Login />} />
+        
+        {/* ✅ Admin Group Approvals Route - FIXED */}
+        <Route 
+          path="/admin/approvals"
+          element={
+            <AdminRoute>
+              <GroupApprovals />
+            </AdminRoute>
+          } 
+        />
         
         {/* Protected Dashboards */}
         <Route 
@@ -30,6 +49,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        
         <Route 
           path="/supervisor-dashboard" 
           element={
@@ -38,6 +58,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        
         <Route 
           path="/admin-dashboard" 
           element={
@@ -50,6 +71,21 @@ function App() {
         {/* Fallback Route */}
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
       </Routes>
+      
+      {/* Toast Notifications */}
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+      
       {/* Footer sabhi pages pe dikhayega */}
       <Footer />
     </Router>

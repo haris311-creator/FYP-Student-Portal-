@@ -1,9 +1,12 @@
+# fyp-backend/projects/views.py
 from rest_framework import viewsets, status, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied
 from accounts.models import CustomUser 
 
 from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest
@@ -13,9 +16,11 @@ from .serializers import (
     ProjectGroupSerializer,
     GroupCreateSerializer,
     FYDPProposalSerializer,
-    ChangeRequestSerializer
+    ChangeRequestSerializer,
+    AdminProjectGroupSerializer,
+    AdminApprovalSerializer,
 )
-from .permissions import IsStudent, IsGroupMemberOrReadOnly
+from .permissions import IsStudent, IsGroupMemberOrReadOnly, IsAdminUser
 
 
 # =============================================================================
@@ -40,23 +45,16 @@ class EligibilityCheckView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        # 1. Data ko alag karo
         members_data = request.data.pop('members', [])
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # 2. Group save karo
         self.perform_create(serializer)
         group = serializer.instance
         
-        # 3. Members ko process karo
         member_errors = []
         for idx, member_data in enumerate(members_data):
-            # ✅ CHANGED: odoo_id ki jagah student_id use karo
-            # Frontend se jo 'odoo_id' aa raha hai, wo actually student_id hai
             user_odoo_id = member_data.get('odoo_id')
-            
-            # User ko dhoondo (student_id field se)
             user = CustomUser.objects.filter(student_id=user_odoo_id).first()
             
             if not user:
@@ -66,14 +64,13 @@ class EligibilityCheckView(viewsets.ViewSet):
                 })
                 continue
             
-            # GroupMember create karo
             try:
                 GroupMember.objects.create(
                     group=group,
                     student=user,
                     role=member_data.get('role', 'member'),
                     full_name=member_data.get('full_name'),
-                    odoo_id=member_data.get('odoo_id'),  # Ye save kar rahe hain GroupMember mein
+                    odoo_id=member_data.get('odoo_id'),
                     cgpa=member_data.get('cgpa'),
                     earned_credit_hours=member_data.get('earned_credit_hours'),
                     prerequisites_completed=member_data.get('prerequisites_completed', True),
@@ -82,7 +79,6 @@ class EligibilityCheckView(viewsets.ViewSet):
             except Exception as e:
                 member_errors.append({"index": idx, "error": str(e)})
 
-        # 4. Agar koi member error hai, toh Group delete karke error return karo
         if member_errors:
             group.delete()
             return Response({"member_errors": member_errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -100,46 +96,50 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def create(self, request, *args, **kwargs):
-        # 1. Members data alag karo
+        # ✅ Save members data first
         members_data = request.data.pop('members', [])
         
-        # 2. Group validate & save karo
+        # ✅ NO AUTO-DELETE: Rejected groups will stay in database for audit trail
+        # Admin can see all rejected groups in history
+        
+        # 2️⃣ Continue with normal group creation
+        request.data['status'] = 'pending_approval'
+        request.data.pop('group_number', None)
+        
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         group = serializer.instance
         
-        # 3. Members process karo
+        print(f"✅ New group created: {group.id}, Status: {group.status}")
+        
+        # 3️⃣ Create members
         member_errors = []
         for idx, member_data in enumerate(members_data):
-            # ✅ FIX: Frontend se 'odoo_id' aa raha hai, lekin DB mein filter 'student_id' se hoga
             user_input_id = member_data.get('odoo_id')
             user = CustomUser.objects.filter(student_id=user_input_id).first()
             
             if not user:
                 member_errors.append({
                     "index": idx,
-                    "error": f"User '{user_input_id}' not found. Check if student_id matches database."
+                    "error": f"User '{user_input_id}' not found."
                 })
                 continue
             
-            # ✅ GroupMember create karo
-            try:
-                GroupMember.objects.create(
-                    group=group,
-                    student=user,
-                    role=member_data.get('role', 'member'),
-                    full_name=member_data.get('full_name'),
-                    odoo_id=member_data.get('odoo_id'),
-                    cgpa=member_data.get('cgpa'),
-                    earned_credit_hours=member_data.get('earned_credit_hours'),
-                    prerequisites_completed=member_data.get('prerequisites_completed', True),
-                    has_special_permission=member_data.get('has_special_permission', False)
-                )
-            except Exception as e:
-                member_errors.append({"index": idx, "error": str(e)})
-
-        # 4. Agar koi error hai, toh Group delete karke response do
+            GroupMember.objects.create(
+                group=group,
+                student=user,
+                role=member_data.get('role', 'member'),
+                full_name=member_data.get('full_name'),
+                odoo_id=member_data.get('odoo_id'),
+                cgpa=member_data.get('cgpa'),
+                earned_credit_hours=member_data.get('earned_credit_hours'),
+                prerequisites_completed=member_data.get('prerequisites_completed', True),
+                has_special_permission=member_data.get('has_special_permission', False)
+            )
+            
+            print(f"✅ Member {idx+1} added: {user.email}")
+        
         if member_errors:
             group.delete()
             return Response({"member_errors": member_errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -147,21 +147,67 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
-    # ✅ CORRECT INDENTATION: @action class level par hai
     @action(detail=False, methods=['get'])
     def my_group(self, request):
-        """Get current user's group"""
+        """Get current user's group (EXCLUDE rejected groups)"""
         user = request.user
-        member = GroupMember.objects.filter(student=user).first()
+        
+        # ✅ Only return non-rejected groups
+        member = GroupMember.objects.filter(
+            student=user,
+            group__status__in=[
+                'pending_approval',
+                'idea_pitch',
+                'approved',
+                'proposal_pending',
+                'proposal_approved',
+                'in_progress',
+                'completed'
+            ]
+        ).select_related('group').first()
         
         if member:
             serializer = self.get_serializer(member.group)
             return Response(serializer.data)
+        
+        # No active group found - student can create new one
         return Response(None, status=status.HTTP_404_NOT_FOUND)
     
-
-
+    @action(detail=False, methods=['get'])
+    def pending_approval(self, request):
+        """
+        GET /api/projects/groups/pending_approval/
+        For students to see their pending groups
+        """
+        user = request.user
+        pending = ProjectGroup.objects.filter(
+            members__student=user,
+            status='pending_approval'
+        ).prefetch_related('members__student')
+        
+        serializer = self.get_serializer(pending, many=True)
+        return Response(serializer.data)
     
+    @action(detail=False, methods=['get'], url_path='my-group-with-history')
+    def my_group_with_history(self, request):
+        """
+        Get user's latest group (including rejected ones for display)
+        This helps show rejection status to students
+        """
+        user = request.user
+        
+        # Get ALL groups for this user, ordered by creation date
+        member = GroupMember.objects.filter(
+            student=user
+        ).select_related('group').order_by('-group__created_at').first()
+        
+        if member:
+            serializer = self.get_serializer(member.group)
+            return Response(serializer.data)
+        
+        return Response(None, status=status.HTTP_404_NOT_FOUND)
+
+
 # =============================================================================
 # 4. FYDP PROPOSALS - Digital Form 1
 # =============================================================================
@@ -199,3 +245,192 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(requested_by=self.request.user)
+
+
+# =============================================================================
+# ✅ ADMIN APPROVAL VIEWSET - FIXED & COMPLETE
+# =============================================================================
+
+class AdminGroupApprovalViewSet(viewsets.ViewSet):
+    """
+    Admin ke liye group approval system.
+    Endpoints:
+    - GET /api/projects/admin/approval/pending/
+    - GET /api/projects/admin/approval/all/
+    - POST /api/projects/admin/approval/{id}/approve/
+    - POST /api/projects/admin/approval/{id}/reject/
+    - GET /api/projects/admin/approval/{id}/details/
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def check_admin_permission(self, request):
+        """Check if user is admin"""
+        if not hasattr(request.user, 'user_type') or request.user.user_type != 'admin':
+            raise PermissionDenied("Only admin users can access this endpoint")
+    
+    @action(detail=False, methods=['get'])
+    def pending(self, request):
+        """GET /api/projects/admin/approval/pending/"""
+        self.check_admin_permission(request)
+        
+        pending_groups = ProjectGroup.objects.filter(
+            status='pending_approval'
+        ).prefetch_related(
+            'members__student',
+            'supervisor',
+            'co_supervisor'
+        ).order_by('-created_at')
+        
+        serializer = AdminProjectGroupSerializer(pending_groups, many=True)
+        return Response({
+            'count': pending_groups.count(),
+            'results': serializer.data
+        })
+    
+    @action(detail=False, methods=['get'], url_path='all')
+    def all_groups(self, request):
+        """GET /api/projects/admin/approval/all/"""
+        self.check_admin_permission(request)
+        
+        groups = ProjectGroup.objects.all().prefetch_related(
+            'members__student',
+            'supervisor',
+            'co_supervisor'
+        ).order_by('-created_at')
+        
+        # Optional filtering
+        status_filter = request.query_params.get('status', None)
+        if status_filter:
+            groups = groups.filter(status=status_filter)
+        
+        semester_filter = request.query_params.get('semester', None)
+        if semester_filter:
+            groups = groups.filter(semester=semester_filter)
+        
+        paginator = PageNumberPagination()
+        paginator.page_size = 20
+        result_page = paginator.paginate_queryset(groups, request)
+        
+        serializer = AdminProjectGroupSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """POST /api/projects/admin/approval/{id}/approve/"""
+        self.check_admin_permission(request)
+        
+        try:
+            group = ProjectGroup.objects.select_related(
+                'supervisor', 'co_supervisor'
+            ).prefetch_related('members__student').get(pk=pk)
+        except ProjectGroup.DoesNotExist:
+            return Response(
+                {'error': 'Group not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if group.status != 'pending_approval':
+            return Response(
+                {'error': f'Group is not pending approval. Current status: {group.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check for optional group number override
+        override_number = request.data.get('group_number_override', None)
+        if override_number:
+            if ProjectGroup.objects.filter(group_number=override_number).exclude(pk=pk).exists():
+                return Response(
+                    {'error': 'Group number already exists'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            group.group_number = override_number
+        
+        # ✅ Approve logic inline (no need for model method)
+        group.status = 'idea_pitch'  # Next status after approval
+        group.approved_by = request.user
+        group.approved_at = timezone.now()
+        group.rejection_reason = None
+        
+        # Auto-generate group_number if not provided
+        if not group.group_number:
+            semester = group.semester or '2026'
+            year = semester.split()[0] if semester else '2026'
+            last_group = ProjectGroup.objects.filter(
+                semester=semester,
+                group_number__isnull=False,
+                group_number__startswith=f'GRP-{year}'
+            ).order_by('-group_number').first()
+            
+            if last_group and last_group.group_number:
+                try:
+                    last_num = int(last_group.group_number.split('-')[-1])
+                    group.group_number = f"GRP-{year}-{last_num + 1:03d}"
+                except:
+                    group.group_number = f"GRP-{year}-001"
+            else:
+                group.group_number = f"GRP-{year}-001"
+        
+        group.save()
+        
+        serializer = AdminProjectGroupSerializer(group)
+        return Response({
+            'message': f'Group {group.group_number} approved successfully!',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """POST /api/projects/admin/approval/{id}/reject/"""
+        self.check_admin_permission(request)
+        
+        reason = request.data.get('reason', '').strip()
+        if not reason:
+            return Response(
+                {'error': 'Rejection reason is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            group = ProjectGroup.objects.get(pk=pk)
+        except ProjectGroup.DoesNotExist:
+            return Response(
+                {'error': 'Group not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if group.status not in ['pending_approval']:
+            return Response(
+                {'error': f'Group cannot be rejected. Current status: {group.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # ✅ Reject logic inline
+        group.status = 'rejected'
+        group.rejection_reason = reason
+        group.approved_by = request.user
+        group.approved_at = timezone.now()
+        group.save()
+        
+        serializer = AdminProjectGroupSerializer(group)
+        return Response({
+            'message': 'Group rejected',
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['get'])
+    def details(self, request, pk=None):
+        """GET /api/projects/admin/approval/{id}/details/"""
+        self.check_admin_permission(request)
+        
+        try:
+            group = ProjectGroup.objects.select_related(
+                'supervisor', 'co_supervisor'
+            ).prefetch_related('members__student').get(pk=pk)
+        except ProjectGroup.DoesNotExist:
+            return Response(
+                {'error': 'Group not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = AdminProjectGroupSerializer(group)
+        return Response(serializer.data)
