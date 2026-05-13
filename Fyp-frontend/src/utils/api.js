@@ -139,3 +139,27 @@ export const proposalAPI = {
   
   getStatus: (groupId) => api.get(`/projects/groups/${groupId}/proposal/status/`)
 };
+
+
+// =============================================================================
+// SUPERVISOR ENDPOINTS - NEW
+// =============================================================================
+export const supervisorAPI = {
+  /**
+   * Fetch groups assigned to logged-in supervisor
+   * GET /api/projects/groups/supervisor/
+   */
+  getAssignedGroups: () => api.get('/projects/groups/supervisor/'),
+  
+  /**
+   * Fetch members of a specific group
+   * GET /api/projects/groups/supervisor/{groupId}/members/
+   */
+  getGroupMembers: (groupId) => api.get(`/projects/groups/supervisor/${groupId}/members/`),
+  
+  /**
+   * Update group progress or status (if needed)
+   * PATCH /api/projects/groups/{groupId}/
+   */
+  updateGroup: (groupId, data) => api.patch(`/projects/groups/${groupId}/`, data),
+};

@@ -6,9 +6,11 @@ from .views import (
     FYDPProposalViewSet,
     ChangeRequestViewSet,
     AdminGroupApprovalViewSet,
+    SupervisorGroupViewSet,
 )
 
 router = DefaultRouter()
+router.register(r'groups/supervisor', SupervisorGroupViewSet, basename='supervisor-groups')
 router.register(r'faculty', FacultyViewSet, basename='faculty')
 router.register(r'groups', ProjectGroupViewSet, basename='project-group')
 router.register(r'proposals', FYDPProposalViewSet, basename='proposal')

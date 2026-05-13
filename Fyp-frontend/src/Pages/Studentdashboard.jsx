@@ -347,20 +347,44 @@ useEffect(() => {
                   <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{existingGroup.supervisor_name || 'Not Assigned'}</p>
                 </div>
               </div>
-              {/* Members List */}
-              <div>
-                <h4 style={{ marginBottom: '1rem', color: '#1e293b', fontSize: '1rem', margin: '0 0 1rem 0' }}>Group Members:</h4>
-                {existingGroup.members?.map((member, idx) => (
-                  <div key={idx} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '0.75rem', borderLeft: '3px solid #3b82f6' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ color: '#1e293b' }}>{member.full_name || member.student_email}</strong>
-                      <span style={{ background: member.role === 'lead' ? '#1e3a8a' : '#64748b', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600' }}>
-                        {member.role === 'lead' ? '👑 Lead' : '👤 Member'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+{/* Members List - UPDATED */}
+<div>
+  <h4 style={{ marginBottom: '1rem', color: '#1e293b', fontSize: '1rem', margin: '0 0 1rem 0' }}>Group Members:</h4>
+  {existingGroup.members?.map((member, idx) => (
+    <div key={idx} style={{ 
+      background: '#f8fafc', 
+      padding: '1rem', 
+      borderRadius: '8px', 
+      marginBottom: '0.75rem',
+      borderLeft: '3px solid #3b82f6'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <strong style={{ color: '#1e293b' }}>
+          {member.student_name || member.full_name || member.student_email || 'Unknown Student'}
+        </strong>
+        <span style={{ 
+          background: member.role === 'lead' ? '#1e3a8a' : '#64748b',
+          color: 'white', 
+          padding: '0.25rem 0.75rem', 
+          borderRadius: '6px', 
+          fontSize: '0.75rem',
+          fontWeight: '600'
+        }}>
+          {member.role === 'lead' ? '👑 Lead' : '👤 Member'}
+        </span>
+      </div>
+      
+      {/* ✅ Added Odoo ID, CGPA & Credits */}
+      <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
+        <span>Odoo ID: {member.odoo_id || 'N/A'}</span>
+        <span style={{ margin: '0 1rem' }}>|</span>
+        <span>CGPA: {member.cgpa || 'N/A'}</span>
+        <span style={{ margin: '0 1rem' }}>|</span>
+        <span>Credits: {member.earned_credit_hours || 'N/A'}</span>
+      </div>
+    </div>
+  ))}
+</div>
             </div>
           </div>
         );

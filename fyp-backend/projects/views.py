@@ -8,6 +8,10 @@ from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 from accounts.models import CustomUser 
+from django.db import models
+from .models import ProjectGroup, Faculty
+from .serializers import ProjectGroupSerializer
+
 
 from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest
 from .serializers import (
@@ -434,3 +438,84 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
         
         serializer = AdminProjectGroupSerializer(group)
         return Response(serializer.data)
+
+
+# fyp-backend/projects/views.py - Replace the entire SupervisorGroupViewSet with this:
+
+# =============================================================================
+# ✅ SUPERVISOR DASHBOARD VIEWSET - FIXED (Using GenericViewSet)
+# =============================================================================
+class SupervisorGroupViewSet(viewsets.GenericViewSet):
+    """
+    Supervisor ke liye assigned groups fetch karne ka endpoint.
+    Endpoint: GET /api/projects/groups/supervisor/
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProjectGroupSerializer  # Add this line
+
+    def list(self, request):
+        """GET /api/projects/groups/supervisor/"""
+
+        user = request.user
+        
+        # Check if user is supervisor
+        if user.user_type != 'supervisor':
+            return Response(
+                {'error': 'Only supervisors can access this endpoint'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get Faculty profile linked to this user
+        try:
+            faculty = Faculty.objects.get(user=user)
+        except Faculty.DoesNotExist:
+            return Response(
+                {'error': 'Faculty profile not found for this user'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Fetch groups where this faculty is supervisor OR co-supervisor
+        groups = ProjectGroup.objects.filter(
+            models.Q(supervisor=faculty) | models.Q(co_supervisor=faculty),
+            status__in=['idea_pitch', 'proposal_pending', 'proposal_approved', 
+                       'in_progress', 'completed']
+        ).prefetch_related(
+            'members__student',
+            'supervisor',
+            'co_supervisor'
+        ).order_by('-created_at')
+        
+        serializer = self.get_serializer(groups, many=True, context={'request': request})
+        
+        return Response({
+            'count': groups.count(),
+            'results': serializer.data
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['get'])
+    def members(self, request, pk=None):
+        """GET /api/projects/groups/supervisor/{id}/members/"""
+        try:
+            group = ProjectGroup.objects.prefetch_related('members__student').get(pk=pk)
+        except ProjectGroup.DoesNotExist:
+            return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Verify supervisor access
+        faculty = Faculty.objects.filter(user=request.user).first()
+        if not faculty or (group.supervisor != faculty and group.co_supervisor != faculty):
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        members_data = []
+        for member in group.members.all():
+            members_data.append({
+                'id': member.id,
+                'full_name': member.full_name or member.student.get_full_name(),
+                'email': member.student.email,
+                'student_id': member.student.student_id,
+                'role': member.role,
+                'cgpa': float(member.cgpa),
+                'credit_hours': member.earned_credit_hours,
+                'contribution': member.contribution_percentage
+            })
+        
+        return Response({'members': members_data})

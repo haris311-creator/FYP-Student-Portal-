@@ -32,7 +32,7 @@ function Navbar() {
     window.dispatchEvent(new Event('authChanged'));
     
     setIsLoggedIn(false);
-    navigate('/');
+    navigate('/login');
   };
 
   return (

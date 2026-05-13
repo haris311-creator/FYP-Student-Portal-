@@ -1,45 +1,17 @@
-// fyp-frontend/src/pages/SupervisorDashboard.jsx
+// fyp-frontend/src/Pages/Supervisordashboard.jsx
 import React, { useState, useEffect } from 'react';
+import { supervisorAPI } from '../utils/api';
 import './Supervisordashboard.css';
-
-const assignedGroups = [
-  {
-    id: 1,
-    name: 'Team Alpha',
-    project: 'AI-Based Chatbot for University',
-    members: ['Ali Ahmed', 'Sara Khan', 'Hassan Raza'],
-    phase: 'FYP-1',
-    progress: 65,
-    pendingLogs: 3,
-  },
-  {
-    id: 2,
-    name: 'Team Beta',
-    project: 'E-commerce Platform',
-    members: ['Fatima Malik', 'Zain Ul Abideen'],
-    phase: 'FYP-2',
-    progress: 85,
-    pendingLogs: 1,
-  },
-  {
-    id: 3,
-    name: 'Team Gamma',
-    project: 'Smart Attendance System',
-    members: ['Usman Tariq', 'Ayesha Siddiqui', 'Bilal Ahmed'],
-    phase: 'FYP-1',
-    progress: 40,
-    pendingLogs: 5,
-  },
-];
 
 function SupervisorDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  
-  // 👤 User Profile State
   const [userInfo, setUserInfo] = useState({ name: '', role: '', email: '' });
+  const [assignedGroups, setAssignedGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Load user info
   useEffect(() => {
     const loadUser = () => {
       try {
@@ -60,289 +32,274 @@ function SupervisorDashboard() {
     loadUser();
   }, []);
 
-  const renderOverview = () => (
-    <div>
-      <h2 className="content-title">Overview</h2>
+  // Fetch assigned groups
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#eff6ff' }}>👥</div>
-          <div>
-            <p className="stat-number">3</p>
-            <p className="stat-label">Assigned Groups</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fef9c3' }}>📋</div>
-          <div>
-            <p className="stat-number">9</p>
-            <p className="stat-label">Pending Log Reviews</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#f0fdf4' }}>📄</div>
-          <div>
-            <p className="stat-number">2</p>
-            <p className="stat-label">Reports to Review</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fdf4ff' }}>✏️</div>
-          <div>
-            <p className="stat-number">1</p>
-            <p className="stat-label">Marks Pending</p>
-          </div>
-        </div>
-      </div>
+  useEffect(() => {
+    const fetchAssignedGroups = async () => {
+      try {
+        setLoading(true);
+        const response = await supervisorAPI.getAssignedGroups();
+        
+        const transformedGroups = response.data.results.map(group => ({
+          id: group.id,
+          group_number: group.group_number,
+          name: `Group ${group.group_number}`, 
+          project: group.project_title || 'Untitled Project',
+          // ✅ UPDATED: Full name + odoo_id
+          members: group.members?.map(m => ({
+            name: m.student_first_name && m.student_last_name 
+              ? `${m.student_first_name} ${m.student_last_name}`.trim()
+              : m.student_name || m.full_name || m.student?.full_name || 'Unknown',
+            odoo_id: m.student_id || m.odoo_id || m.student?.student_id || 'N/A',
+            email: m.student_email || m.student?.email || ''
+          })) || [],
+          phase: group.fydp_phase === 'fydp1' ? 'FYP-1' : 'FYP-2',
+          status: group.status,
+          progress: calculateProgress(group.status),
+          // ✅ UPDATED: Use domain_display (full name) from backend
+          domain: group.domain_display || group.domain || 'N/A',
+        }));
+        
+        setAssignedGroups(transformedGroups);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching groups:', err);
+        setError('Failed to load assigned groups');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAssignedGroups();
+  }, []);
 
-      <h3 className="sub-title">My Groups</h3>
-      <div className="groups-list">
-        {assignedGroups.map(group => (
-          <div key={group.id} className="group-card">
-            <div className="group-card-top">
-              <div>
-                <h4 className="group-name">{group.name}</h4>
-                <p className="group-project">{group.project}</p>
-                <p className="group-members">
-                  👤 {group.members.join(', ')}
-                </p>
-              </div>
-              <div className="group-card-right">
-                <span className={`phase-badge ${group.phase === 'FYP-2' ? 'phase-2' : 'phase-1'}`}>
-                  {group.phase}
-                </span>
-                {group.pendingLogs > 0 && (
-                  <span className="pending-badge">{group.pendingLogs} logs pending</span>
-                )}
-              </div>
-            </div>
-            <div className="progress-bar-container">
-              <div className="progress-bar-label">
-                <span>Progress</span>
-                <span>{group.progress}%</span>
-              </div>
-              <div className="progress-bar-track">
-                <div
-                  className="progress-bar-fill"
-                  style={{ width: `${group.progress}%` }}
-                />
-              </div>
-            </div>
-            <button
-              className="view-btn"
-              onClick={() => {
-                setSelectedGroup(group);
-                setActiveTab('groupDetail');
-              }}
-            >
-              View Details →
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderGroupDetail = () => {
-    if (!selectedGroup) return null;
-    return (
-      <div>
-        <button
-          className="back-btn"
-          onClick={() => setActiveTab('overview')}
-        >
-          ← Back
-        </button>
-        <h2 className="content-title">{selectedGroup.name}</h2>
-        <p className="group-project" style={{ marginBottom: '2rem', color: '#64748b' }}>
-          {selectedGroup.project}
-        </p>
-
-        <div className="detail-grid">
-          <div className="detail-card">
-            <p className="detail-label">Phase</p>
-            <p className="detail-value">{selectedGroup.phase}</p>
-          </div>
-          <div className="detail-card">
-            <p className="detail-label">Progress</p>
-            <p className="detail-value">{selectedGroup.progress}%</p>
-          </div>
-          <div className="detail-card">
-            <p className="detail-label">Members</p>
-            <p className="detail-value">{selectedGroup.members.length}</p>
-          </div>
-          <div className="detail-card">
-            <p className="detail-label">Pending Logs</p>
-            <p className="detail-value" style={{ color: '#f59e0b' }}>{selectedGroup.pendingLogs}</p>
-          </div>
-        </div>
-
-        <h3 className="sub-title">Meeting Logs</h3>
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Week</th>
-                <th>Topics Discussed</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Week 1</td>
-                <td>Requirements finalization</td>
-                <td><span className="badge-approved">Approved</span></td>
-                <td>—</td>
-              </tr>
-              <tr>
-                <td>Week 2</td>
-                <td>ERD & Database Design</td>
-                <td><span className="badge-pending">Pending</span></td>
-                <td>
-                  <button className="approve-btn">Approve</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Week 3</td>
-                <td>—</td>
-                <td><span style={{ color: '#94a3b8' }}>Not Submitted</span></td>
-                <td>—</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h3 className="sub-title" style={{ marginTop: '2rem' }}>Enter Marks</h3>
-        <div className="marks-form">
-          <div className="marks-row">
-            <div className="form-group">
-              <label className="form-label">Presentation (40)</label>
-              <input type="number" className="form-input" placeholder="e.g. 35" max="40" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Report (30)</label>
-              <input type="number" className="form-input" placeholder="e.g. 25" max="30" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Sessional (20)</label>
-              <input type="number" className="form-input" placeholder="e.g. 18" max="20" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Logs (10)</label>
-              <input type="number" className="form-input" placeholder="e.g. 8" max="10" />
-            </div>
-          </div>
-          <button className="submit-btn">Save Marks</button>
-        </div>
-      </div>
-    );
+  const calculateProgress = (status) => {
+    const progressMap = {
+      'pending_approval': 10, 'idea_pitch': 25, 'proposal_pending': 40,
+      'proposal_approved': 60, 'in_progress': 80, 'completed': 100, 'rejected': 0
+    };
+    return progressMap[status] || 0;
   };
 
-  const renderReviews = () => (
-    <div>
-      <h2 className="content-title">Pending Reviews</h2>
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Group</th>
-              <th>Type</th>
-              <th>Submitted</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Team Alpha</td>
-              <td>Meeting Log — Week 2</td>
-              <td>2025-04-20</td>
-              <td><button className="approve-btn">Approve</button></td>
-            </tr>
-            <tr>
-              <td>Team Gamma</td>
-              <td>Project Proposal</td>
-              <td>2025-04-18</td>
-              <td><button className="approve-btn">Review</button></td>
-            </tr>
-            <tr>
-              <td>Team Beta</td>
-              <td>FYP-2 Final Report</td>
-              <td>2025-04-15</td>
-              <td><button className="approve-btn">Review</button></td>
-            </tr>
-          </tbody>
-        </table>
+  if (loading) return <div className="dashboard-container"><div className="loading-spinner">Loading...</div></div>;
+  if (error) return <div className="dashboard-container"><div className="error-message">{error}</div></div>;
+
+  const renderOverview = () => (
+    <div className="overview-content">
+      <h1 className="page-title">Overview</h1>
+      
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon purple">👥</div>
+          <div className="stat-value">{assignedGroups.length}</div>
+          <div className="stat-label">Assigned Groups</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon yellow">📋</div>
+          <div className="stat-value">9</div>
+          <div className="stat-label">Pending Log Reviews</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon green">📄</div>
+          <div className="stat-value">2</div>
+          <div className="stat-label">Reports to Review</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon orange">✏️</div>
+          <div className="stat-value">1</div>
+          <div className="stat-label">Marks Pending</div>
+        </div>
+      </div>
+
+      {/* My Groups Section */}
+      <div className="groups-section">
+        <h2 className="section-title">My Groups</h2>
+        
+        {assignedGroups.length === 0 ? (
+          <div className="empty-state"><p>No groups assigned yet.</p></div>
+        ) : (
+          <div className="groups-list-horizontal">
+            {assignedGroups.map(group => (
+              <div key={group.id} className="group-card-horizontal">
+                <div className="group-info">
+                  <div className="group-header">
+                    <h3 className="group-name">{group.name}</h3>
+                    <span className={`phase-badge ${group.phase === 'FYP-1' ? 'fyp1' : 'fyp2'}`}>
+                      {group.phase}
+                    </span>
+                  </div>
+                  <p className="group-project">{group.project}</p>
+                  {/* ✅ FIXED: Use group.members instead of selectedGroup.members */}
+                  <div className="group-members">
+                    <span className="member-icon">👤</span>
+                    <span className="member-names">
+                      {group.members && group.members.length > 0 
+                        ? group.members.map(m => m.name).join(', ')
+                        : 'No members yet'
+                      }
+                    </span>
+                  </div>
+                </div>
+
+                <div className="group-actions">
+                  <div className="progress-section">
+                    <div className="progress-label">
+                      <span>Progress</span>
+                      <span className="progress-percentage">{group.progress}%</span>
+                    </div>
+                    <div className="progress-bar-container">
+                      <div className="progress-bar-fill" style={{ width: `${group.progress}%` }}></div>
+                    </div>
+                  </div>
+                  <button 
+                    className="view-details-btn"
+                    onClick={() => { setSelectedGroup(group); setActiveTab('groupDetail'); }}
+                  >
+                    View Details →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 
   return (
-    <div className="dashboard-page">
-      <div className={`dashboard-sidebar ${menuOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <h2 className="sidebar-title">Supervisor Panel</h2>
-          <button className="sidebar-close" onClick={() => setMenuOpen(false)}>✕</button>
-        </div>
-        
-        {/* 👤 User Profile Card - TOP POSITION */}
-        <div style={{ 
-          padding: '1rem',
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-          borderRadius: '12px',
-          margin: '0 0.75rem 1rem 0.75rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-          color: 'white'
-        }}>
-          <div style={{
-            width: '44px', height: '44px', borderRadius: '50%',
-            background: 'rgba(255,255,255,0.2)', color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: '700', fontSize: '1.1rem', flexShrink: 0,
-            backdropFilter: 'blur(10px)'
-          }}>
-            {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
+    <div className="dashboard-container">
+      <div className="dashboard-body">
+        {/* Sidebar */}
+        <aside className="sidebar">
+          <div className="sidebar-header">
+            <h2 className="sidebar-title">Supervisor Portal</h2>
           </div>
+          <div className="profile-card">
+            <div className="profile-avatar">
+              {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'S'}
+            </div>
+            <div className="profile-info">
+              <h3 className="profile-name">{userInfo.name}</h3>
+              <p className="profile-role">Supervisor</p>
+            </div>
+          </div>
+          <nav className="sidebar-nav">
+            <button className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
+              <span className="nav-icon">🏠</span>
+              <span className="nav-text">Overview</span>
+            </button>
+            <button className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveTab('reviews')}>
+              <span className="nav-icon">📋</span>
+              <span className="nav-text">Pending Reviews</span>
+            </button>
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="main-content">
+          {activeTab === 'overview' && renderOverview()}
           
-          <div style={{ overflow: 'visible', flex: 1, minWidth: 0 }}>
-            <p style={{ 
-              margin: 0, fontSize: '0.9rem', fontWeight: '600', color: 'white',
-              whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2', overflowWrap: 'break-word'
-            }}>
-              {userInfo.name}
-            </p>
-            <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', textTransform: 'capitalize' }}>
-              {userInfo.role === 'admin' ? 'Administrator' : 
-               userInfo.role === 'supervisor' ? 'Supervisor' : 'User'}
-            </p>
-          </div>
-        </div>
-        
-        <button
-          className={`sidebar-btn ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('overview'); setMenuOpen(false); }}
-        >
-          🏠 Overview
-        </button>
-        <button
-          className={`sidebar-btn ${activeTab === 'reviews' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('reviews'); setMenuOpen(false); }}
-        >
-          📋 Pending Reviews
-        </button>
-      </div>
+          {/* Group Detail View */}
+          {activeTab === 'groupDetail' && selectedGroup && (
+            <div className="group-detail-view">
+              <div className="detail-header">
+                <button className="back-btn" onClick={() => setActiveTab('overview')}>
+                  ← Back to Overview
+                </button>
+                <h1 className="detail-title">{selectedGroup.name}</h1>
+                <p className="detail-subtitle">{selectedGroup.project}</p>
+              </div>
 
-      <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
-        ☰ Menu
-      </button>
+              <div className="detail-grid">
+                {/* Left Column: Group Info */}
+                <div className="detail-column">
+                  <div className="detail-card">
+                    <h3 className="detail-card-title">Group Information</h3>
+                    <div className="detail-row">
+                      <span className="detail-label">Group ID</span>
+                      <span className="detail-value">{selectedGroup.group_number}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Phase</span>
+                      <span className={`phase-badge ${selectedGroup.phase === 'FYP-1' ? 'fyp1' : 'fyp2'}`}>
+                        {selectedGroup.phase}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Status</span>
+                      <span className={`status-badge status-${selectedGroup.status}`}>
+                        {selectedGroup.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Domain</span>
+                      <span className="detail-value">{selectedGroup.domain || 'N/A'}</span>
+                    </div>
+                  </div>
 
-      <div className="dashboard-content">
-        {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'groupDetail' && renderGroupDetail()}
-        {activeTab === 'reviews' && renderReviews()}
+                  {/* Progress Card */}
+                  <div className="detail-card">
+                    <h3 className="detail-card-title">Progress</h3>
+                    <div className="progress-detail">
+                      <div className="progress-circle">
+                        <svg viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8"/>
+                          <circle 
+                            cx="50" cy="50" r="45" fill="none" stroke="#1e3a8a" strokeWidth="8"
+                            strokeDasharray={`${selectedGroup.progress * 2.83} 283`}
+                            strokeLinecap="round"
+                            transform="rotate(-90 50 50)"
+                          />
+                        </svg>
+                        <div className="progress-text">{selectedGroup.progress}%</div>
+                      </div>
+                      <div className="progress-bar-large">
+                        <div className="progress-label-row">
+                          <span>Completion</span>
+                          <span>{selectedGroup.progress}%</span>
+                        </div>
+                        <div className="progress-track">
+                          <div className="progress-fill-large" style={{ width: `${selectedGroup.progress}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Members */}
+                <div className="detail-column">
+                  <div className="detail-card full-height">
+                    <h3 className="detail-card-title">Team Members</h3>
+                    <div className="members-list-detail">
+                      {selectedGroup.members && selectedGroup.members.length > 0 ? (
+                        selectedGroup.members.map((member, idx) => (
+                          <div key={idx} className="member-row">
+                            <div className="member-avatar-sm">
+                              {member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="member-info">
+                              <span className="member-name">{member.name}</span>
+                              <span className="member-role">ID: {member.odoo_id}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="empty-members">No members added yet</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {activeTab === 'reviews' && (
+            <div className="placeholder-section">
+              <h2>Pending Reviews</h2>
+              <p>Feature coming soon...</p>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
