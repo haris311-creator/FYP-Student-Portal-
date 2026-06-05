@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest
+from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest, MeetingMinute, AttendanceLog
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from accounts.models import CustomUser
 
 User = get_user_model()
 
@@ -324,3 +325,143 @@ class AdminApprovalSerializer(serializers.Serializer):
         if data.get('action') == 'reject' and not data.get('rejection_reason', '').strip():
             raise serializers.ValidationError({'rejection_reason': 'Rejection reason is required when rejecting a group'})
         return data
+    
+
+
+# =============================================================================
+# MEETING MINUTES SERIALIZERS
+# =============================================================================
+
+class AttendanceLogSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    student_id = serializers.CharField(source='student.student_id', read_only=True)
+    student = serializers.IntegerField(source='student.id', read_only=True)  # Database ID
+    
+    class Meta:
+        model = AttendanceLog
+        fields = ['id', 'student', 'student_name', 'student_id', 'status', 'marked_at']
+        read_only_fields = ['marked_at']
+
+
+class MeetingMinuteSerializer(serializers.ModelSerializer):
+    """
+    Meeting minutes with nested attendance records.
+    """
+    attendance_records = AttendanceLogSerializer(many=True, read_only=True)
+    supervisor_name = serializers.CharField(source='supervisor.full_name', read_only=True)
+    
+    class Meta:
+        model = MeetingMinute
+        fields = [
+            'id', 'group', 'supervisor', 'supervisor_name',
+            'meeting_number', 'date', 'agenda',
+            'previous_task_status', 'previous_task_comment',
+            'new_task', 'status', 'submitted_at', 'updated_at',
+            'attendance_records'
+        ]
+        read_only_fields = ['submitted_at', 'updated_at']
+    
+    def create(self, validated_data):
+        # Auto-set supervisor from request user
+        request = self.context.get('request')
+        if request and hasattr(request.user, 'faculty_profile'):
+            validated_data['supervisor'] = request.user.faculty_profile
+        return super().create(validated_data)
+
+
+class MeetingMinuteCreateUpdateSerializer(serializers.ModelSerializer):
+    attendance = serializers.DictField(
+        child=serializers.ChoiceField(choices=['present', 'absent']),
+        write_only=True,
+        required=False
+    )
+    supervisor = serializers.PrimaryKeyRelatedField(read_only=True)
+    
+    class Meta:
+        model = MeetingMinute
+        fields = [
+            'meeting_number', 'date', 'agenda',
+            'previous_task_status', 'previous_task_comment',
+            'new_task', 'attendance', 'supervisor'
+        ]
+    
+    def create(self, validated_data):
+        attendance_data = validated_data.pop('attendance', {})
+        
+        # Supervisor auto-set
+        request = self.context.get('request')
+        if request and hasattr(request.user, 'faculty_profile'):
+            validated_data['supervisor'] = request.user.faculty_profile
+        
+        meeting = MeetingMinute.objects.create(**validated_data)
+        
+        group = meeting.group
+        
+        # ✅ UPDATED: Handle BOTH Database ID (int) and Odoo ID (string)
+        for student_key, status in attendance_data.items():
+            try:
+                student = None
+                # Check if key is an integer (Database ID)
+                if str(student_key).isdigit():
+                    student = CustomUser.objects.get(id=student_key)
+                else:
+                    # If not integer, assume Odoo ID
+                    student = CustomUser.objects.get(student_id=student_key)
+                
+                if student:
+                    AttendanceLog.objects.create(
+                        meeting=meeting,
+                        student=student,
+                        status=status
+                    )
+            except CustomUser.DoesNotExist:
+                print(f"⚠️ Student with key {student_key} not found")
+                pass
+        
+        return meeting
+    
+    def update(self, instance, validated_data):
+        attendance_data = validated_data.pop('attendance', None)
+        
+        # Update meeting fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # ✅ UPDATED: Update/Delete and Re-create Attendance
+        if attendance_data is not None:
+            # Delete old records for this meeting to avoid duplicates/conflicts
+            instance.attendance_records.all().delete()
+            
+            for student_key, status in attendance_data.items():
+                try:
+                    student = None
+                    if str(student_key).isdigit():
+                        student = CustomUser.objects.get(id=student_key)
+                    else:
+                        student = CustomUser.objects.get(student_id=student_key)
+                    
+                    if student:
+                        AttendanceLog.objects.create(
+                            meeting=instance,
+                            student=student,
+                            status=status
+                        )
+                except CustomUser.DoesNotExist:
+                    pass
+        
+        return instance
+
+
+class GroupAttendanceSheetSerializer(serializers.Serializer):
+    """
+    FP-5 Attendance Sheet format - All meetings summary.
+    """
+    group_id = serializers.UUIDField()
+    group_number = serializers.CharField()
+    project_title = serializers.CharField()
+    supervisor_name = serializers.CharField()
+    semester = serializers.CharField()
+    fydp_phase = serializers.CharField()
+    members = serializers.ListField()
+    meetings_summary = serializers.ListField()

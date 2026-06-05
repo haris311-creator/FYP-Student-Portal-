@@ -349,3 +349,106 @@ class ChangeRequest(models.Model):
         """Auto-calculate penalty"""
         penalties = {'A1': 0.00, 'A2': 5.00, 'B': 10.00, 'C': 10.00, 'D': 0.00, 'E': None}
         return penalties.get(self.change_type, 0.00)
+
+
+    # =============================================================================
+# MEETING MINUTES & ATTENDANCE MODELS
+# =============================================================================
+
+class MeetingMinute(models.Model):
+    """
+    Supervisor ke liye meeting minutes form.
+    Total 16 meetings per semester.
+    """
+    MEETING_STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('submitted', 'Submitted'),
+    ]
+    
+    PREVIOUS_TASK_STATUS_CHOICES = [
+        ('complete', '✅ Completed'),
+        ('incomplete', '❌ Incomplete'),
+        ('partial', '⚠️ Partial'),
+    ]
+    
+    group = models.ForeignKey(
+        ProjectGroup,
+        on_delete=models.CASCADE,
+        related_name='meeting_minutes'
+    )
+    supervisor = models.ForeignKey(
+        Faculty,
+        on_delete=models.CASCADE,
+        related_name='conducted_meetings'
+    )
+    meeting_number = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(16)],
+        help_text="Meeting number (1-16)"
+    )
+    date = models.DateField()
+    agenda = models.TextField(help_text="Discussion agenda")
+    
+    # Previous task tracking (for meeting 2 onwards)
+    previous_task_status = models.CharField(
+        max_length=20,
+        choices=PREVIOUS_TASK_STATUS_CHOICES,
+        null=True,
+        blank=True
+    )
+    previous_task_comment = models.TextField(blank=True)
+    
+    # New task assignment
+    new_task = models.TextField(help_text="Tasks assigned for next week")
+    
+    status = models.CharField(
+        max_length=20,
+        choices=MEETING_STATUS_CHOICES,
+        default='draft'
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['group', 'meeting_number']
+        ordering = ['meeting_number']
+    
+    def __str__(self):
+        return f"{self.group.group_number} - Meeting #{self.meeting_number}"
+    
+    def save(self, *args, **kwargs):
+        # Auto-set status to submitted when saved
+        self.status = 'submitted'
+        super().save(*args, **kwargs)
+
+
+class AttendanceLog(models.Model):
+    """
+    Per-meeting attendance for each student.
+    """
+    ATTENDANCE_STATUS_CHOICES = [
+        ('present', 'Present'),
+        ('absent', 'Absent'),
+    ]
+    
+    meeting = models.ForeignKey(
+        MeetingMinute,
+        on_delete=models.CASCADE,
+        related_name='attendance_records'
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        limit_choices_to={'user_type': 'student'}
+    )
+    status = models.CharField(
+        max_length=10,
+        choices=ATTENDANCE_STATUS_CHOICES
+    )
+    marked_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['meeting', 'student']
+        
+    
+    def __str__(self):
+        return f"{self.student.full_name} - {self.status}"

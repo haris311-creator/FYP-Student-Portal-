@@ -11,6 +11,7 @@ from accounts.models import CustomUser
 from django.db import models
 from .models import ProjectGroup, Faculty
 from .serializers import ProjectGroupSerializer
+from .models import MeetingMinute, AttendanceLog
 
 
 from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest
@@ -23,6 +24,9 @@ from .serializers import (
     ChangeRequestSerializer,
     AdminProjectGroupSerializer,
     AdminApprovalSerializer,
+    MeetingMinuteSerializer,
+    MeetingMinuteCreateUpdateSerializer,
+    AttendanceLogSerializer,    
 )
 from .permissions import IsStudent, IsGroupMemberOrReadOnly, IsAdminUser
 
@@ -455,17 +459,14 @@ class SupervisorGroupViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
         """GET /api/projects/groups/supervisor/"""
-
         user = request.user
         
-        # Check if user is supervisor
         if user.user_type != 'supervisor':
             return Response(
                 {'error': 'Only supervisors can access this endpoint'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Get Faculty profile linked to this user
         try:
             faculty = Faculty.objects.get(user=user)
         except Faculty.DoesNotExist:
@@ -474,22 +475,26 @@ class SupervisorGroupViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Fetch groups where this faculty is supervisor OR co-supervisor
         groups = ProjectGroup.objects.filter(
             models.Q(supervisor=faculty) | models.Q(co_supervisor=faculty),
             status__in=['idea_pitch', 'proposal_pending', 'proposal_approved', 
-                       'in_progress', 'completed']
+                    'in_progress', 'completed']
         ).prefetch_related(
-            'members__student',
+            'members__student',  # ✅ Yeh important hai
             'supervisor',
             'co_supervisor'
         ).order_by('-created_at')
         
         serializer = self.get_serializer(groups, many=True, context={'request': request})
         
+        # ✅ Debug print
+        print(f"✅ Serialized groups: {len(serializer.data)} groups")
+        for group_data in serializer.data:
+            print(f"  Group {group_data.get('group_number')}: {len(group_data.get('members', []))} members")
+        
         return Response({
             'count': groups.count(),
-            'results': serializer.data
+            'results': serializer.data  # ✅ Yeh sahi hai
         }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['get'])
@@ -519,3 +524,362 @@ class SupervisorGroupViewSet(viewsets.GenericViewSet):
             })
         
         return Response({'members': members_data})
+    
+
+
+# =============================================================================
+# MEETING MINUTES VIEWSET
+# =============================================================================
+
+class MeetingMinuteViewSet(viewsets.ModelViewSet):
+    """
+    CRUD operations for meeting minutes.
+    - Supervisor can create/update meetings for their groups
+    - View all meetings for a group
+    """
+    serializer_class = MeetingMinuteSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        Filter meetings based on user role:
+        - Supervisors: Only their conducted meetings
+        - Students: Only their group's meetings
+        """
+        user = self.request.user
+        group_id = self.request.query_params.get('group_id')
+        
+        queryset = MeetingMinute.objects.all()
+        
+        if group_id:
+            queryset = queryset.filter(group_id=group_id)
+        
+        if user.user_type == 'supervisor':
+            try:
+                faculty = user.faculty_profile
+                queryset = queryset.filter(
+                    models.Q(supervisor=faculty) | 
+                    models.Q(group__co_supervisor=faculty)
+                )
+            except Faculty.DoesNotExist:
+                return MeetingMinute.objects.none()
+        
+        elif user.user_type == 'student':
+            # Students can only see their group's meetings
+            queryset = queryset.filter(
+                group__members__student=user
+            ).distinct()
+        
+        return queryset.select_related('supervisor', 'group').prefetch_related('attendance_records')
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return MeetingMinuteCreateUpdateSerializer
+        return MeetingMinuteSerializer
+    
+    def perform_create(self, serializer):
+        group_id = self.request.data.get('group') or self.request.query_params.get('group_id')
+        if group_id:
+            try:
+                group = ProjectGroup.objects.get(pk=group_id)
+                # Supervisor auto-set karein
+                if hasattr(self.request.user, 'faculty_profile'):
+                    serializer.save(group=group, supervisor=self.request.user.faculty_profile)
+                else:
+                    serializer.save(group=group)
+            except ProjectGroup.DoesNotExist:
+                serializer.save()
+        else:
+            serializer.save()
+    
+    @action(detail=True, methods=['get'])
+    def attendance_summary(self, request, pk=None):
+        """
+        Get attendance summary for a specific meeting.
+        """
+        meeting = self.get_object()
+        attendance = meeting.attendance_records.all()
+        
+        summary = {
+            'meeting_number': meeting.meeting_number,
+            'date': meeting.date,
+            'total_students': attendance.count(),
+            'present': attendance.filter(status='present').count(),
+            'absent': attendance.filter(status='absent').count(),
+            'records': AttendanceLogSerializer(attendance, many=True).data
+        }
+        
+        return Response(summary)
+
+
+# =============================================================================
+# ATTENDANCE SHEET VIEWSET (FP-5 Format)
+# =============================================================================
+
+class AttendanceSheetViewSet(viewsets.ViewSet):
+    """
+    Generate FP-5 style attendance sheet for a group.
+    Shows all 16 meetings in grid format.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def retrieve(self, request, pk=None):
+        """
+        GET /api/projects/groups/{pk}/attendance-sheet/
+        """
+        try:
+            group = ProjectGroup.objects.prefetch_related(
+                'members__student',
+                'meeting_minutes__attendance_records'
+            ).get(pk=pk)
+        except ProjectGroup.DoesNotExist:
+            return Response(
+                {'error': 'Group not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Verify access
+        user = request.user
+        if user.user_type == 'supervisor':
+            try:
+                faculty = user.faculty_profile
+                if group.supervisor != faculty and group.co_supervisor != faculty:
+                    return Response(
+                        {'error': 'Access denied'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except Faculty.DoesNotExist:
+                return Response(
+                    {'error': 'Faculty profile not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        
+        # Build attendance sheet data
+        members = group.members.all()
+        meetings = group.meeting_minutes.all().order_by('meeting_number')
+        
+        # Create meeting number to data map
+        meeting_map = {}
+        for meeting in meetings:
+            meeting_map[meeting.meeting_number] = {
+                'date': meeting.date.strftime('%Y-%m-%d'),
+                'attendance': {
+                    rec.student.id: rec.status 
+                    for rec in meeting.attendance_records.all()
+                }
+            }
+        
+        # Build member-wise attendance
+        members_data = []
+        for member in members:
+            # ✅ Safely get full name
+            student = member.student
+            full_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.email
+            
+            member_attendance = []
+            total_present = 0
+            
+            for meeting_num in range(1, 17):
+                if meeting_num in meeting_map:
+                    att_status = meeting_map[meeting_num]['attendance'].get(
+                        member.student.id, 'absent'
+                    )
+                    if att_status == 'present':
+                        total_present += 1
+                    member_attendance.append(att_status)
+                else:
+                    member_attendance.append(None)
+            
+            members_data.append({
+                'student_id': member.student.id,
+                'full_name': full_name,  # ✅ Fixed
+                'odoo_id': member.student.student_id or 'N/A',
+                'attendance': member_attendance,
+                'total_present': total_present,
+                'total_meetings': len(meetings)
+            })
+        
+        # Build meetings summary
+        meetings_summary = []
+        for meeting_num in range(1, 17):
+            if meeting_num in meeting_map:
+                meetings_summary.append({
+                    'meeting_number': meeting_num,
+                    'date': meeting_map[meeting_num]['date'],
+                    'conducted': True
+                })
+            else:
+                meetings_summary.append({
+                    'meeting_number': meeting_num,
+                    'date': None,
+                    'conducted': False
+                })
+        
+        data = {
+            'group_id': group.group_id,
+            'group_number': group.group_number,
+            'project_title': group.project_title,
+            'supervisor_name': group.supervisor.full_name if group.supervisor else 'N/A',
+            'semester': group.semester,
+            'fydp_phase': group.fydp_phase,
+            'members': members_data,
+            'meetings_summary': meetings_summary,
+            'total_meetings_conducted': len(meetings)
+        }
+        
+        return Response(data)
+    
+    @action(detail=True, methods=['get'], url_path='export-excel')
+    def export_excel(self, request, pk=None):
+        """
+        Export attendance sheet as Excel file.
+        Requires: pip install openpyxl
+        """
+        try:
+            import openpyxl
+            from openpyxl import Workbook
+            from openpyxl.styles import Font, PatternFill, Alignment
+            from django.http import HttpResponse
+        except ImportError:
+            return Response(
+                {'error': 'Excel export requires openpyxl. Install: pip install openpyxl'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Get attendance sheet data
+        response = self.retrieve(request, pk)
+        if response.status_code != 200:
+            return response
+        
+        data = response.data
+        
+        # Create Excel workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"Attendance-{data['group_number']}"
+        
+        # Header styling
+        header_fill = PatternFill(start_color="1e3a8a", end_color="1e3a8a", fill_type="solid")
+        header_font = Font(color="FFFFFF", bold=True)
+        
+        # Title
+        ws.merge_cells('A1:D1')
+        ws['A1'] = f"Attendance Sheet (FP-5) - {data['group_number']}"
+        ws['A1'].font = Font(size=16, bold=True)
+        ws['A1'].alignment = Alignment(horizontal='center')
+        
+        # Group info
+        ws['A3'] = f"Project: {data['project_title']}"
+        ws['A4'] = f"Supervisor: {data['supervisor_name']}"
+        ws['A5'] = f"Semester: {data['semester']} | Phase: {data['fydp_phase']}"
+        
+        # Attendance table header
+        ws.append([])  # Empty row
+        headers = ['Seat No.', 'Student Name', 'Odoo ID'] + \
+                  [f"Meeting {i}" for i in range(1, 17)] + \
+                  ['Total']
+        
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=7, column=col_num, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Student data
+        for idx, member in enumerate(data['members'], 8):
+            ws.cell(row=idx, column=1, value=idx-7)  # Seat number
+            ws.cell(row=idx, column=2, value=member['full_name'])
+            ws.cell(row=idx, column=3, value=member['odoo_id'])
+            
+            for meeting_num, att_status in enumerate(member['attendance'], 4):
+                if att_status == 'present':
+                    ws.cell(row=idx, column=meeting_num, value='P')
+                elif att_status == 'absent':
+                    ws.cell(row=idx, column=meeting_num, value='A')
+                else:
+                    ws.cell(row=idx, column=meeting_num, value='-')
+            
+            # Total
+            total_cell = ws.cell(row=idx, column=21, value=member['total_present'])
+            total_cell.font = Font(bold=True)
+        
+        # Save to response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename=Attendance_{data["group_number"]}.xlsx'
+        wb.save(response)
+        
+        return response
+    
+
+
+# =============================================================================
+# ✅ STUDENT MEETING DATA VIEWSET
+# =============================================================================
+
+class StudentMeetingDataView(viewsets.ViewSet):
+    """
+    Student ke liye apni Group ki Attendance aur Tasks fetch karne ka endpoint.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def list(self, request):
+        user = request.user
+        
+        try:
+            # ✅ FIX: .get() ki jagah .filter() use karein aur pehla active group lein
+            member = GroupMember.objects.filter(
+                student=user,
+                group__status__in=['idea_pitch', 'approved', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed']
+            ).select_related('group').first()
+            
+            if not member:
+                return Response({
+                    'error': 'No active group found',
+                    'current_task': None,
+                    'attendance': []
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            group = member.group
+            
+            # 2. Meetings fetch karein
+            meetings = MeetingMinute.objects.filter(group=group).order_by('meeting_number')
+            
+            # 3. Latest Task dhundein (Aakhri meeting se)
+            current_task = None
+            if meetings.exists():
+                last_meeting = meetings.last()
+                current_task = last_meeting.new_task
+            
+            # 4. Student ki Attendance Records fetch karein
+            attendance_logs = AttendanceLog.objects.filter(
+                meeting__group=group,
+                student=user
+            ).order_by('meeting__meeting_number')
+            
+            # Data structure build karein
+            attendance_data = []
+            for log in attendance_logs:
+                attendance_data.append({
+                    'meeting_number': log.meeting.meeting_number,
+                    'date': log.meeting.date,
+                    'status': log.status.capitalize(),  # ✅ Capitalize: 'present' -> 'Present'
+                    'agenda': log.meeting.agenda,
+                    'task_assigned': log.meeting.new_task 
+                })
+            
+            response_data = {
+                'group_number': group.group_number,
+                'current_task': current_task,
+                'attendance': attendance_data
+            }
+            
+            return Response(response_data)
+            
+        except Exception as e:
+            return Response({
+                'error': str(e),
+                'current_task': None,
+                'attendance': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

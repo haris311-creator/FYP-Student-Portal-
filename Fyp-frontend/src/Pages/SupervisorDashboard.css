@@ -1,6 +1,8 @@
 /* fyp-frontend/src/Pages/Supervisordashboard.css */
 
-/* Container */
+/* =========================================
+   1. GLOBAL LAYOUT & RESET
+   ========================================= */
 .dashboard-container {
   min-height: 100vh;
   background: #f5f7fa;
@@ -8,9 +10,11 @@
   flex-direction: column;
 }
 
-/* ✅ SINGLE TOP NAVBAR */
+/* =========================================
+   2. TOP NAVBAR (HEADER)
+   ========================================= */
 .dashboard-header {
-  background: #1e3a8a; /* Dark Blue */
+  background: #1e3a8a;
   color: white;
   padding: 0 2rem;
   height: 64px;
@@ -61,14 +65,18 @@
   font-size: 0.9rem;
 }
 
-/* Dashboard Body Layout */
+/* =========================================
+   3. DASHBOARD BODY LAYOUT
+   ========================================= */
 .dashboard-body {
   display: flex;
   flex: 1;
-  margin-top: 0; /* Ensure it sits right under header */
+  margin-top: 0;
 }
 
-/* ✅ SIDEBAR */
+/* =========================================
+   4. SIDEBAR STYLES
+   ========================================= */
 .sidebar {
   width: 260px;
   background: white;
@@ -76,7 +84,7 @@
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
-  min-height: calc(100vh - 64px); /* Full height minus header */
+  min-height: calc(100vh - 64px);
 }
 
 .sidebar-header {
@@ -90,7 +98,70 @@
   margin: 0;
 }
 
-/* ✅ NAYA CODE (Paste Karein) - Blue Gradient Style */
+/* Mobile View - Sidebar ko slide karna hai */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px; /* Shuru mein chhupa hua */
+    width: 280px;
+    height: 100vh;
+    z-index: 10000;
+    transition: left 0.3s ease;
+    background: white;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.open {
+    left: 0; /* Slide in - visible ho */
+  }
+  
+  /* Close button show karein */
+  .sidebar-close {
+    display: block;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #64748b;
+  }
+  
+  /* Mobile menu button */
+  .mobile-menu-btn {
+    display: block;
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: #1e3a8a;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 50px;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Desktop par close button aur menu button hide */
+@media (min-width: 769px) {
+  .sidebar-close {
+    display: none;
+  }
+  
+  .mobile-menu-btn {
+    display: none;
+  }
+}
+
+/* =========================================
+   5. PROFILE CARD (Blue Gradient)
+   ========================================= */
 .profile-card {
   display: flex;
   align-items: center;
@@ -147,7 +218,9 @@
   color: #9ca3af;
 }
 
-/* Sidebar Nav */
+/* =========================================
+   6. SIDEBAR NAVIGATION
+   ========================================= */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -180,7 +253,9 @@
   border-left: 3px solid #1e3a8a;
 }
 
-/* ✅ MAIN CONTENT */
+/* =========================================
+   7. MAIN CONTENT AREA
+   ========================================= */
 .main-content {
   flex: 1;
   padding: 2rem;
@@ -194,6 +269,9 @@
   margin: 0 0 1.5rem 0;
 }
 
+/* =========================================
+   8. STATS GRID (Overview Cards)
+   ========================================= */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -241,7 +319,9 @@
   margin-top: 0.25rem;
 }
 
-/* ✅ Groups List (Horizontal Cards) */
+/* =========================================
+   9. GROUPS LIST (Horizontal Cards)
+   ========================================= */
 .groups-list-horizontal {
   display: flex;
   flex-direction: column;
@@ -360,7 +440,9 @@
   color: white;
 }
 
-/* Loading & Error */
+/* =========================================
+   10. LOADING & ERROR STATES
+   ========================================= */
 .loading-spinner {
   display: flex;
   justify-content: center;
@@ -375,10 +457,9 @@
   margin-top: 2rem;
 }
 
-/* ============================================ */
-/* ✅ NEW: GROUP DETAIL VIEW STYLES */
-/* ============================================ */
-
+/* =========================================
+   11. GROUP DETAIL VIEW
+   ========================================= */
 .group-detail-view {
   animation: fadeIn 0.3s ease;
 }
@@ -428,6 +509,31 @@
   font-size: 1rem;
   color: #64748b;
   margin: 0;
+}
+
+/* Detail Tabs */
+.detail-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover { background: #f8fafc; }
+.tab-btn.active {
+  background: #1e3a8a;
+  color: white;
+  border-color: #1e3a8a;
 }
 
 /* Detail Grid Layout */
@@ -632,7 +738,465 @@
   color: #6b7280;
 }
 
-/* Responsive */
+/* =========================================
+   12. MEETINGS & ATTENDANCE SECTION
+   ========================================= */
+.detail-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover { background: #f8fafc; }
+.tab-btn.active {
+  background: #1e3a8a;
+  color: white;
+  border-color: #1e3a8a;
+}
+
+.meetings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.attendance-sheet-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card-header h3 { margin: 0; font-size: 1.1rem; color: #1e3a8a; }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #1e3a8a;
+  color: #1e3a8a;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-outline:hover { background: #1e3a8a; color: white; }
+
+.table-responsive { overflow-x: auto; }
+
+.fp5-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 800px;
+}
+
+.fp5-table th {
+  background: #1e3a8a;
+  color: white;
+  padding: 0.6rem;
+  text-align: center;
+  border: 1px solid #1e40af;
+}
+
+.fp5-table td {
+  padding: 0.6rem;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.att-p { background: #dcfce7; color: #15803d; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.att-a { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.att-none { color: #cbd5e1; }
+
+.total-cell { font-weight: 700; color: #1e3a8a; }
+
+.meetings-grid-section h3 { margin: 0 0 1rem 0; font-size: 1.1rem; color: #1e3a8a; }
+
+.meetings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.meeting-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.meeting-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-2px); }
+
+.meeting-done { border-left: 4px solid #10b981; }
+.meeting-pending { border-left: 4px solid #3b82f6; }
+
+.meeting-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.meeting-num { font-weight: 600; color: #0f172a; }
+
+.badge { 
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0; /* Badge ko shrink hone se bachaye */
+  white-space: nowrap; /* Text wrap na ho */ 
+}
+.badge-green { background: #dcfce7; color: #15803d; }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+
+.meeting-card-body p { margin: 0.2rem 0; font-size: 0.8rem; color: #64748b; }
+.meeting-task { color: #374151 !important; }
+
+/* Mobile View */
+@media (max-width: 768px) {
+  .meeting-card {
+    padding: 0.875rem;
+  }
+  
+  .meeting-num {
+    font-size: 0.875rem;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+}
+
+/* =========================================
+   13. MEETING FORM STYLES
+   ========================================= */
+.meeting-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.meeting-form-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #1e3a8a;
+}
+
+.close-form-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-form-btn:hover {
+  background: #f1f5f9;
+  color: #ef4444;
+}
+
+.form-info-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.form-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-info-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.form-info-value {
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.mform-group {
+  margin-bottom: 1.5rem;
+}
+
+.mform-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.mform-input,
+.mform-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.mform-input:focus,
+.mform-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.mform-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.prev-task-box {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.prev-task-label {
+  font-size: 0.85rem;
+  color: #92400e;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.prev-task-status-row {
+  margin-bottom: 1rem;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.radio-label input[type="radio"] {
+  cursor: pointer;
+}
+
+.attendance-check-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.attendance-check-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.attendance-check-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.att-member-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.att-member-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.att-member-id {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.att-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.att-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #64748b;
+}
+
+.att-btn:hover {
+  background: #f8fafc;
+}
+
+.att-btn-present {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.att-btn-absent {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.mform-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.submit-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover {
+  background: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.submit-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.back-btn {
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: #f8fafc;
+  color: #1e3a8a;
+}
+
+.meeting-active {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  cursor: default;
+}
+
+/* =========================================
+   14. RESPONSIVE DESIGN
+   ========================================= */
 @media (max-width: 1024px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -655,9 +1219,6 @@
     width: 100%;
     flex-direction: row;
     justify-content: space-between;
-  }
-  .sidebar {
-    display: none; /* Hide sidebar on mobile for now */
   }
   
   .progress-detail {

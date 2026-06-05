@@ -5,32 +5,67 @@ import './Navbar.css';
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isChecking, setIsChecking] = useState(true); // ✅ Loading state
   const navigate = useNavigate();
 
-  // Check auth status
-  const checkAuth = () => {
-    const token = localStorage.getItem('access_token');
-    setIsLoggedIn(!!token);
+  const checkAuth = async () => {
+    setIsChecking(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const userStr = localStorage.getItem('user');
+      
+      // Agar token ya user data nahi hai
+      if (!token || !userStr || token === 'undefined') {
+        // Clear everything
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_type');
+        setIsLoggedIn(false);
+        setIsChecking(false);
+        return;
+      }
+
+      // ✅ Token ko backend se validate karein (optional but recommended)
+      // Ya phir sirf check karein ke user data valid hai
+      try {
+        const user = JSON.parse(userStr);
+        if (user && user.user_type) {
+          setIsLoggedIn(true);
+        } else {
+          throw new Error('Invalid user data');
+        }
+      } catch (e) {
+        // Invalid data - clear everything
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('user_type');
+        setIsLoggedIn(false);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsLoggedIn(false);
+    } finally {
+      setIsChecking(false);
+    }
   };
 
   useEffect(() => {
-    checkAuth(); // Check on load
+    checkAuth();
     
-    // Listen for auth changes (login/logout)
+    // Listen for auth changes
     window.addEventListener('authChanged', checkAuth);
     return () => window.removeEventListener('authChanged', checkAuth);
   }, []);
 
-  // Logout handler
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     localStorage.removeItem('user_type');
     
-    // Notify Navbar
     window.dispatchEvent(new Event('authChanged'));
-    
     setIsLoggedIn(false);
     navigate('/login');
   };
@@ -56,7 +91,12 @@ function Navbar() {
             </Link>
           </li>
           <li>
-            {isLoggedIn ? (
+            {/* ✅ Show Login while checking, then show actual state */}
+            {isChecking ? (
+              <Link to="/login" className="nav-link login-btn" onClick={() => setMenuOpen(false)}> 
+                Login               
+              </Link>
+            ) : isLoggedIn ? (
               <button 
                 onClick={handleLogout} 
                 className="nav-link login-btn" 

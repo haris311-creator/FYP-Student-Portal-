@@ -1,6 +1,6 @@
 // fyp-frontend/src/Pages/Supervisordashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { supervisorAPI } from '../utils/api';
+import { supervisorAPI, meetingAPI, attendanceSheetAPI } from '../utils/api';
 import './Supervisordashboard.css';
 
 function SupervisorDashboard() {
@@ -10,7 +10,23 @@ function SupervisorDashboard() {
   const [assignedGroups, setAssignedGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  
+  // ✅ New states for Meetings & Attendance
+  const [detailSubTab, setDetailSubTab] = useState('info');
+  const [meetingsList, setMeetingsList] = useState([]);
+  const [attendanceData, setAttendanceData] = useState(null);
+  const [loadingMeetings, setLoadingMeetings] = useState(false);
+  const [activeMeetingForm, setActiveMeetingForm] = useState(null);
+  const [formData, setFormData] = useState({
+    date: '',
+    agenda: '',
+    previous_task_status: '',
+    previous_task_comment: '',
+    new_task: '',
+    attendance: {}
+  });
+  const [formLoading, setFormLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   // Load user info
   useEffect(() => {
     const loadUser = () => {
@@ -33,37 +49,47 @@ function SupervisorDashboard() {
   }, []);
 
   // Fetch assigned groups
-
   useEffect(() => {
     const fetchAssignedGroups = async () => {
       try {
         setLoading(true);
         const response = await supervisorAPI.getAssignedGroups();
         
-        const transformedGroups = response.data.results.map(group => ({
-          id: group.id,
-          group_number: group.group_number,
-          name: `Group ${group.group_number}`, 
-          project: group.project_title || 'Untitled Project',
-          // ✅ UPDATED: Full name + odoo_id
-          members: group.members?.map(m => ({
-            name: m.student_first_name && m.student_last_name 
-              ? `${m.student_first_name} ${m.student_last_name}`.trim()
-              : m.student_name || m.full_name || m.student?.full_name || 'Unknown',
-            odoo_id: m.student_id || m.odoo_id || m.student?.student_id || 'N/A',
-            email: m.student_email || m.student?.email || ''
-          })) || [],
-          phase: group.fydp_phase === 'fydp1' ? 'FYP-1' : 'FYP-2',
-          status: group.status,
-          progress: calculateProgress(group.status),
-          // ✅ UPDATED: Use domain_display (full name) from backend
-          domain: group.domain_display || group.domain || 'N/A',
-        }));
+        console.log("📦 Raw API Response:", response.data);
+        console.log("📦 Results:", response.data.results);
         
+        const transformedGroups = response.data.results.map(group => {
+          console.log(`Processing Group ${group.group_number}:`, group);
+          
+          return {
+            id: group.id,
+            group_number: group.group_number,
+            name: `Group ${group.group_number}`, 
+            project: group.project_title || 'Untitled Project',
+            members: group.members?.map(m => {
+              console.log(`  Member:`, m);
+              return {
+                name: m.student_first_name && m.student_last_name 
+                  ? `${m.student_first_name} ${m.student_last_name}`.trim()
+                  : m.student_name || m.full_name || m.student?.full_name || 'Unknown',
+                odoo_id: m.student_id || m.odoo_id || m.student?.student_id || 'N/A',
+                student_db_id: m.student || m.id || null, // ✅ Backend ne 'student' field mein ID bheji hai
+                email: m.student_email || m.student?.email || ''
+              };
+            }) || [],
+            phase: group.fydp_phase === 'fydp1' ? 'FYP-1' : 'FYP-2',
+            status: group.status,
+            progress: calculateProgress(group.status),
+            domain: group.domain_display || group.domain || 'N/A',
+          };
+        });
+        
+        console.log("✅ Transformed Groups:", transformedGroups);
         setAssignedGroups(transformedGroups);
         setError(null);
       } catch (err) {
-        console.error('Error fetching groups:', err);
+        console.error('❌ Error fetching groups:', err);
+        console.error('Response:', err.response?.data);
         setError('Failed to load assigned groups');
       } finally {
         setLoading(false);
@@ -71,6 +97,43 @@ function SupervisorDashboard() {
     };
     fetchAssignedGroups();
   }, []);
+
+
+  // Fetch meetings & attendance data when group is selected
+  useEffect(() => {
+    if (!selectedGroup) {
+      console.log("⚠️ No group selected, skipping meetings fetch");
+      return;
+    }
+
+    const fetchMeetingsData = async () => {
+      try {
+        console.log(`🔄 Fetching meetings for group ${selectedGroup.id}...`);
+        setLoadingMeetings(true);
+        
+        const [meetingsRes, sheetRes] = await Promise.all([
+          meetingAPI.getByGroup(selectedGroup.id),
+          attendanceSheetAPI.getSheet(selectedGroup.id)
+        ]);
+        
+        console.log("✅ Meetings API Response:", meetingsRes.data);
+        console.log("✅ Meetings Results:", meetingsRes.data.results || meetingsRes.data);
+        console.log("✅ Attendance Sheet:", sheetRes.data);
+        
+        // ✅ Handle both array and object with results
+        const meetingsData = meetingsRes.data.results || meetingsRes.data || [];
+        setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
+        setAttendanceData(sheetRes.data);
+      } catch (err) {
+        console.error("❌ Error fetching meetings:", err);
+        console.error("Response:", err.response?.data);
+      } finally {
+        setLoadingMeetings(false);
+      }
+    };
+    
+    fetchMeetingsData();
+  }, [selectedGroup]);
 
   const calculateProgress = (status) => {
     const progressMap = {
@@ -80,14 +143,175 @@ function SupervisorDashboard() {
     return progressMap[status] || 0;
   };
 
+const handleMeetingCardClick = (meetingNum) => {
+  const existingMeeting = meetingsList.find(m => m.meeting_number === meetingNum);
+  
+  console.log("📋 Meeting Clicked:", meetingNum);
+  console.log("Existing Meeting:", existingMeeting);
+  
+  // Initialize default attendance (all Present)
+  let attendanceMap = {};
+  selectedGroup.members.forEach((member, idx) => {
+    // Use student_db_id as key
+    const key = member.student_db_id;
+    if (key) {
+      attendanceMap[key] = 'present';
+    }
+  });
+
+  if (existingMeeting) {
+    console.log("✅ Editing existing meeting");
+    console.log("Attendance Records:", existingMeeting.attendance_records);
+    
+    // Populate form with saved data
+    (existingMeeting.attendance_records || []).forEach(rec => {
+      // Backend se 'student' field mein student ka database ID aa raha hai
+      const studentKey = rec.student;
+      console.log(`Mapping: Student ${studentKey} -> ${rec.status}`);
+      
+      if (studentKey) {
+        attendanceMap[studentKey] = rec.status;
+      }
+    });
+
+    setFormData({
+      date: existingMeeting.date,
+      agenda: existingMeeting.agenda,
+      previous_task_status: existingMeeting.previous_task_status || '',
+      previous_task_comment: existingMeeting.previous_task_comment || '',
+      new_task: existingMeeting.new_task,
+      attendance: attendanceMap
+    });
+    
+    console.log("✅ Form populated with attendance:", attendanceMap);
+  } else {
+    console.log("➕ Creating new meeting");
+    setFormData({
+      date: new Date().toISOString().split('T')[0],
+      agenda: '',
+      previous_task_status: '',
+      previous_task_comment: '',
+      new_task: '',
+      attendance: attendanceMap
+    });
+  }
+  setActiveMeetingForm(meetingNum);
+};
+
+  const handleFormChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAttendanceChange = (studentId, status) => {
+    console.log(`Attendance: Student ${studentId} -> ${status}`);
+    setFormData(prev => ({
+      ...prev,
+      attendance: { ...prev.attendance, [studentId]: status }
+    }));
+  };
+
+const handleSubmitMeeting = async () => {
+  if (!formData.date || !formData.agenda || !formData.new_task) {
+    alert('Please fill all required fields (Date, Agenda, New Task)');
+    return;
+  }
+
+  try {
+    setFormLoading(true);
+    console.log("💾 Starting save process...");
+    
+    // Convert attendance format
+    const formattedAttendance = {};
+    selectedGroup.members.forEach(member => {
+      if (member.student_db_id) {
+        const status = formData.attendance[member.student_db_id] || 'present';
+        formattedAttendance[member.student_db_id] = status;
+      }
+    });
+
+    const payload = {
+      group: selectedGroup.id,
+      meeting_number: activeMeetingForm,
+      date: formData.date,
+      agenda: formData.agenda,
+      previous_task_status: formData.previous_task_status || null,
+      previous_task_comment: formData.previous_task_comment || '',
+      new_task: formData.new_task,
+      attendance: formattedAttendance
+    };
+
+    console.log("📤 Sending payload:", payload);
+
+    const existingMeeting = meetingsList.find(m => m.meeting_number === activeMeetingForm);
+    
+    if (existingMeeting) {
+      console.log("🔄 Updating meeting", existingMeeting.id);
+      await meetingAPI.update(existingMeeting.id, payload);
+      alert('Meeting updated successfully!');
+    } else {
+      console.log("💾 Creating new meeting");
+      await meetingAPI.create(selectedGroup, payload);
+      alert('Meeting saved successfully!');
+    }
+
+    // ✅ IMMEDIATE STATE UPDATE (API call se pehle nahi, baad mein)
+    console.log("🔄 Refreshing data from server...");
+    
+    // Force wait for backend to process
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Fresh data fetch karein
+    const meetingsResponse = await meetingAPI.getByGroup(selectedGroup.id);
+    const sheetResponse = await attendanceSheetAPI.getSheet(selectedGroup.id);
+    
+    console.log("✅ Meetings Response:", meetingsResponse.data);
+    console.log("✅ Sheet Response:", sheetResponse.data);
+    
+    // ✅ Properly handle response structure
+    const meetingsData = meetingsResponse.data.results || meetingsResponse.data || [];
+    const attendanceData = sheetResponse.data;
+    
+    console.log("📋 Processed Meetings:", meetingsData);
+    console.log("📊 Processed Attendance:", attendanceData);
+    
+    // State update - yeh zaroori hai!
+    setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
+    setAttendanceData(attendanceData);
+    
+    // Form close karein
+    setActiveMeetingForm(null);
+    
+    // Form reset
+    setFormData({
+      date: '',
+      agenda: '',
+      previous_task_status: '',
+      previous_task_comment: '',
+      new_task: '',
+      attendance: {}
+    });
+    
+    console.log("✅ Save complete, UI updated");
+    
+  } catch (err) {
+    console.error("❌ Error saving meeting:", err);
+    console.error("Response data:", err.response?.data);
+    alert("Failed to save meeting. Please try again.");
+  } finally {
+    setFormLoading(false);
+  }
+};
+
+  const closeForm = () => {
+    setActiveMeetingForm(null);
+  };
+
   if (loading) return <div className="dashboard-container"><div className="loading-spinner">Loading...</div></div>;
   if (error) return <div className="dashboard-container"><div className="error-message">{error}</div></div>;
 
   const renderOverview = () => (
     <div className="overview-content">
       <h1 className="page-title">Overview</h1>
-      
-      {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon purple">👥</div>
@@ -110,11 +334,8 @@ function SupervisorDashboard() {
           <div className="stat-label">Marks Pending</div>
         </div>
       </div>
-
-      {/* My Groups Section */}
       <div className="groups-section">
         <h2 className="section-title">My Groups</h2>
-        
         {assignedGroups.length === 0 ? (
           <div className="empty-state"><p>No groups assigned yet.</p></div>
         ) : (
@@ -129,7 +350,6 @@ function SupervisorDashboard() {
                     </span>
                   </div>
                   <p className="group-project">{group.project}</p>
-                  {/* ✅ FIXED: Use group.members instead of selectedGroup.members */}
                   <div className="group-members">
                     <span className="member-icon">👤</span>
                     <span className="member-names">
@@ -140,7 +360,6 @@ function SupervisorDashboard() {
                     </span>
                   </div>
                 </div>
-
                 <div className="group-actions">
                   <div className="progress-section">
                     <div className="progress-label">
@@ -166,13 +385,312 @@ function SupervisorDashboard() {
     </div>
   );
 
+  const renderMeetingsSection = () => {
+    if (loadingMeetings) return <div className="loading-spinner">Loading meetings data...</div>;
+
+    return (
+      <div className="meetings-container">
+        <div className="attendance-sheet-card">
+          <div className="card-header">
+            <h3>📋 Attendance Sheet (FP-5)</h3>
+            <button 
+              className="btn-outline" 
+              onClick={async () => {
+                try {
+                  const res = await attendanceSheetAPI.exportExcel(selectedGroup.id);
+                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', `Attendance_${selectedGroup.group_number}.xlsx`);
+                  document.body.appendChild(link);
+                  link.click();
+                } catch (err) {
+                  alert("Excel export failed. Make sure openpyxl is installed on backend.");
+                }
+              }}
+            >
+              📥 Export Excel
+            </button>
+          </div>
+          {attendanceData ? (
+            <div className="table-responsive">
+              <table className="fp5-table">
+                <thead>
+                  <tr>
+                    <th>Seat No.</th>
+                    <th>Student Name</th>
+                    <th>Odoo ID</th>
+                    {Array.from({ length: 16 }, (_, i) => <th key={i}>{i + 1}</th>)}
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendanceData.members.map((member, idx) => (
+                    <tr key={member.student_id}>
+                      <td>{idx + 1}</td>
+                      <td>{member.full_name}</td>
+                      <td>{member.odoo_id}</td>
+                      {member.attendance.map((status, mIdx) => (
+                        <td key={mIdx} className={`att-${status === 'present' ? 'p' : status === 'absent' ? 'a' : 'none'}`}>
+                          {status === 'present' ? 'P' : status === 'absent' ? 'A' : '—'}
+                        </td>
+                      ))}
+                      <td className="total-cell">{member.total_present}/{member.total_meetings}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p>No attendance records found.</p>
+          )}
+        </div>
+
+        <div className="meetings-grid-section">
+          <h3>📝 Meeting Minutes</h3>
+          <div className="meetings-grid">
+            {Array.from({ length: 16 }, (_, i) => {
+              const meetingNum = i + 1;
+              const meeting = meetingsList.find(m => m.meeting_number === meetingNum);
+              const isConducted = !!meeting;
+              const isActive = activeMeetingForm === meetingNum;
+              
+              return (
+                <div key={meetingNum}>
+                  <div 
+                    className={`meeting-card ${isConducted ? 'meeting-done' : 'meeting-pending'} ${isActive ? 'meeting-active' : ''}`}
+                    onClick={() => !isActive && handleMeetingCardClick(meetingNum)}
+                  >
+                    <div className="meeting-card-header">
+                      <span className="meeting-num">Meeting #{meetingNum}</span>
+                      <span className={`badge ${isConducted ? 'badge-green' : 'badge-blue'}`}>
+                        {isConducted ? '✅ Done' : '📝 Pending'}
+                      </span>
+                    </div>
+                    {isConducted && !isActive && (
+                      <div className="meeting-card-body">
+                        <p className="meeting-date">📅 {meeting.date}</p>
+                        <p className="meeting-task"><strong>Task:</strong> {meeting.new_task?.slice(0, 40)}...</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {isActive && (
+                    <div className="meeting-form-overlay">
+                      <div className="meeting-form-container">
+                        <div className="form-header">
+                          <h3>Meeting #{meetingNum} — Minutes Form</h3>
+                          <button className="close-form-btn" onClick={closeForm}>✕</button>
+                        </div>
+                        
+                        <div className="form-info-row">
+                          <div className="form-info-item">
+                            <span className="form-info-label">Project Title</span>
+                            <span className="form-info-value">{selectedGroup.project}</span>
+                          </div>
+                          <div className="form-info-item">
+                            <span className="form-info-label">Supervisor</span>
+                            <span className="form-info-value">{userInfo.name}</span>
+                          </div>
+                        </div>
+
+                        <div className="mform-group">
+                          <label className="mform-label">Date of Meeting <span className="required">*</span></label>
+                          <input
+                            type="date"
+                            className="mform-input"
+                            value={formData.date}
+                            onChange={e => handleFormChange('date', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="mform-group">
+                          <label className="mform-label">Discussion Agenda <span className="required">*</span></label>
+                          <textarea
+                            className="mform-textarea"
+                            placeholder="What was discussed in this meeting..."
+                            value={formData.agenda}
+                            onChange={e => handleFormChange('agenda', e.target.value)}
+                            rows="3"
+                          />
+                        </div>
+
+                        {meetingNum > 1 && (
+                          <div className="prev-task-box">
+                            <p className="prev-task-label">Previous Task Assigned:</p>
+                            <div className="prev-task-status-row">
+                              <label className="mform-label">Status:</label>
+                              <div className="radio-group">
+                                <label className="radio-label">
+                                  <input 
+                                    type="radio" 
+                                    name={`prevStatus-${meetingNum}`} 
+                                    value="complete"
+                                    checked={formData.previous_task_status === 'complete'}
+                                    onChange={e => handleFormChange('previous_task_status', e.target.value)}
+                                  /> ✅ Completed
+                                </label>
+                                <label className="radio-label">
+                                  <input 
+                                    type="radio" 
+                                    name={`prevStatus-${meetingNum}`} 
+                                    value="incomplete"
+                                    checked={formData.previous_task_status === 'incomplete'}
+                                    onChange={e => handleFormChange('previous_task_status', e.target.value)}
+                                  /> ❌ Incomplete
+                                </label>
+                                <label className="radio-label">
+                                  <input 
+                                    type="radio" 
+                                    name={`prevStatus-${meetingNum}`} 
+                                    value="partial"
+                                    checked={formData.previous_task_status === 'partial'}
+                                    onChange={e => handleFormChange('previous_task_status', e.target.value)}
+                                  /> ⚠️ Partial
+                                </label>
+                              </div>
+                            </div>
+                            <input
+                              type="text"
+                              className="mform-input"
+                              placeholder="Supervisor comment on previous task..."
+                              value={formData.previous_task_comment}
+                              onChange={e => handleFormChange('previous_task_comment', e.target.value)}
+                            />
+                          </div>
+                        )}
+
+                        <div className="mform-group">
+                          <label className="mform-label">New Task / Suggestions Assigned <span className="required">*</span></label>
+                          <textarea
+                            className="mform-textarea"
+                            placeholder="Tasks assigned for next week..."
+                            value={formData.new_task}
+                            onChange={e => handleFormChange('new_task', e.target.value)}
+                            rows="3"
+                          />
+                        </div>
+
+                        <div className="mform-group">
+                          <label className="mform-label">Attendance</label>
+                          {selectedGroup.members && selectedGroup.members.length > 0 ? (
+                            <div className="attendance-check-grid">
+                              {selectedGroup.members.map((member, idx) => {
+                                const studentKey = member.student_db_id;
+                                const currentStatus = studentKey ? (formData.attendance[studentKey] || 'present') : 'present';
+                                
+                                console.log(`Rendering ${member.name}: Key=${studentKey}, Status=${currentStatus}`);
+                                
+                                if (!studentKey) {
+                                  return (
+                                    <div key={idx} className="attendance-check-row" style={{opacity: 0.6}}>
+                                      <div className="att-member-info">
+                                        <span className="att-member-name">{member.name}</span>
+                                        <span className="att-member-id">{member.odoo_id}</span>
+                                        <span style={{color: '#f59e0b', fontSize: '0.75rem'}}>⚠️ No DB ID</span>
+                                      </div>
+                                      <div className="att-toggle">
+                                        <button
+                                          type="button"
+                                          className="att-btn att-btn-present"
+                                          onClick={() => {
+                                            const tempKey = `temp_${idx}`;
+                                            handleAttendanceChange(tempKey, 'present');
+                                          }}
+                                        >
+                                          Present
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="att-btn"
+                                          onClick={() => {
+                                            const tempKey = `temp_${idx}`;
+                                            handleAttendanceChange(tempKey, 'absent');
+                                          }}
+                                        >
+                                          Absent
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                
+                                return (
+                                  <div key={studentKey} className="attendance-check-row">
+                                    <div className="att-member-info">
+                                      <span className="att-member-name">{member.name}</span>
+                                      <span className="att-member-id">{member.odoo_id}</span>
+                                    </div>
+                                    <div className="att-toggle">
+                                      <button
+                                        type="button"
+                                        className={`att-btn ${currentStatus === 'present' ? 'att-btn-present' : ''}`}
+                                        onClick={() => {
+                                          console.log(`✅ ${member.name} -> Present`);
+                                          handleAttendanceChange(studentKey, 'present');
+                                        }}
+                                      >
+                                        Present
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={`att-btn ${currentStatus === 'absent' ? 'att-btn-absent' : ''}`}
+                                        onClick={() => {
+                                          console.log(`❌ ${member.name} -> Absent`);
+                                          handleAttendanceChange(studentKey, 'absent');
+                                        }}
+                                      >
+                                        Absent
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div style={{padding: '1rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e'}}>
+                              ⚠️ No members found in this group. Please check group data.
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mform-actions">
+                          <button 
+                            className="submit-btn" 
+                            onClick={handleSubmitMeeting}
+                            disabled={formLoading}
+                          >
+                            {formLoading ? 'Saving...' : '💾 Save Meeting Minutes'}
+                          </button>
+                          <button className="back-btn" onClick={closeForm}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="dashboard-container">
+      {/* ✅ MOBILE MENU BUTTON */}
+      <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
+        ☰ Menu
+      </button>
+
       <div className="dashboard-body">
-        {/* Sidebar */}
-        <aside className="sidebar">
+        <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h2 className="sidebar-title">Supervisor Portal</h2>
+            {/* ✅ CLOSE BUTTON */}
+            <button className="sidebar-close" onClick={() => setMenuOpen(false)}>✕</button>
           </div>
           <div className="profile-card">
             <div className="profile-avatar">
@@ -184,112 +702,123 @@ function SupervisorDashboard() {
             </div>
           </div>
           <nav className="sidebar-nav">
-            <button className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
+            <button 
+              className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} 
+              onClick={() => { setActiveTab('overview'); setMenuOpen(false); }}
+            >
               <span className="nav-icon">🏠</span>
               <span className="nav-text">Overview</span>
             </button>
-            <button className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveTab('reviews')}>
+            <button 
+              className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`} 
+              onClick={() => { setActiveTab('reviews'); setMenuOpen(false); }}
+            >
               <span className="nav-icon">📋</span>
               <span className="nav-text">Pending Reviews</span>
             </button>
           </nav>
         </aside>
 
-        {/* Main Content */}
         <main className="main-content">
           {activeTab === 'overview' && renderOverview()}
           
-          {/* Group Detail View */}
           {activeTab === 'groupDetail' && selectedGroup && (
             <div className="group-detail-view">
               <div className="detail-header">
-                <button className="back-btn" onClick={() => setActiveTab('overview')}>
+                <button className="back-btn" onClick={() => { setActiveTab('overview'); setSelectedGroup(null); }}>
                   ← Back to Overview
                 </button>
                 <h1 className="detail-title">{selectedGroup.name}</h1>
                 <p className="detail-subtitle">{selectedGroup.project}</p>
+                
+                <div className="detail-tabs">
+                  <button 
+                    className={`tab-btn ${detailSubTab === 'info' ? 'active' : ''}`}
+                    onClick={() => setDetailSubTab('info')}
+                  >
+                    📊 Group Info
+                  </button>
+                  <button 
+                    className={`tab-btn ${detailSubTab === 'meetings' ? 'active' : ''}`}
+                    onClick={() => setDetailSubTab('meetings')}
+                  >
+                    📅 Manage Meetings
+                  </button>
+                </div>
               </div>
 
-              <div className="detail-grid">
-                {/* Left Column: Group Info */}
-                <div className="detail-column">
-                  <div className="detail-card">
-                    <h3 className="detail-card-title">Group Information</h3>
-                    <div className="detail-row">
-                      <span className="detail-label">Group ID</span>
-                      <span className="detail-value">{selectedGroup.group_number}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Phase</span>
-                      <span className={`phase-badge ${selectedGroup.phase === 'FYP-1' ? 'fyp1' : 'fyp2'}`}>
-                        {selectedGroup.phase}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Status</span>
-                      <span className={`status-badge status-${selectedGroup.status}`}>
-                        {selectedGroup.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Domain</span>
-                      <span className="detail-value">{selectedGroup.domain || 'N/A'}</span>
-                    </div>
-                  </div>
-
-                  {/* Progress Card */}
-                  <div className="detail-card">
-                    <h3 className="detail-card-title">Progress</h3>
-                    <div className="progress-detail">
-                      <div className="progress-circle">
-                        <svg viewBox="0 0 100 100">
-                          <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8"/>
-                          <circle 
-                            cx="50" cy="50" r="45" fill="none" stroke="#1e3a8a" strokeWidth="8"
-                            strokeDasharray={`${selectedGroup.progress * 2.83} 283`}
-                            strokeLinecap="round"
-                            transform="rotate(-90 50 50)"
-                          />
-                        </svg>
-                        <div className="progress-text">{selectedGroup.progress}%</div>
+              {detailSubTab === 'info' ? (
+                <div className="detail-grid">
+                  <div className="detail-column">
+                    <div className="detail-card">
+                      <h3 className="detail-card-title">Group Information</h3>
+                      <div className="detail-row">
+                        <span className="detail-label">Group ID</span>
+                        <span className="detail-value">{selectedGroup.group_number}</span>
                       </div>
-                      <div className="progress-bar-large">
-                        <div className="progress-label-row">
-                          <span>Completion</span>
-                          <span>{selectedGroup.progress}%</span>
-                        </div>
-                        <div className="progress-track">
-                          <div className="progress-fill-large" style={{ width: `${selectedGroup.progress}%` }}></div>
-                        </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Phase</span>
+                        <span className={`phase-badge ${selectedGroup.phase === 'FYP-1' ? 'fyp1' : 'fyp2'}`}>
+                          {selectedGroup.phase}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Status</span>
+                        <span className={`status-badge status-${selectedGroup.status}`}>
+                          {selectedGroup.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Domain</span>
+                        <span className="detail-value">{selectedGroup.domain || 'N/A'}</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                {/* Right Column: Members */}
-                <div className="detail-column">
-                  <div className="detail-card full-height">
-                    <h3 className="detail-card-title">Team Members</h3>
-                    <div className="members-list-detail">
-                      {selectedGroup.members && selectedGroup.members.length > 0 ? (
-                        selectedGroup.members.map((member, idx) => (
-                          <div key={idx} className="member-row">
-                            <div className="member-avatar-sm">
-                              {member.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="member-info">
-                              <span className="member-name">{member.name}</span>
-                              <span className="member-role">ID: {member.odoo_id}</span>
-                            </div>
+                    <div className="detail-card">
+                      <h3 className="detail-card-title">Progress</h3>
+                      <div className="progress-detail">
+                        <div className="progress-circle">
+                          <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8"/>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#1e3a8a" strokeWidth="8"
+                              strokeDasharray={`${selectedGroup.progress * 2.83} 283`}
+                              strokeLinecap="round" transform="rotate(-90 50 50)" />
+                          </svg>
+                          <div className="progress-text">{selectedGroup.progress}%</div>
+                        </div>
+                        <div className="progress-bar-large">
+                          <div className="progress-label-row">
+                            <span>Completion</span>
+                            <span>{selectedGroup.progress}%</span>
                           </div>
-                        ))
-                      ) : (
-                        <div className="empty-members">No members added yet</div>
-                      )}
+                          <div className="progress-track">
+                            <div className="progress-fill-large" style={{ width: `${selectedGroup.progress}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="detail-column">
+                    <div className="detail-card full-height">
+                      <h3 className="detail-card-title">Team Members</h3>
+                      <div className="members-list-detail">
+                        {selectedGroup.members && selectedGroup.members.length > 0 ? (
+                          selectedGroup.members.map((member, idx) => (
+                            <div key={idx} className="member-row">
+                              <div className="member-avatar-sm">{member.name.charAt(0).toUpperCase()}</div>
+                              <div className="member-info">
+                                <span className="member-name">{member.name}</span>
+                                <span className="member-role">ID: {member.odoo_id}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : <p>No members found.</p>}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                renderMeetingsSection()
+              )}
             </div>
           )}
           

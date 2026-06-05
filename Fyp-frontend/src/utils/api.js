@@ -163,3 +163,74 @@ export const supervisorAPI = {
    */
   updateGroup: (groupId, data) => api.patch(`/projects/groups/${groupId}/`, data),
 };
+
+
+// Add at the end of the file
+
+// =============================================================================
+// MEETING MINUTES ENDPOINTS - NEW
+// =============================================================================
+export const meetingAPI = {
+  /**
+   * Get all meetings for a group
+   * GET /api/projects/meetings/?group_id={groupId}
+   */
+  getByGroup: (groupId) => api.get(`/projects/meetings/?group_id=${groupId}`),
+  
+  /**
+   * Create/Update a meeting with attendance
+   * POST /api/projects/meetings/
+   */
+  create: (group, meetingData) => {
+    const payload = {
+      ...meetingData,
+      group: group.id
+    };
+    return api.post('/projects/meetings/', payload);
+  },
+  
+  /**
+   * Update existing meeting
+   * PUT /api/projects/meetings/{id}/
+   */
+  update: (meetingId, meetingData) => 
+    api.put(`/projects/meetings/${meetingId}/`, meetingData),
+  
+  /**
+   * Get attendance summary for a meeting
+   * GET /api/projects/meetings/{id}/attendance_summary/
+   */
+  getAttendanceSummary: (meetingId) => 
+    api.get(`/projects/meetings/${meetingId}/attendance_summary/`),
+};
+
+// =============================================================================
+// ATTENDANCE SHEET ENDPOINTS - NEW
+// =============================================================================
+export const attendanceSheetAPI = {
+  /**
+   * Get FP-5 attendance sheet for a group
+   * GET /api/projects/attendance-sheet/{groupId}/
+   */
+  getSheet: (groupId) => api.get(`/projects/attendance-sheet/${groupId}/`),
+  
+  /**
+   * Export attendance sheet as Excel
+   * GET /api/projects/attendance-sheet/{groupId}/export-excel/
+   */
+  exportExcel: (groupId) => 
+    api.get(`/projects/attendance-sheet/${groupId}/export-excel/`, {
+      responseType: 'blob'  // Important for file download
+    }),
+};
+
+// =============================================================================
+// STUDENT MEETING ENDPOINTS - NEW
+// =============================================================================
+export const studentMeetingAPI = {
+  /**
+   * Fetch current task and attendance for logged-in student
+   * GET /api/projects/students/my-meetings/
+   */
+  getMyMeetings: () => api.get('/projects/students/my-meetings/'),
+};
