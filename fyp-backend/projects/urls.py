@@ -7,9 +7,10 @@ from .views import (
     ChangeRequestViewSet,
     AdminGroupApprovalViewSet,
     SupervisorGroupViewSet,
-    MeetingMinuteViewSet,        
+    MeetingMinuteViewSet,
     AttendanceSheetViewSet,
-    StudentMeetingDataView,         
+    StudentMeetingDataView,
+    AnnouncementViewSet,
 )
 
 router = DefaultRouter()
@@ -19,9 +20,10 @@ router.register(r'groups', ProjectGroupViewSet, basename='project-group')
 router.register(r'proposals', FYDPProposalViewSet, basename='proposal')
 router.register(r'change-requests', ChangeRequestViewSet, basename='change-request')
 router.register(r'admin/approval', AdminGroupApprovalViewSet, basename='admin-approval')
-router.register(r'meetings', MeetingMinuteViewSet, basename='meeting')  
-router.register(r'attendance-sheet', AttendanceSheetViewSet, basename='attendance') 
-router.register(r'students/my-meetings', StudentMeetingDataView, basename='student-meetings') 
+router.register(r'meetings', MeetingMinuteViewSet, basename='meeting')
+router.register(r'attendance-sheet', AttendanceSheetViewSet, basename='attendance')
+router.register(r'students/my-meetings', StudentMeetingDataView, basename='student-meetings')
+router.register(r'announcements', AnnouncementViewSet, basename='announcement')
 
 urlpatterns = [
     path('', include(router.urls)),

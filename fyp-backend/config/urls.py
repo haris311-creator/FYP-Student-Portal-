@@ -36,5 +36,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home_view, name='home'),
     path('api/auth/', include('accounts.urls')),
-      path('api/projects/', include('projects.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('api/projects/', include('projects.urls')),
+]
+
+# Serve media files during development (for uploaded proposals and templates)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

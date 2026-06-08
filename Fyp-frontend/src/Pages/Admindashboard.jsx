@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminAPI } from "../api/admin"; 
+import api, { proposalAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import './Admindashboard.css';
 
@@ -14,16 +15,27 @@ function AdminDashboard() {
   const [pendingProposals, setPendingProposals] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
   const [loading, setLoading] = useState({ proposals: false, groups: false });
+  const [activeSupervisors, setActiveSupervisors] = useState(0);
+  const [inProgressProjects, setInProgressProjects] = useState(0);
+  const [completedProjects, setCompletedProjects] = useState(0);
   
   // Local states
   const [announcement, setAnnouncement] = useState('');
+  const [priority, setPriority] = useState('medium');
   const [announcementList, setAnnouncementList] = useState([
     { id: 1, text: 'FYP Orientation Session — April 25', date: '2025-04-20' },
     { id: 2, text: 'Proposal Submission Deadline — May 1', date: '2025-04-18' },
   ]);
   
-  // 👤 User Profile State
+  // User Profile State
   const [userInfo, setUserInfo] = useState({ name: '', role: '', email: '' });
+
+  // Final Proposal Approval States
+  const [pendingFinalProposals, setPendingFinalProposals] = useState([]);
+  const [loadingFinalProposals, setLoadingFinalProposals] = useState(false);
+  const [selectedFinalProposal, setSelectedFinalProposal] = useState(null);
+  const [finalReviewForm, setFinalReviewForm] = useState({ action: 'approve', remarks: '' });
+  const [submittingFinalReview, setSubmittingFinalReview] = useState(false);
 
   useEffect(() => {
     const loadUser = () => {
@@ -45,10 +57,12 @@ function AdminDashboard() {
     loadUser();
   }, []);
 
-  // ✅ Fetch data from backend on mount
   useEffect(() => {
     fetchPendingProposals();
     fetchAllGroups();
+    fetchFinalProposals();
+    fetchActiveSupervisors(); 
+    fetchAnnouncements();   
   }, []);
 
   const fetchPendingProposals = async () => {
@@ -81,17 +95,31 @@ function AdminDashboard() {
       const response = await adminAPI.getAllGroups();
       const data = response.data.results || response.data;
       
+      let inProgressCount = 0;
+      let completedCount = 0;
+      
       const formatted = data.map(group => {
         let displayStatus = 'Pending';
-        if (group.status === 'approved' || group.status === 'idea_pitch') {
-          displayStatus = 'Active';
-        } else if (group.status === 'completed') {
+        const status = group.status?.toLowerCase();
+        
+        if (status === 'completed') {
+          completedCount++;
           displayStatus = 'Completed';
-        } else if (group.status === 'rejected') {
+        } else if (status === 'approved' || status === 'idea_pitch') {
+          inProgressCount++;
+          displayStatus = 'Active';
+        } else if (status === 'rejected') {
           displayStatus = 'Rejected';
+        } else if (status === 'in_progress' || status === 'proposal_approved') {
+          inProgressCount++;
+          displayStatus = 'In Progress';
+        } else if (status === 'proposal_pending') {
+          inProgressCount++;
+          displayStatus = 'Proposal Pending';
         }
 
         return {
+          ...group,
           id: group.id,
           group: group.members_details?.map(m => m.full_name || m.email).join(', ') || 'Unknown',
           title: group.project_title || group.name || 'Untitled Project',
@@ -104,11 +132,92 @@ function AdminDashboard() {
       });
       
       setAllGroups(formatted);
+      setInProgressProjects(inProgressCount);
+      setCompletedProjects(completedCount);
     } catch (error) {
       console.error('Error fetching groups:', error);
       toast.error('Failed to load groups');
     } finally {
       setLoading(prev => ({ ...prev, groups: false }));
+    }
+  };
+
+  const fetchActiveSupervisors = async () => {
+    try {
+      const response = await api.get('/projects/faculty/?is_active=true');
+      setActiveSupervisors(response.data.length || 0);
+    } catch (error) {
+      console.error('Error fetching supervisors:', error);
+      setActiveSupervisors(0);
+    }
+  };
+
+const fetchAnnouncements = async () => {
+  try {
+    const response = await api.get('/projects/announcements/');
+    console.log('📢 Announcements API Response:', response.data);
+    
+    // Handle both paginated and non-paginated responses
+    let announcements = [];
+    if (Array.isArray(response.data)) {
+      announcements = response.data;
+    } else if (response.data.results) {
+      announcements = response.data.results;
+    }
+    
+    console.log('📋 Processed Announcements:', announcements);
+    setAnnouncementList(announcements);
+    
+    // Force re-render
+    setTimeout(() => {
+      console.log('🔄 Force re-render, current list:', announcementList);
+    }, 100);
+    
+  } catch (error) {
+    console.error('❌ Error fetching announcements:', error);
+    console.error('Response:', error.response?.data);
+    toast.error('Failed to load announcements');
+  }
+};
+
+  const createAnnouncement = async (title, content, priority) => {
+    try {
+      await api.post('/projects/announcements/', {
+        title,
+        content,
+        priority: priority || 'medium',
+        is_active: true
+      });
+      toast.success('Announcement posted successfully!');
+      fetchAnnouncements(); // Refresh list
+    } catch (error) {
+      console.error('Error creating announcement:', error);
+      toast.error('Failed to post announcement');
+    }
+  };
+
+  const deleteAnnouncement = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this announcement?')) return;
+    
+    try {
+      await api.delete(`/projects/announcements/${id}/`);
+      toast.success('Announcement deleted successfully!');
+      fetchAnnouncements(); // Refresh list
+    } catch (error) {
+      console.error('Error deleting announcement:', error);
+      toast.error('Failed to delete announcement');
+    }
+  };
+
+  const fetchFinalProposals = async () => {
+    try {
+      setLoadingFinalProposals(true);
+      const res = await proposalAPI.getPendingAdmin();
+      setPendingFinalProposals(res.data.results || []);
+    } catch (err) {
+      console.error("Error fetching final proposals:", err);
+    } finally {
+      setLoadingFinalProposals(false);
     }
   };
 
@@ -145,48 +254,134 @@ function AdminDashboard() {
     }
   };
 
-  const handleAnnouncementSubmit = (e) => {
-    e.preventDefault();
-    if (!announcement.trim()) return;
-    const newItem = {
-      id: Date.now(),
-      text: announcement,
-      date: new Date().toISOString().split('T')[0],
-    };
-    setAnnouncementList(prev => [newItem, ...prev]);
-    setAnnouncement('');
-    toast.success('Announcement posted!');
+  const handleFinalReviewSubmit = async () => {
+    if (!selectedFinalProposal) return;
+    
+    if (finalReviewForm.action === 'reject' && !finalReviewForm.remarks.trim()) {
+      toast.error('Remarks are required when rejecting a proposal.');
+      return;
+    }
+    
+    setSubmittingFinalReview(true);
+    try {
+      await proposalAPI.adminReview(selectedFinalProposal.id, finalReviewForm);
+      toast.success(`Proposal ${finalReviewForm.action === 'approve' ? 'finally approved' : 'rejected'}!`);
+      setSelectedFinalProposal(null);
+      setFinalReviewForm({ action: 'approve', remarks: '' });
+      fetchFinalProposals();
+    } catch (err) {
+      console.error("Final review failed:", err);
+      toast.error(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
+    } finally {
+      setSubmittingFinalReview(false);
+    }
   };
+
+  const handleFileDownload = async (fileUrl) => {
+    try {
+      let fullUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        fullUrl = `http://localhost:8000${fileUrl}`;
+      }
+      
+      const response = await fetch(fullUrl);
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const filename = fileUrl.split('/').pop() || 'proposal_document';
+      link.setAttribute('download', filename);
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download file. Please check if the file exists.');
+    }
+  };
+
+const handleAnnouncementSubmit = (e) => {
+  e.preventDefault();
+  if (!announcement.trim()) return;
+  
+  // Backend API call with priority
+  createAnnouncement(announcement, announcement, priority);
+  setAnnouncement(''); // Clear input
+  setPriority('medium'); // Reset to default
+};
+
+  // Helper Function for Page Header with Back Button
+  const renderPageHeader = (title) => (
+    <div style={{ marginBottom: '1.5rem' }}>
+      <button 
+        onClick={() => setActiveTab('overview')}
+        style={{
+          display: 'none',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.5rem 1rem',
+          background: '#1e3a8a',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '0.875rem',
+          fontWeight: '600',
+          marginBottom: '1rem',
+          transition: 'background 0.2s'
+        }}
+        className="back-button"
+        onMouseOver={(e) => e.target.style.background = '#1e40af'}
+        onMouseOut={(e) => e.target.style.background = '#1e3a8a'}
+      >
+        ← Back to Overview
+      </button>
+      <h2 className="content-title">{title}</h2>
+    </div>
+  );
 
   const renderOverview = () => (
     <div>
       <h2 className="content-title">Overview</h2>
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#eff6ff' }}>📁</div>
           <div>
             <p className="stat-number">{allGroups.length}</p>
             <p className="stat-label">Total FYP Groups</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fef9c3' }}>⏳</div>
           <div>
             <p className="stat-number">{pendingProposals.length}</p>
-            <p className="stat-label">Pending Approvals</p>
+            <p className="stat-label">Pending Groups & Ideas Approvals</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#f0fdf4' }}>✅</div>
           <div>
-            <p className="stat-number">{allGroups.filter(g => g.status === 'Completed').length}</p>
+            <p className="stat-number">{inProgressProjects}</p>
+            <p className="stat-label">In Progress Projects</p>
+          </div>
+        </div>          
+        <div className="stat-card">
+          <div>
+            <p className="stat-number">{completedProjects}</p>
             <p className="stat-label">Completed Projects</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: '#fdf4ff' }}>👨‍🏫</div>
           <div>
-            <p className="stat-number">25</p>
+            <p className="stat-number">{activeSupervisors}</p>
             <p className="stat-label">Active Supervisors</p>
           </div>
         </div>
@@ -194,47 +389,35 @@ function AdminDashboard() {
 
       <h3 className="sub-title">Quick Actions</h3>
       <div className="actions-grid">
-        <button className="action-btn" onClick={() => setActiveTab('announcements')}>
-          <span className="action-icon">📢</span>
-          <span>Announcements</span>
-        </button>
         <button className="action-btn" onClick={() => setActiveTab('proposals')}>
-          <span className="action-icon">📋</span>
-          <span>Approve Proposals</span>
+          <span>Approve Groups & Ideas</span>
+        </button>
+        <button className="action-btn" onClick={() => setActiveTab('finalProposals')}>
+          <span>Proposal Approval</span>
         </button>
         <button className="action-btn" onClick={() => setActiveTab('groups')}>
-          <span className="action-icon">👥</span>
           <span>View All Groups</span>
         </button>
-        <button className="action-btn" onClick={() => navigate('/admin/approvals')}>
-          <span className="action-icon">⚡</span>
-          <span>Advanced Approval</span>
-        </button>
-        <button className="action-btn">
-          <span className="action-icon">📊</span>
-          <span>Schedule Evaluations</span>
-        </button>
-        <button className="action-btn">
-          <span className="action-icon">📥</span>
-          <span>Export Excel</span>
-        </button>
+        <button className="action-btn" onClick={() => setActiveTab('announcements')}>
+          <span>Announcements</span>
+        </button>        
       </div>
     </div>
   );
 
   const renderProposals = () => (
     <div>
-      <h2 className="content-title">Pending Proposals</h2>
+      {renderPageHeader('Pending Group Approvals')}
       {loading.proposals ? (
         <div className="loading-state">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading proposals...</p>
+          <p className="mt-2 text-gray-600">Loading groups...</p>
         </div>
       ) : pendingProposals.length === 0 ? (
         <div className="empty-state">
           <p className="empty-icon">✅</p>
-          <p className="empty-text">All proposals have been reviewed!</p>
-          <button className="refresh-btn" onClick={fetchPendingProposals}>🔁 Refresh</button>
+          <p className="empty-text">All groups have been reviewed!</p>
+          <button className="refresh-btn" onClick={fetchPendingProposals}>Refresh</button>
         </div>
       ) : (
         <div className="table-container">
@@ -270,9 +453,165 @@ function AdminDashboard() {
     </div>
   );
 
+  const renderFinalProposals = () => {
+    if (loadingFinalProposals) {
+      return (
+        <div>
+          {renderPageHeader('Final Proposal Approvals')}
+          <div className="loading-state">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading proposals...</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {renderPageHeader('Final Proposal Approvals')}
+        <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+          These proposals have been approved by the supervisor and require your final review.
+        </p>
+
+        {pendingFinalProposals.length === 0 ? (
+          <div className="empty-state">
+            <p className="empty-text">No proposals pending final approval.</p>
+            <button className="refresh-btn" onClick={fetchFinalProposals}>Refresh</button>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Project Title</th>
+                  <th>Group ID</th>
+                  <th>Supervisor</th>
+                  <th>Attempts</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingFinalProposals.map(p => (
+                  <tr key={p.id}>
+                    <td>{p.project_title}</td>
+                    <td>{p.group_id}</td>
+                    <td>{p.approved_by_supervisor_name || 'N/A'}</td>
+                    <td>{p.submission_count}/3</td>
+                    <td>
+                      <div className="action-btns">
+                        <button className="approve-btn" onClick={() => setSelectedFinalProposal(p)}>Review</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFinalProposalModal = () => {
+    if (!selectedFinalProposal) return null;
+
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div className="meeting-form-container" style={{ maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderRadius: '12px', padding: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: 0 }}>Final Proposal Review</h3>
+            <button className="close-form-btn" onClick={() => setSelectedFinalProposal(null)}>X</button>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedFinalProposal.project_title}</h4>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
+              Submitted on: {selectedFinalProposal.submitted_at ? new Date(selectedFinalProposal.submitted_at).toLocaleString() : 'N/A'}
+            </p>
+            
+            {selectedFinalProposal.supervisor_remarks && (
+              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
+                <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{selectedFinalProposal.supervisor_remarks}</p>
+              </div>
+            )}
+            
+            {selectedFinalProposal.proposal_file ? (
+              <button 
+                onClick={() => handleFileDownload(selectedFinalProposal.proposal_file)}
+                className="submit-btn"
+                style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+              >
+                Download Uploaded Proposal
+              </button>
+            ) : (
+              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                Warning: No file uploaded by students.
+              </div>
+            )}
+          </div>
+
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem 0' }}>Your Final Decision</h4>
+            
+            <div className="mform-group" style={{ marginBottom: '1rem' }}>
+              <label className="mform-label">Action</label>
+              <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input 
+                    type="radio" 
+                    name="finalReviewAction" 
+                    value="approve"
+                    checked={finalReviewForm.action === 'approve'}
+                    onChange={e => setFinalReviewForm({ ...finalReviewForm, action: e.target.value })}
+                  /> Final Approve
+                </label>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input 
+                    type="radio" 
+                    name="finalReviewAction" 
+                    value="reject"
+                    checked={finalReviewForm.action === 'reject'}
+                    onChange={e => setFinalReviewForm({ ...finalReviewForm, action: e.target.value })}
+                  /> Reject
+                </label>
+              </div>
+            </div>
+
+            <div className="mform-group">
+              <label className="mform-label">
+                Remarks {finalReviewForm.action === 'reject' && <span className="required">*</span>}
+              </label>
+              <textarea
+                className="mform-textarea"
+                placeholder={finalReviewForm.action === 'approve' ? "Optional: Any final comments..." : "Required: Reason for rejection?"}
+                value={finalReviewForm.remarks}
+                onChange={e => setFinalReviewForm({ ...finalReviewForm, remarks: e.target.value })}
+                rows="4"
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+            <button 
+              className="submit-btn" 
+              onClick={handleFinalReviewSubmit}
+              disabled={submittingFinalReview}
+            >
+              {submittingFinalReview ? 'Submitting...' : 'Submit Decision'}
+            </button>
+            <button className="back-btn" onClick={() => setSelectedFinalProposal(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderGroups = () => (
     <div>
-      <h2 className="content-title">All FYP Groups</h2>
+      {renderPageHeader('All FYP Groups')}
       {loading.groups ? (
         <div className="loading-state">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -320,6 +659,7 @@ function AdminDashboard() {
   const getStatusClass = (status) => {
     switch(status) {
       case 'Active': return 'status-active';
+      case 'In Progress': return 'status-active';
       case 'Completed': return 'status-done';
       case 'Rejected': return 'status-rejected';
       default: return 'status-pending';
@@ -328,7 +668,8 @@ function AdminDashboard() {
 
   const renderAnnouncements = () => (
     <div>
-      <h2 className="content-title">Manage Announcements</h2>
+      {renderPageHeader('Manage Announcements')}
+      
       <div className="announce-form-box">
         <h3 className="sub-title" style={{ marginTop: 0 }}>Post New Announcement</h3>
         <form onSubmit={handleAnnouncementSubmit} className="announce-form">
@@ -340,6 +681,20 @@ function AdminDashboard() {
             onChange={(e) => setAnnouncement(e.target.value)}
             required
           />
+          
+          {/* ✅ Priority Selector */}
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            className="form-input"
+            style={{ marginTop: '0.5rem' }}
+          >
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
+            <option value="urgent">Urgent Priority</option>
+          </select>
+          
           <button type="submit" className="submit-btn">Post Announcement</button>
         </form>
         <p className="announce-note">
@@ -349,20 +704,43 @@ function AdminDashboard() {
 
       <h3 className="sub-title">Posted Announcements</h3>
       <div className="announce-list">
-        {announcementList.map(a => (
-          <div key={a.id} className="announce-item">
-            <div>
-              <p className="announce-text">{a.text}</p>
-              <p className="announce-date">Posted: {a.date}</p>
+        {announcementList.length === 0 ? (
+          <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>
+            No announcements posted yet.
+          </p>
+        ) : (
+          announcementList.map(a => (
+            <div key={a.id} className="announce-item">
+              <div>
+                <p className="announce-text">{a.title}</p>
+                <p className="announce-date">
+                  Posted: {new Date(a.created_at).toLocaleDateString()}
+                  {a.priority && (
+                    <span style={{
+                      marginLeft: '1rem',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      background: a.priority === 'urgent' ? '#fee2e2' : 
+                                a.priority === 'high' ? '#fef3c7' : '#dbeafe',
+                      color: a.priority === 'urgent' ? '#991b1b' : 
+                            a.priority === 'high' ? '#92400e' : '#1e3a8a',
+                      fontWeight: '600'
+                    }}>
+                      {a.priority.toUpperCase()}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <button
+                className="delete-btn"
+                onClick={() => deleteAnnouncement(a.id)}
+              >
+                Delete
+              </button>
             </div>
-            <button
-              className="delete-btn"
-              onClick={() => setAnnouncementList(prev => prev.filter(x => x.id !== a.id))}
-            >
-              Delete
-            </button>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
@@ -375,7 +753,7 @@ function AdminDashboard() {
           <button className="sidebar-close" onClick={() => setMenuOpen(false)}>✕</button>
         </div>
         
-        {/* 👤 User Profile Card - TOP POSITION */}
+        {/* User Profile Card */}
         <div style={{ 
           padding: '1rem',
           background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
@@ -415,25 +793,31 @@ function AdminDashboard() {
           className={`sidebar-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => { setActiveTab('overview'); setMenuOpen(false); }}
         >
-          🏠 Overview
+          Overview
         </button>
         <button
           className={`sidebar-btn ${activeTab === 'proposals' ? 'active' : ''}`}
           onClick={() => { setActiveTab('proposals'); setMenuOpen(false); }}
         >
-          📋 Pending Proposals
+          Approve Groups & Ideas
+        </button>
+        <button
+          className={`sidebar-btn ${activeTab === 'finalProposals' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('finalProposals'); setMenuOpen(false); }}
+        >
+          Proposal Approval
         </button>
         <button
           className={`sidebar-btn ${activeTab === 'groups' ? 'active' : ''}`}
           onClick={() => { setActiveTab('groups'); setMenuOpen(false); }}
         >
-          👥 All Groups
+          View All Groups
         </button>
         <button
           className={`sidebar-btn ${activeTab === 'announcements' ? 'active' : ''}`}
           onClick={() => { setActiveTab('announcements'); setMenuOpen(false); }}
         >
-          📢 Announcements
+          Announcements
         </button>
       </div>
 
@@ -444,8 +828,10 @@ function AdminDashboard() {
       <div className="dashboard-content">
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'proposals' && renderProposals()}
+        {activeTab === 'finalProposals' && renderFinalProposals()}
         {activeTab === 'groups' && renderGroups()}
         {activeTab === 'announcements' && renderAnnouncements()}
+        {selectedFinalProposal && renderFinalProposalModal()}
       </div>
     </div>
   );

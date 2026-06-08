@@ -94,7 +94,7 @@ export const loginAPI = async (email, password) => {
 // FACULTY ENDPOINTS
 // =============================================================================
 export const facultyAPI = {
-  getAll: () => api.get('/projects/faculty/?is_active=true'),  // ✅ Correct path
+  getAll: () => api.get('/projects/faculty/?is_active=true'),
   getById: (id) => api.get(`/projects/faculty/${id}/`),
 };
 
@@ -123,12 +123,34 @@ export const groupAPI = {
 };
 
 // =============================================================================
-// PROPOSAL ENDPOINTS
+// PROPOSAL ENDPOINTS - UPDATED FOR FILE UPLOAD & REVIEW WORKFLOW
 // =============================================================================
 export const proposalAPI = {
-  submit: (groupId, proposalData) => 
-    api.post(`/projects/groups/${groupId}/proposal/`, proposalData),
-  
+  // Get a specific proposal by ID
+  getProposal: (proposalId) => api.get(`/projects/proposals/${proposalId}/`),
+
+  // Student: Upload proposal file (FormData)
+  uploadProposal: (proposalId, formData) => {
+    return api.post(`/projects/proposals/${proposalId}/upload/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // Supervisor: Get proposals pending their review
+  getPendingSupervisor: () => api.get('/projects/proposals/pending-supervisor/'),
+
+  // Supervisor: Approve or request revision
+  supervisorReview: (proposalId, data) => 
+    api.post(`/projects/proposals/${proposalId}/supervisor-review/`, data),
+
+  // Admin: Get proposals pending final approval
+  getPendingAdmin: () => api.get('/projects/proposals/pending-admin/'),
+
+  // Admin: Final approve or reject
+  adminReview: (proposalId, data) => 
+    api.post(`/projects/proposals/${proposalId}/admin-review/`, data),
+
+  // Legacy/Other methods (keeping just in case)
   uploadSchedule: (proposalId, file) => {
     const formData = new FormData();
     formData.append('project_schedule', file);
@@ -136,51 +158,23 @@ export const proposalAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  
-  getStatus: (groupId) => api.get(`/projects/groups/${groupId}/proposal/status/`)
 };
 
-
 // =============================================================================
-// SUPERVISOR ENDPOINTS - NEW
+// SUPERVISOR ENDPOINTS
 // =============================================================================
 export const supervisorAPI = {
-  /**
-   * Fetch groups assigned to logged-in supervisor
-   * GET /api/projects/groups/supervisor/
-   */
   getAssignedGroups: () => api.get('/projects/groups/supervisor/'),
-  
-  /**
-   * Fetch members of a specific group
-   * GET /api/projects/groups/supervisor/{groupId}/members/
-   */
   getGroupMembers: (groupId) => api.get(`/projects/groups/supervisor/${groupId}/members/`),
-  
-  /**
-   * Update group progress or status (if needed)
-   * PATCH /api/projects/groups/{groupId}/
-   */
   updateGroup: (groupId, data) => api.patch(`/projects/groups/${groupId}/`, data),
 };
 
-
-// Add at the end of the file
-
 // =============================================================================
-// MEETING MINUTES ENDPOINTS - NEW
+// MEETING MINUTES ENDPOINTS
 // =============================================================================
 export const meetingAPI = {
-  /**
-   * Get all meetings for a group
-   * GET /api/projects/meetings/?group_id={groupId}
-   */
   getByGroup: (groupId) => api.get(`/projects/meetings/?group_id=${groupId}`),
   
-  /**
-   * Create/Update a meeting with attendance
-   * POST /api/projects/meetings/
-   */
   create: (group, meetingData) => {
     const payload = {
       ...meetingData,
@@ -189,48 +183,28 @@ export const meetingAPI = {
     return api.post('/projects/meetings/', payload);
   },
   
-  /**
-   * Update existing meeting
-   * PUT /api/projects/meetings/{id}/
-   */
   update: (meetingId, meetingData) => 
     api.put(`/projects/meetings/${meetingId}/`, meetingData),
   
-  /**
-   * Get attendance summary for a meeting
-   * GET /api/projects/meetings/{id}/attendance_summary/
-   */
   getAttendanceSummary: (meetingId) => 
     api.get(`/projects/meetings/${meetingId}/attendance_summary/`),
 };
 
 // =============================================================================
-// ATTENDANCE SHEET ENDPOINTS - NEW
+// ATTENDANCE SHEET ENDPOINTS
 // =============================================================================
 export const attendanceSheetAPI = {
-  /**
-   * Get FP-5 attendance sheet for a group
-   * GET /api/projects/attendance-sheet/{groupId}/
-   */
   getSheet: (groupId) => api.get(`/projects/attendance-sheet/${groupId}/`),
   
-  /**
-   * Export attendance sheet as Excel
-   * GET /api/projects/attendance-sheet/{groupId}/export-excel/
-   */
   exportExcel: (groupId) => 
     api.get(`/projects/attendance-sheet/${groupId}/export-excel/`, {
-      responseType: 'blob'  // Important for file download
+      responseType: 'blob'
     }),
 };
 
 // =============================================================================
-// STUDENT MEETING ENDPOINTS - NEW
+// STUDENT MEETING ENDPOINTS
 // =============================================================================
 export const studentMeetingAPI = {
-  /**
-   * Fetch current task and attendance for logged-in student
-   * GET /api/projects/students/my-meetings/
-   */
   getMyMeetings: () => api.get('/projects/students/my-meetings/'),
 };

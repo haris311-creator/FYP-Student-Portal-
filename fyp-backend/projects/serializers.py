@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest, MeetingMinute, AttendanceLog
+from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest, MeetingMinute, AttendanceLog, Announcement
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from accounts.models import CustomUser
@@ -176,12 +176,23 @@ class GroupCreateSerializer(serializers.Serializer):
 
 
 # =============================================================================
-# FYDP PROPOSAL SERIALIZERS
+# FYDP PROPOSAL SERIALIZERS - UPDATED
 # =============================================================================
 class FYDPProposalSerializer(serializers.ModelSerializer):
     group_id = serializers.UUIDField(source='group.group_id', read_only=True)
     project_title = serializers.CharField(source='group.project_title', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    # Read-only fields for frontend display
+    submission_count = serializers.IntegerField(read_only=True)
+    supervisor_remarks = serializers.CharField(read_only=True)
+    admin_remarks = serializers.CharField(read_only=True)
+    approved_by_supervisor_name = serializers.CharField(
+        source='approved_by_supervisor.full_name', read_only=True, default=None
+    )
+    finally_approved_by_name = serializers.CharField(
+        source='finally_approved_by.full_name', read_only=True, default=None
+    )
     
     class Meta:
         model = FYDPProposal
@@ -191,10 +202,18 @@ class FYDPProposalSerializer(serializers.ModelSerializer):
             'scope_included', 'scope_excluded', 'methodology', 'resources_involved',
             'final_deliverables', 'learning_outcomes', 'industrial_support', 
             'industry_partner_name', 'sdg_mapping', 'ccp_mapping', 'acm_mapping',
-            'project_schedule', 'status', 'status_display', 'submitted_at',
+            'project_schedule', 'proposal_file', 'submission_count',
+            'status', 'status_display', 'submitted_at',
+            'supervisor_remarks', 'approved_by_supervisor_name', 'supervisor_reviewed_at',
+            'admin_remarks', 'finally_approved_by_name', 'admin_reviewed_at',
             'committee_remarks', 'project_serial_no', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['status', 'submitted_at', 'committee_remarks', 'project_serial_no']
+        read_only_fields = [
+            'status', 'submitted_at', 'committee_remarks', 'project_serial_no',
+            'submission_count', 'supervisor_remarks', 'admin_remarks',
+            'approved_by_supervisor_name', 'finally_approved_by_name',
+            'supervisor_reviewed_at', 'admin_reviewed_at'
+        ]
     
     def validate(self, data):
         required_fields = ['problem_statement', 'proposed_solution', 'methodology']
@@ -207,6 +226,59 @@ class FYDPProposalSerializer(serializers.ModelSerializer):
             })
         return data
 
+
+class FYDPProposalUploadSerializer(serializers.ModelSerializer):
+    """
+    Serializer specifically for handling proposal file uploads.
+    Validates file type (PDF/DOCX) and size (Max 10MB).
+    """
+    proposal_file = serializers.FileField(required=True)
+
+    class Meta:
+        model = FYDPProposal
+        fields = ['proposal_file']
+
+    def validate_proposal_file(self, value):
+        # Check file extension
+        file_extension = value.name.split('.')[-1].lower()
+        allowed_extensions = ['pdf', 'docx']
+        
+        if file_extension not in allowed_extensions:
+            raise serializers.ValidationError(
+                f"Only {', '.join(allowed_extensions)} files are allowed."
+            )
+        
+        # Check file size (10MB limit)
+        max_size = 10 * 1024 * 1024  # 10MB in bytes
+        if value.size > max_size:
+            raise serializers.ValidationError("File size cannot exceed 10MB.")
+            
+        return value
+
+
+class FYDPProposalReviewSerializer(serializers.Serializer):
+    """
+    Serializer for Supervisor and Admin review actions.
+    """
+    action = serializers.ChoiceField(choices=['approve', 'revision', 'reject'])
+    remarks = serializers.CharField(
+        required=False, 
+        allow_blank=True, 
+        max_length=1000,
+        help_text="Remarks for the review action"
+    )
+
+    def validate(self, data):
+        action = data.get('action')
+        remarks = data.get('remarks', '').strip()
+        
+        # If rejecting or asking for revision, remarks should ideally be provided
+        if action in ['reject', 'revision'] and not remarks:
+            raise serializers.ValidationError({
+                'remarks': 'Remarks are required when rejecting or requesting revision.'
+            })
+            
+        return data
 
 # =============================================================================
 # CHANGE REQUEST SERIALIZERS
@@ -465,3 +537,44 @@ class GroupAttendanceSheetSerializer(serializers.Serializer):
     fydp_phase = serializers.CharField()
     members = serializers.ListField()
     meetings_summary = serializers.ListField()
+
+
+
+# =============================================================================
+# ANNOUNCEMENT SERIALIZERS
+# =============================================================================
+class AnnouncementSerializer(serializers.ModelSerializer):
+    """Serializer for Announcement model - Public read access"""
+    priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    is_current = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Announcement
+        fields = [
+            'id', 'title', 'content', 'priority', 'priority_display',
+            'is_active', 'is_current', 'start_date', 'end_date',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class AnnouncementCreateUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating announcements (Admin only)"""
+    
+    class Meta:
+        model = Announcement
+        fields = [
+            'id', 'title', 'content', 'priority', 'is_active',
+            'start_date', 'end_date'
+        ]
+    
+    def validate(self, data):
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        if start_date and end_date and end_date <= start_date:
+            raise serializers.ValidationError({
+                'end_date': 'End date must be after start date'
+            })
+        
+        return data

@@ -39,7 +39,7 @@ const GroupFormation = () => {
     const fetchFaculty = async () => {
       try {
         const token = localStorage.getItem('access_token');
-        console.log("🔄 Fetching faculty...");
+        console.log(" Fetching faculty...");
         
         const response = await axios.get('http://localhost:8000/api/projects/faculty/', {
           headers: {
@@ -48,10 +48,10 @@ const GroupFormation = () => {
           }
         });
         
-        console.log("✅ Faculty data received:", response.data);
+        console.log(" Faculty data received:", response.data);
         setFacultyList(response.data);
       } catch (error) {
-        console.error("❌ Error fetching faculty:", error);
+        console.error(" Error fetching faculty:", error);
       }
     };
     
@@ -142,7 +142,7 @@ const GroupFormation = () => {
   return (
     <div className="dashboard-container">
       <div className="form-card">
-        <h2 className="form-title">📝 Register FYDP Group</h2>
+        <h2 className="form-title"> Register FYDP Group</h2>
         
         {error && <div className="alert alert-error">{error}</div>}
         {success && <div className="alert alert-success">{success}</div>}
@@ -212,7 +212,7 @@ const GroupFormation = () => {
               <div key={index} className="member-card">
                 <div className="member-header">
                   <span className="badge">
-                    {index === 0 ? '👑 Group Lead' : `👤 Member ${index + 1}`}
+                    {index === 0 ? ' Group Lead' : ` Member ${index + 1}`}
                   </span>
                   {index > 0 && (
                     <button type="button" className="btn-sm btn-danger" onClick={() => removeMember(index)}>

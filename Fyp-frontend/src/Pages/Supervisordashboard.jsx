@@ -1,6 +1,6 @@
 // fyp-frontend/src/Pages/Supervisordashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { supervisorAPI, meetingAPI, attendanceSheetAPI } from '../utils/api';
+import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI } from '../utils/api';
 import './Supervisordashboard.css';
 
 function SupervisorDashboard() {
@@ -11,7 +11,7 @@ function SupervisorDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // ✅ New states for Meetings & Attendance
+  // New states for Meetings & Attendance
   const [detailSubTab, setDetailSubTab] = useState('info');
   const [meetingsList, setMeetingsList] = useState([]);
   const [attendanceData, setAttendanceData] = useState(null);
@@ -27,6 +27,14 @@ function SupervisorDashboard() {
   });
   const [formLoading, setFormLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  
+  // Proposal Review States
+  const [pendingProposals, setPendingProposals] = useState([]);
+  const [loadingProposals, setLoadingProposals] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState(null);
+  const [reviewForm, setReviewForm] = useState({ action: 'approve', remarks: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+
   // Load user info
   useEffect(() => {
     const loadUser = () => {
@@ -55,8 +63,8 @@ function SupervisorDashboard() {
         setLoading(true);
         const response = await supervisorAPI.getAssignedGroups();
         
-        console.log("📦 Raw API Response:", response.data);
-        console.log("📦 Results:", response.data.results);
+        console.log("Raw API Response:", response.data);
+        console.log("Results:", response.data.results);
         
         const transformedGroups = response.data.results.map(group => {
           console.log(`Processing Group ${group.group_number}:`, group);
@@ -73,7 +81,7 @@ function SupervisorDashboard() {
                   ? `${m.student_first_name} ${m.student_last_name}`.trim()
                   : m.student_name || m.full_name || m.student?.full_name || 'Unknown',
                 odoo_id: m.student_id || m.odoo_id || m.student?.student_id || 'N/A',
-                student_db_id: m.student || m.id || null, // ✅ Backend ne 'student' field mein ID bheji hai
+                student_db_id: m.student || m.id || null,
                 email: m.student_email || m.student?.email || ''
               };
             }) || [],
@@ -84,11 +92,11 @@ function SupervisorDashboard() {
           };
         });
         
-        console.log("✅ Transformed Groups:", transformedGroups);
+        console.log("Transformed Groups:", transformedGroups);
         setAssignedGroups(transformedGroups);
         setError(null);
       } catch (err) {
-        console.error('❌ Error fetching groups:', err);
+        console.error('Error fetching groups:', err);
         console.error('Response:', err.response?.data);
         setError('Failed to load assigned groups');
       } finally {
@@ -98,17 +106,32 @@ function SupervisorDashboard() {
     fetchAssignedGroups();
   }, []);
 
+  // Fetch pending proposals for supervisor
+  useEffect(() => {
+    const fetchProposals = async () => {
+      try {
+        setLoadingProposals(true);
+        const res = await proposalAPI.getPendingSupervisor();
+        setPendingProposals(res.data.results || []);
+      } catch (err) {
+        console.error("Error fetching proposals:", err);
+      } finally {
+        setLoadingProposals(false);
+      }
+    };
+    fetchProposals();
+  }, []);
 
   // Fetch meetings & attendance data when group is selected
   useEffect(() => {
     if (!selectedGroup) {
-      console.log("⚠️ No group selected, skipping meetings fetch");
+      console.log("No group selected, skipping meetings fetch");
       return;
     }
 
     const fetchMeetingsData = async () => {
       try {
-        console.log(`🔄 Fetching meetings for group ${selectedGroup.id}...`);
+        console.log(`Fetching meetings for group ${selectedGroup.id}...`);
         setLoadingMeetings(true);
         
         const [meetingsRes, sheetRes] = await Promise.all([
@@ -116,16 +139,15 @@ function SupervisorDashboard() {
           attendanceSheetAPI.getSheet(selectedGroup.id)
         ]);
         
-        console.log("✅ Meetings API Response:", meetingsRes.data);
-        console.log("✅ Meetings Results:", meetingsRes.data.results || meetingsRes.data);
-        console.log("✅ Attendance Sheet:", sheetRes.data);
+        console.log("Meetings API Response:", meetingsRes.data);
+        console.log("Meetings Results:", meetingsRes.data.results || meetingsRes.data);
+        console.log("Attendance Sheet:", sheetRes.data);
         
-        // ✅ Handle both array and object with results
         const meetingsData = meetingsRes.data.results || meetingsRes.data || [];
         setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
         setAttendanceData(sheetRes.data);
       } catch (err) {
-        console.error("❌ Error fetching meetings:", err);
+        console.error("Error fetching meetings:", err);
         console.error("Response:", err.response?.data);
       } finally {
         setLoadingMeetings(false);
@@ -143,60 +165,56 @@ function SupervisorDashboard() {
     return progressMap[status] || 0;
   };
 
-const handleMeetingCardClick = (meetingNum) => {
-  const existingMeeting = meetingsList.find(m => m.meeting_number === meetingNum);
-  
-  console.log("📋 Meeting Clicked:", meetingNum);
-  console.log("Existing Meeting:", existingMeeting);
-  
-  // Initialize default attendance (all Present)
-  let attendanceMap = {};
-  selectedGroup.members.forEach((member, idx) => {
-    // Use student_db_id as key
-    const key = member.student_db_id;
-    if (key) {
-      attendanceMap[key] = 'present';
-    }
-  });
-
-  if (existingMeeting) {
-    console.log("✅ Editing existing meeting");
-    console.log("Attendance Records:", existingMeeting.attendance_records);
+  const handleMeetingCardClick = (meetingNum) => {
+    const existingMeeting = meetingsList.find(m => m.meeting_number === meetingNum);
     
-    // Populate form with saved data
-    (existingMeeting.attendance_records || []).forEach(rec => {
-      // Backend se 'student' field mein student ka database ID aa raha hai
-      const studentKey = rec.student;
-      console.log(`Mapping: Student ${studentKey} -> ${rec.status}`);
-      
-      if (studentKey) {
-        attendanceMap[studentKey] = rec.status;
+    console.log("Meeting Clicked:", meetingNum);
+    console.log("Existing Meeting:", existingMeeting);
+    
+    let attendanceMap = {};
+    selectedGroup.members.forEach((member, idx) => {
+      const key = member.student_db_id;
+      if (key) {
+        attendanceMap[key] = 'present';
       }
     });
 
-    setFormData({
-      date: existingMeeting.date,
-      agenda: existingMeeting.agenda,
-      previous_task_status: existingMeeting.previous_task_status || '',
-      previous_task_comment: existingMeeting.previous_task_comment || '',
-      new_task: existingMeeting.new_task,
-      attendance: attendanceMap
-    });
-    
-    console.log("✅ Form populated with attendance:", attendanceMap);
-  } else {
-    console.log("➕ Creating new meeting");
-    setFormData({
-      date: new Date().toISOString().split('T')[0],
-      agenda: '',
-      previous_task_status: '',
-      previous_task_comment: '',
-      new_task: '',
-      attendance: attendanceMap
-    });
-  }
-  setActiveMeetingForm(meetingNum);
-};
+    if (existingMeeting) {
+      console.log("Editing existing meeting");
+      console.log("Attendance Records:", existingMeeting.attendance_records);
+      
+      (existingMeeting.attendance_records || []).forEach(rec => {
+        const studentKey = rec.student;
+        console.log(`Mapping: Student ${studentKey} -> ${rec.status}`);
+        
+        if (studentKey) {
+          attendanceMap[studentKey] = rec.status;
+        }
+      });
+
+      setFormData({
+        date: existingMeeting.date,
+        agenda: existingMeeting.agenda,
+        previous_task_status: existingMeeting.previous_task_status || '',
+        previous_task_comment: existingMeeting.previous_task_comment || '',
+        new_task: existingMeeting.new_task,
+        attendance: attendanceMap
+      });
+      
+      console.log("Form populated with attendance:", attendanceMap);
+    } else {
+      console.log("Creating new meeting");
+      setFormData({
+        date: new Date().toISOString().split('T')[0],
+        agenda: '',
+        previous_task_status: '',
+        previous_task_comment: '',
+        new_task: '',
+        attendance: attendanceMap
+      });
+    }
+    setActiveMeetingForm(meetingNum);
+  };
 
   const handleFormChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -210,126 +228,319 @@ const handleMeetingCardClick = (meetingNum) => {
     }));
   };
 
-const handleSubmitMeeting = async () => {
-  if (!formData.date || !formData.agenda || !formData.new_task) {
-    alert('Please fill all required fields (Date, Agenda, New Task)');
-    return;
-  }
-
-  try {
-    setFormLoading(true);
-    console.log("💾 Starting save process...");
-    
-    // Convert attendance format
-    const formattedAttendance = {};
-    selectedGroup.members.forEach(member => {
-      if (member.student_db_id) {
-        const status = formData.attendance[member.student_db_id] || 'present';
-        formattedAttendance[member.student_db_id] = status;
-      }
-    });
-
-    const payload = {
-      group: selectedGroup.id,
-      meeting_number: activeMeetingForm,
-      date: formData.date,
-      agenda: formData.agenda,
-      previous_task_status: formData.previous_task_status || null,
-      previous_task_comment: formData.previous_task_comment || '',
-      new_task: formData.new_task,
-      attendance: formattedAttendance
-    };
-
-    console.log("📤 Sending payload:", payload);
-
-    const existingMeeting = meetingsList.find(m => m.meeting_number === activeMeetingForm);
-    
-    if (existingMeeting) {
-      console.log("🔄 Updating meeting", existingMeeting.id);
-      await meetingAPI.update(existingMeeting.id, payload);
-      alert('Meeting updated successfully!');
-    } else {
-      console.log("💾 Creating new meeting");
-      await meetingAPI.create(selectedGroup, payload);
-      alert('Meeting saved successfully!');
+  const handleSubmitMeeting = async () => {
+    if (!formData.date || !formData.agenda || !formData.new_task) {
+      alert('Please fill all required fields (Date, Agenda, New Task)');
+      return;
     }
 
-    // ✅ IMMEDIATE STATE UPDATE (API call se pehle nahi, baad mein)
-    console.log("🔄 Refreshing data from server...");
-    
-    // Force wait for backend to process
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Fresh data fetch karein
-    const meetingsResponse = await meetingAPI.getByGroup(selectedGroup.id);
-    const sheetResponse = await attendanceSheetAPI.getSheet(selectedGroup.id);
-    
-    console.log("✅ Meetings Response:", meetingsResponse.data);
-    console.log("✅ Sheet Response:", sheetResponse.data);
-    
-    // ✅ Properly handle response structure
-    const meetingsData = meetingsResponse.data.results || meetingsResponse.data || [];
-    const attendanceData = sheetResponse.data;
-    
-    console.log("📋 Processed Meetings:", meetingsData);
-    console.log("📊 Processed Attendance:", attendanceData);
-    
-    // State update - yeh zaroori hai!
-    setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
-    setAttendanceData(attendanceData);
-    
-    // Form close karein
-    setActiveMeetingForm(null);
-    
-    // Form reset
-    setFormData({
-      date: '',
-      agenda: '',
-      previous_task_status: '',
-      previous_task_comment: '',
-      new_task: '',
-      attendance: {}
-    });
-    
-    console.log("✅ Save complete, UI updated");
-    
-  } catch (err) {
-    console.error("❌ Error saving meeting:", err);
-    console.error("Response data:", err.response?.data);
-    alert("Failed to save meeting. Please try again.");
-  } finally {
-    setFormLoading(false);
-  }
-};
+    try {
+      setFormLoading(true);
+      console.log("Starting save process...");
+      
+      const formattedAttendance = {};
+      selectedGroup.members.forEach(member => {
+        if (member.student_db_id) {
+          const status = formData.attendance[member.student_db_id] || 'present';
+          formattedAttendance[member.student_db_id] = status;
+        }
+      });
+
+      const payload = {
+        group: selectedGroup.id,
+        meeting_number: activeMeetingForm,
+        date: formData.date,
+        agenda: formData.agenda,
+        previous_task_status: formData.previous_task_status || null,
+        previous_task_comment: formData.previous_task_comment || '',
+        new_task: formData.new_task,
+        attendance: formattedAttendance
+      };
+
+      console.log("Sending payload:", payload);
+
+      const existingMeeting = meetingsList.find(m => m.meeting_number === activeMeetingForm);
+      
+      if (existingMeeting) {
+        console.log("Updating meeting", existingMeeting.id);
+        await meetingAPI.update(existingMeeting.id, payload);
+        alert('Meeting updated successfully!');
+      } else {
+        console.log("Creating new meeting");
+        await meetingAPI.create(selectedGroup, payload);
+        alert('Meeting saved successfully!');
+      }
+
+      console.log("Refreshing data from server...");
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const meetingsResponse = await meetingAPI.getByGroup(selectedGroup.id);
+      const sheetResponse = await attendanceSheetAPI.getSheet(selectedGroup.id);
+      
+      console.log("Meetings Response:", meetingsResponse.data);
+      console.log("Sheet Response:", sheetResponse.data);
+      
+      const meetingsData = meetingsResponse.data.results || meetingsResponse.data || [];
+      const attendanceData = sheetResponse.data;
+      
+      console.log("Processed Meetings:", meetingsData);
+      console.log("Processed Attendance:", attendanceData);
+      
+      setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
+      setAttendanceData(attendanceData);
+      
+      setActiveMeetingForm(null);
+      
+      setFormData({
+        date: '',
+        agenda: '',
+        previous_task_status: '',
+        previous_task_comment: '',
+        new_task: '',
+        attendance: {}
+      });
+      
+      console.log("Save complete, UI updated");
+      
+    } catch (err) {
+      console.error("Error saving meeting:", err);
+      console.error("Response data:", err.response?.data);
+      alert("Failed to save meeting. Please try again.");
+    } finally {
+      setFormLoading(false);
+    }
+  };
 
   const closeForm = () => {
     setActiveMeetingForm(null);
   };
 
+  // Handle Proposal Review Submission
+  const handleReviewSubmit = async () => {
+    if (!selectedProposal) return;
+    
+    if (reviewForm.action === 'revision' && !reviewForm.remarks.trim()) {
+      alert('Remarks are required when requesting a revision.');
+      return;
+    }
+    
+    setSubmittingReview(true);
+    try {
+      await proposalAPI.supervisorReview(selectedProposal.id, reviewForm);
+      alert(`Proposal ${reviewForm.action === 'approve' ? 'approved and sent to Admin' : 'sent back to students for revision'}!`);
+      setSelectedProposal(null);
+      setReviewForm({ action: 'approve', remarks: '' });
+      
+      // Refresh list
+      const res = await proposalAPI.getPendingSupervisor();
+      setPendingProposals(res.data.results || []);
+    } catch (err) {
+      console.error("Review failed:", err);
+      alert(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+    // Helper function to force download
+  // Robust File Download Function using Fetch API
+  const handleFileDownload = async (fileUrl) => {
+    try {
+      // Check if fileUrl is already a full URL or just a path
+      let fullUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        fullUrl = `http://localhost:8000${fileUrl}`;
+      }
+      
+      // Fetch the file as a blob
+      const response = await fetch(fullUrl);
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from URL for the download attribute
+      const filename = fileUrl.split('/').pop() || 'proposal_document';
+      link.setAttribute('download', filename);
+      
+      // Append to body, click, and cleanup
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download file. Please check if the file exists.');
+    }
+  };
+
   if (loading) return <div className="dashboard-container"><div className="loading-spinner">Loading...</div></div>;
   if (error) return <div className="dashboard-container"><div className="error-message">{error}</div></div>;
+
+  // Render Pending Proposals List
+  const renderReviews = () => {
+    if (loadingProposals) return <div className="overview-content"><div className="loading-spinner">Loading proposals...</div></div>;
+
+    return (
+      <div className="overview-content">
+        <h1 className="page-title">Pending Proposal Reviews</h1>
+        <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+          Review and approve proposals submitted by your assigned groups.
+        </p>
+
+        {pendingProposals.length === 0 ? (
+          <div className="empty-state" style={{ padding: '3rem', textAlign: 'center', background: '#f8fafc', borderRadius: '12px' }}>
+            <p style={{ fontSize: '2rem', marginBottom: '1rem' }}>&#10004;</p>
+            <p style={{ color: '#64748b' }}>No proposals pending your review.</p>
+          </div>
+        ) : (
+          <div className="groups-list-horizontal" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {pendingProposals.map(proposal => (
+              <div key={proposal.id} className="group-card-horizontal" style={{ cursor: 'pointer' }} onClick={() => setSelectedProposal(proposal)}>
+                <div className="group-info">
+                  <div className="group-header">
+                    <h3 className="group-name">{proposal.project_title}</h3>
+                    <span className="badge badge-blue" style={{ fontSize: '0.75rem' }}>
+                      Attempt {proposal.submission_count}/3
+                    </span>
+                  </div>
+                  <p className="group-project" style={{ color: '#64748b', fontSize: '0.875rem' }}>Group ID: {proposal.group_id}</p>
+                  <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#eff6ff', borderRadius: '6px' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#1e3a8a', fontWeight: '600', margin: 0 }}>
+                      Status: {proposal.status_display}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                  <button className="view-details-btn">Review &rarr;</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render Proposal Review Modal
+  const renderProposalReviewModal = () => {
+    return (
+      <div className="meeting-form-overlay" style={{ zIndex: 1000 }}>
+        <div className="meeting-form-container" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="form-header">
+            <h3>Review Proposal</h3>
+            <button className="close-form-btn" onClick={() => setSelectedProposal(null)}>&#10005;</button>
+          </div>
+
+          <div style={{ padding: '1rem 0' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedProposal.project_title}</h4>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
+                Submitted on: {selectedProposal.submitted_at ? new Date(selectedProposal.submitted_at).toLocaleString() : 'N/A'}
+              </p>
+              
+              {selectedProposal.proposal_file ? (
+                <button 
+                  onClick={() => handleFileDownload(selectedProposal.proposal_file)}
+                  className="submit-btn"
+                  style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+                >
+                  Download Uploaded Proposal
+                </button>
+              ) : (
+                <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                  Warning: No file uploaded by students.
+                </div>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 1rem 0' }}>Your Decision</h4>
+              
+              <div className="mform-group" style={{ marginBottom: '1rem' }}>
+                <label className="mform-label">Action</label>
+                <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                  <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input 
+                      type="radio" 
+                      name="reviewAction" 
+                      value="approve"
+                      checked={reviewForm.action === 'approve'}
+                      onChange={e => setReviewForm({ ...reviewForm, action: e.target.value })}
+                    /> Approve (Send to Admin)
+                  </label>
+                  <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input 
+                      type="radio" 
+                      name="reviewAction" 
+                      value="revision"
+                      checked={reviewForm.action === 'revision'}
+                      onChange={e => setReviewForm({ ...reviewForm, action: e.target.value })}
+                    /> Request Revision
+                  </label>
+                </div>
+              </div>
+
+              <div className="mform-group">
+                <label className="mform-label">
+                  Remarks {reviewForm.action === 'revision' && <span className="required">*</span>}
+                </label>
+                <textarea
+                  className="mform-textarea"
+                  placeholder={reviewForm.action === 'approve' ? "Optional: Any positive feedback..." : "Required: What needs to be changed?"}
+                  value={reviewForm.remarks}
+                  onChange={e => setReviewForm({ ...reviewForm, remarks: e.target.value })}
+                  rows="4"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mform-actions">
+            <button 
+              className="submit-btn" 
+              onClick={handleReviewSubmit}
+              disabled={submittingReview}
+            >
+              {submittingReview ? 'Submitting...' : 'Submit Review'}
+            </button>
+            <button className="back-btn" onClick={() => setSelectedProposal(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderOverview = () => (
     <div className="overview-content">
       <h1 className="page-title">Overview</h1>
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon purple">👥</div>
           <div className="stat-value">{assignedGroups.length}</div>
           <div className="stat-label">Assigned Groups</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon yellow">📋</div>
           <div className="stat-value">9</div>
           <div className="stat-label">Pending Log Reviews</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon green">📄</div>
           <div className="stat-value">2</div>
           <div className="stat-label">Reports to Review</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon orange">✏️</div>
           <div className="stat-value">1</div>
           <div className="stat-label">Marks Pending</div>
         </div>
@@ -392,7 +603,7 @@ const handleSubmitMeeting = async () => {
       <div className="meetings-container">
         <div className="attendance-sheet-card">
           <div className="card-header">
-            <h3>📋 Attendance Sheet (FP-5)</h3>
+            <h3> Attendance Sheet (FP-5)</h3>
             <button 
               className="btn-outline" 
               onClick={async () => {
@@ -409,7 +620,7 @@ const handleSubmitMeeting = async () => {
                 }
               }}
             >
-              📥 Export Excel
+              ⬇️ Export Excel
             </button>
           </div>
           {attendanceData ? (
@@ -447,7 +658,7 @@ const handleSubmitMeeting = async () => {
         </div>
 
         <div className="meetings-grid-section">
-          <h3>📝 Meeting Minutes</h3>
+          <h3> Meeting Minutes</h3>
           <div className="meetings-grid">
             {Array.from({ length: 16 }, (_, i) => {
               const meetingNum = i + 1;
@@ -464,12 +675,12 @@ const handleSubmitMeeting = async () => {
                     <div className="meeting-card-header">
                       <span className="meeting-num">Meeting #{meetingNum}</span>
                       <span className={`badge ${isConducted ? 'badge-green' : 'badge-blue'}`}>
-                        {isConducted ? '✅ Done' : '📝 Pending'}
+                        {isConducted ? ' Done' : ' Pending'}
                       </span>
                     </div>
                     {isConducted && !isActive && (
                       <div className="meeting-card-body">
-                        <p className="meeting-date">📅 {meeting.date}</p>
+                        <p className="meeting-date"> {meeting.date}</p>
                         <p className="meeting-task"><strong>Task:</strong> {meeting.new_task?.slice(0, 40)}...</p>
                       </div>
                     )}
@@ -528,7 +739,7 @@ const handleSubmitMeeting = async () => {
                                     value="complete"
                                     checked={formData.previous_task_status === 'complete'}
                                     onChange={e => handleFormChange('previous_task_status', e.target.value)}
-                                  /> ✅ Completed
+                                  />  Completed
                                 </label>
                                 <label className="radio-label">
                                   <input 
@@ -537,7 +748,7 @@ const handleSubmitMeeting = async () => {
                                     value="incomplete"
                                     checked={formData.previous_task_status === 'incomplete'}
                                     onChange={e => handleFormChange('previous_task_status', e.target.value)}
-                                  /> ❌ Incomplete
+                                  />  Incomplete
                                 </label>
                                 <label className="radio-label">
                                   <input 
@@ -546,7 +757,7 @@ const handleSubmitMeeting = async () => {
                                     value="partial"
                                     checked={formData.previous_task_status === 'partial'}
                                     onChange={e => handleFormChange('previous_task_status', e.target.value)}
-                                  /> ⚠️ Partial
+                                  />  Partial
                                 </label>
                               </div>
                             </div>
@@ -587,7 +798,7 @@ const handleSubmitMeeting = async () => {
                                       <div className="att-member-info">
                                         <span className="att-member-name">{member.name}</span>
                                         <span className="att-member-id">{member.odoo_id}</span>
-                                        <span style={{color: '#f59e0b', fontSize: '0.75rem'}}>⚠️ No DB ID</span>
+                                        <span style={{color: '#f59e0b', fontSize: '0.75rem'}}> No DB ID</span>
                                       </div>
                                       <div className="att-toggle">
                                         <button
@@ -626,7 +837,7 @@ const handleSubmitMeeting = async () => {
                                         type="button"
                                         className={`att-btn ${currentStatus === 'present' ? 'att-btn-present' : ''}`}
                                         onClick={() => {
-                                          console.log(`✅ ${member.name} -> Present`);
+                                          console.log(`${member.name} -> Present`);
                                           handleAttendanceChange(studentKey, 'present');
                                         }}
                                       >
@@ -636,7 +847,7 @@ const handleSubmitMeeting = async () => {
                                         type="button"
                                         className={`att-btn ${currentStatus === 'absent' ? 'att-btn-absent' : ''}`}
                                         onClick={() => {
-                                          console.log(`❌ ${member.name} -> Absent`);
+                                          console.log(`${member.name} -> Absent`);
                                           handleAttendanceChange(studentKey, 'absent');
                                         }}
                                       >
@@ -649,7 +860,7 @@ const handleSubmitMeeting = async () => {
                             </div>
                           ) : (
                             <div style={{padding: '1rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e'}}>
-                              ⚠️ No members found in this group. Please check group data.
+                               No members found in this group. Please check group data.
                             </div>
                           )}
                         </div>
@@ -660,7 +871,7 @@ const handleSubmitMeeting = async () => {
                             onClick={handleSubmitMeeting}
                             disabled={formLoading}
                           >
-                            {formLoading ? 'Saving...' : '💾 Save Meeting Minutes'}
+                            {formLoading ? 'Saving...' : ' Save Meeting Minutes'}
                           </button>
                           <button className="back-btn" onClick={closeForm}>
                             Cancel
@@ -680,7 +891,6 @@ const handleSubmitMeeting = async () => {
 
   return (
     <div className="dashboard-container">
-      {/* ✅ MOBILE MENU BUTTON */}
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
         ☰ Menu
       </button>
@@ -689,7 +899,6 @@ const handleSubmitMeeting = async () => {
         <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h2 className="sidebar-title">Supervisor Portal</h2>
-            {/* ✅ CLOSE BUTTON */}
             <button className="sidebar-close" onClick={() => setMenuOpen(false)}>✕</button>
           </div>
           <div className="profile-card">
@@ -706,14 +915,12 @@ const handleSubmitMeeting = async () => {
               className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} 
               onClick={() => { setActiveTab('overview'); setMenuOpen(false); }}
             >
-              <span className="nav-icon">🏠</span>
               <span className="nav-text">Overview</span>
             </button>
             <button 
               className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`} 
               onClick={() => { setActiveTab('reviews'); setMenuOpen(false); }}
             >
-              <span className="nav-icon">📋</span>
               <span className="nav-text">Pending Reviews</span>
             </button>
           </nav>
@@ -736,13 +943,13 @@ const handleSubmitMeeting = async () => {
                     className={`tab-btn ${detailSubTab === 'info' ? 'active' : ''}`}
                     onClick={() => setDetailSubTab('info')}
                   >
-                    📊 Group Info
+                     Group Info
                   </button>
                   <button 
                     className={`tab-btn ${detailSubTab === 'meetings' ? 'active' : ''}`}
                     onClick={() => setDetailSubTab('meetings')}
                   >
-                    📅 Manage Meetings
+                     Manage Meetings
                   </button>
                 </div>
               </div>
@@ -822,12 +1029,8 @@ const handleSubmitMeeting = async () => {
             </div>
           )}
           
-          {activeTab === 'reviews' && (
-            <div className="placeholder-section">
-              <h2>Pending Reviews</h2>
-              <p>Feature coming soon...</p>
-            </div>
-          )}
+          {activeTab === 'reviews' && renderReviews()}
+          {selectedProposal && renderProposalReviewModal()}
         </main>
       </div>
     </div>

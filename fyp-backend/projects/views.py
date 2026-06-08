@@ -1,5 +1,5 @@
 # fyp-backend/projects/views.py
-from rest_framework import viewsets, status, mixins
+from rest_framework import viewsets, status, mixins, filters, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
@@ -14,19 +14,23 @@ from .serializers import ProjectGroupSerializer
 from .models import MeetingMinute, AttendanceLog
 
 
-from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest
+from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest, MeetingMinute, AttendanceLog, Announcement
 from .serializers import (
     FacultyListSerializer,
     GroupMemberSerializer,
     ProjectGroupSerializer,
     GroupCreateSerializer,
     FYDPProposalSerializer,
+    FYDPProposalUploadSerializer,  
+    FYDPProposalReviewSerializer,     
     ChangeRequestSerializer,
     AdminProjectGroupSerializer,
     AdminApprovalSerializer,
     MeetingMinuteSerializer,
     MeetingMinuteCreateUpdateSerializer,
-    AttendanceLogSerializer,    
+    AttendanceLogSerializer, 
+    AnnouncementSerializer, 
+    AnnouncementCreateUpdateSerializer, 
 )
 from .permissions import IsStudent, IsGroupMemberOrReadOnly, IsAdminUser
 
@@ -217,28 +221,183 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
 
 
 # =============================================================================
-# 4. FYDP PROPOSALS - Digital Form 1
+# 4. FYDP PROPOSALS - Digital Form 1 & File Upload
 # =============================================================================
 class FYDPProposalViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing FYDP Proposals.
+    Handles student uploads, supervisor reviews, and admin final approvals.
+    """
     serializer_class = FYDPProposalSerializer
-    permission_classes = [IsAuthenticated, IsStudent, IsGroupMemberOrReadOnly]
-    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
-        return FYDPProposal.objects.filter(group__members__student=self.request.user)
+        """
+        Filter proposals based on user role:
+        - Students: Only their own group's proposal
+        - Supervisors: Proposals of their assigned groups
+        - Admins: All proposals
+        """
+        user = self.request.user
+        queryset = FYDPProposal.objects.all()
 
-    @action(detail=True, methods=['post'])
-    def submit(self, request, pk=None):
-        """Move proposal from Draft -> Submitted"""
-        proposal = self.get_object()
-        if proposal.status != 'draft':
-            return Response({"error": "Already submitted"}, status=status.HTTP_400_BAD_REQUEST)
+        if user.user_type == 'student':
+            return queryset.filter(group__members__student=user)
+        elif user.user_type == 'supervisor':
+            try:
+                faculty = user.faculty_profile
+                return queryset.filter(
+                    models.Q(group__supervisor=faculty) | models.Q(group__co_supervisor=faculty)
+                ).distinct()
+            except Faculty.DoesNotExist:
+                return FYDPProposal.objects.none()
+        elif user.user_type == 'admin':
+            return queryset
         
+        return FYDPProposal.objects.none()
+
+    def get_serializer_class(self):
+        if self.action == 'upload':
+            return FYDPProposalUploadSerializer
+        if self.action in ['supervisor_review', 'admin_review']:
+            return FYDPProposalReviewSerializer
+        return FYDPProposalSerializer
+
+    @action(detail=False, methods=['get'], url_path='pending-supervisor')
+    def pending_supervisor(self, request):
+        """
+        GET /api/projects/proposals/pending-supervisor/
+        For supervisors to see proposals pending their review.
+        """
+        if request.user.user_type != 'supervisor':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            faculty = request.user.faculty_profile
+        except Faculty.DoesNotExist:
+            return Response({'error': 'Faculty profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        pending_proposals = self.get_queryset().filter(
+            status__in=['submitted', 'revision_needed']
+        )
+        
+        serializer = self.get_serializer(pending_proposals, many=True)
+        return Response({'count': pending_proposals.count(), 'results': serializer.data})
+
+    @action(detail=False, methods=['get'], url_path='pending-admin')
+    def pending_admin(self, request):
+        """
+        GET /api/projects/proposals/pending-admin/
+        For admins to see proposals pending final approval.
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        pending_proposals = FYDPProposal.objects.filter(status='approved_by_supervisor')
+        serializer = self.get_serializer(pending_proposals, many=True)
+        return Response({'count': pending_proposals.count(), 'results': serializer.data})
+
+    @action(detail=True, methods=['post'], url_path='upload')
+    def upload(self, request, pk=None):
+        """
+        POST /api/projects/proposals/{id}/upload/
+        Student uploads the proposal file (PDF/DOCX).
+        """
+        if request.user.user_type != 'student':
+            return Response({'error': 'Only students can upload proposals'}, status=status.HTTP_403_FORBIDDEN)
+
+        proposal = self.get_object()
+        
+        # Check if upload is allowed
+        can_upload, reason = proposal.can_upload()
+        if not can_upload:
+            return Response({'error': reason}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate file
+        serializer = FYDPProposalUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Save file and update proposal
+        proposal.proposal_file = serializer.validated_data['proposal_file']
         proposal.status = 'submitted'
         proposal.submitted_at = timezone.now()
+        proposal.supervisor_remarks = '' # Clear old remarks if re-uploading after revision
+        proposal.admin_remarks = ''
+        
+        # Increment submission count
+        success, msg = proposal.increment_submission_count()
+        if not success:
+            return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+            
         proposal.save()
-        return Response({"message": "Proposal submitted for committee review"})
+        
+        return Response({
+            'message': 'Proposal uploaded successfully',
+            'data': FYDPProposalSerializer(proposal).data
+        }, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'], url_path='supervisor-review')
+    def supervisor_review(self, request, pk=None):
+        """
+        POST /api/projects/proposals/{id}/supervisor-review/
+        Supervisor approves or requests revision.
+        """
+        if request.user.user_type != 'supervisor':
+            return Response({'error': 'Only supervisors can review proposals'}, status=status.HTTP_403_FORBIDDEN)
+
+        proposal = self.get_object()
+        
+        # Verify supervisor is assigned to this group
+        try:
+            faculty = request.user.faculty_profile
+            if proposal.group.supervisor != faculty and proposal.group.co_supervisor != faculty:
+                return Response({'error': 'You are not assigned to this group'}, status=status.HTTP_403_FORBIDDEN)
+        except Faculty.DoesNotExist:
+            return Response({'error': 'Faculty profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate action
+        serializer = FYDPProposalReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        action = serializer.validated_data['action']
+        remarks = serializer.validated_data.get('remarks', '')
+        
+        success, msg = proposal.supervisor_review(faculty, action, remarks)
+        if not success:
+            return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response({
+            'message': msg,
+            'data': FYDPProposalSerializer(proposal).data
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='admin-review')
+    def admin_review(self, request, pk=None):
+        """
+        POST /api/projects/proposals/{id}/admin-review/
+        Admin gives final approval or rejection.
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Only admins can give final approval'}, status=status.HTTP_403_FORBIDDEN)
+
+        proposal = self.get_object()
+        
+        # Validate action
+        serializer = FYDPProposalReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        action = serializer.validated_data['action']
+        remarks = serializer.validated_data.get('remarks', '')
+        
+        success, msg = proposal.admin_review(request.user, action, remarks)
+        if not success:
+            return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response({
+            'message': msg,
+            'data': FYDPProposalSerializer(proposal).data
+        }, status=status.HTTP_200_OK)
 
 # =============================================================================
 # 5. CHANGE REQUESTS - Form 3 & 4
@@ -883,3 +1042,64 @@ class StudentMeetingDataView(viewsets.ViewSet):
                 'current_task': None,
                 'attendance': []
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+# =============================================================================
+# ANNOUNCEMENT VIEWSET
+# =============================================================================
+class AnnouncementViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing announcements.
+    
+    - Public can view active announcements (READ only)
+    - Admin/Staff can create, update, delete (FULL CRUD)
+    """
+    queryset = Announcement.objects.all()
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ['priority', 'created_at', 'start_date']
+    ordering = ['-priority', '-created_at']
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return AnnouncementCreateUpdateSerializer
+        return AnnouncementSerializer
+    
+    from .permissions import IsStudent, IsGroupMemberOrReadOnly, IsAdminUser
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'active']:
+            permission_classes = [permissions.AllowAny]
+        else:
+            permission_classes = [IsAdminUser]
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Public users only see active announcements
+        if not self.request.user.is_staff:
+            queryset = queryset.filter(
+                is_active=True,
+                start_date__lte=timezone.now()
+            )
+            queryset = queryset.filter(
+                models.Q(end_date__isnull=True) | 
+                models.Q(end_date__gte=timezone.now())
+            )
+        
+        return queryset
+    
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """
+        GET /api/projects/announcements/active/
+        Get all currently active announcements for homepage ticker
+        """
+        announcements = self.get_queryset().filter(is_active=True)
+        serializer = self.get_serializer(announcements, many=True)
+        return Response({
+            'count': announcements.count(),
+            'results': serializer.data
+        })

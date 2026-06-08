@@ -253,15 +253,16 @@ class GroupMember(models.Model):
 
 
 # =============================================================================
-# FYDP PROPOSAL MODEL
+# FYDP PROPOSAL MODEL - UPDATED
 # =============================================================================
 class FYDPProposal(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('submitted', 'Submitted'),
         ('under_review', 'Under Review'),
+        ('approved_by_supervisor', 'Approved by Supervisor'),  # ✅ NEW
+        ('revision_needed', 'Revision Needed'),  # ✅ NEW
         ('approved', 'Approved'),
-        ('revision_requested', 'Revision Requested'),
         ('rejected', 'Rejected'),
     ]
     
@@ -288,8 +289,46 @@ class FYDPProposal(models.Model):
     acm_mapping = models.JSONField(default=list, blank=True)
     project_schedule = models.FileField(upload_to='proposals/schedules/', blank=True)
     
+    # ✅ NEW: Proposal file upload field
+    proposal_file = models.FileField(
+        upload_to='proposals/documents/',
+        blank=True,
+        null=True,
+        help_text="Upload filled proposal form (PDF/DOCX only, Max 10MB)"
+    )
+    
+    # ✅ NEW: Track submission attempts (Max 3)
+    submission_count = models.PositiveIntegerField(default=0)
+    
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
     submitted_at = models.DateTimeField(null=True, blank=True)
+    
+    # ✅ NEW: Supervisor review fields
+    supervisor_remarks = models.TextField(blank=True, help_text="Supervisor's feedback")
+    approved_by_supervisor = models.ForeignKey(
+        Faculty,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_proposals',
+        help_text="Supervisor who approved this proposal"
+    )
+    supervisor_reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    # ✅ NEW: Admin final review fields
+    admin_remarks = models.TextField(blank=True, help_text="Admin's final decision remarks")
+    finally_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='finally_approved_proposals',
+        limit_choices_to={'user_type': 'admin'},
+        help_text="Admin who gave final approval"
+    )
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Existing fields
     committee_remarks = models.TextField(blank=True)
     project_serial_no = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -300,6 +339,109 @@ class FYDPProposal(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.get_status_display()}"
+    
+    def can_upload(self):
+        """
+        Check if student can upload/modify proposal.
+        Returns: (can_upload: bool, reason: str)
+        """
+        if self.status == 'approved':
+            return False, "Proposal already approved. Cannot modify."
+        
+        if self.status == 'rejected':
+            return False, "Proposal rejected. Contact admin."
+        
+        if self.submission_count >= 3:
+            return False, "Maximum 3 submission attempts reached."
+        
+        return True, "Upload allowed"
+    
+    def increment_submission_count(self):
+        """Increment submission count and check limit"""
+        if self.submission_count >= 3:
+            return False, "Maximum submission attempts (3) reached"
+        
+        self.submission_count += 1
+        self.save()
+        return True, f"Submission #{self.submission_count}"
+    
+    def submit_for_review(self):
+        """Move proposal from Draft -> Submitted"""
+        if self.status != 'draft':
+            return False, "Proposal already submitted"
+        
+        self.status = 'submitted'
+        self.submitted_at = timezone.now()
+        self.save()
+        return True, "Proposal submitted for review"
+    
+    def supervisor_review(self, faculty, action, remarks=''):
+        """
+        Supervisor review action.
+        action: 'approve' or 'revision'
+        """
+        if self.status not in ['submitted', 'under_review', 'revision_needed']:
+            return False, f"Cannot review. Current status: {self.status}"
+        
+        if action == 'approve':
+            self.status = 'approved_by_supervisor'
+            self.supervisor_remarks = remarks
+            self.approved_by_supervisor = faculty
+            self.supervisor_reviewed_at = timezone.now()
+        elif action == 'revision':
+            self.status = 'revision_needed'
+            self.supervisor_remarks = remarks
+            self.supervisor_reviewed_at = timezone.now()
+        else:
+            return False, "Invalid action. Use 'approve' or 'revision'"
+        
+        self.save()
+        return True, f"Proposal {action}d by supervisor"
+    
+    def admin_review(self, admin_user, action, remarks=''):
+        """
+        Admin final review action.
+        action: 'approve' or 'reject'
+        """
+        if self.status != 'approved_by_supervisor':
+            return False, f"Cannot review. Status must be 'approved_by_supervisor', current: {self.status}"
+        
+        if action == 'approve':
+            self.status = 'approved'
+            self.admin_remarks = remarks
+            self.finally_approved_by = admin_user
+            self.admin_reviewed_at = timezone.now()
+            self.project_serial_no = self._generate_serial_number()
+        elif action == 'reject':
+            self.status = 'rejected'
+            self.admin_remarks = remarks
+            self.finally_approved_by = admin_user
+            self.admin_reviewed_at = timezone.now()
+        else:
+            return False, "Invalid action. Use 'approve' or 'reject'"
+        
+        self.save()
+        return True, f"Proposal finally {action}d by admin"
+    
+    def _generate_serial_number(self):
+        """Generate project serial number"""
+        year = timezone.now().year
+        prefix = f"PRJ-{year}"
+        
+        # Get last serial number
+        last_proposal = FYDPProposal.objects.filter(
+            project_serial_no__startswith=prefix,
+            status='approved'
+        ).order_by('-project_serial_no').first()
+        
+        if last_proposal and last_proposal.project_serial_no:
+            try:
+                last_num = int(last_proposal.project_serial_no.split('-')[-1])
+                return f"{prefix}-{last_num + 1:04d}"
+            except:
+                return f"{prefix}-0001"
+        else:
+            return f"{prefix}-0001"
 
 
 # =============================================================================
@@ -452,3 +594,50 @@ class AttendanceLog(models.Model):
     
     def __str__(self):
         return f"{self.student.full_name} - {self.status}"
+
+
+
+
+# =============================================================================
+# ANNOUNCEMENT MODEL
+# =============================================================================
+class Announcement(models.Model):
+    """
+    Announcement model for homepage ticker and admin management.
+    """
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    content = models.TextField(help_text="Full announcement content")
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    is_active = models.BooleanField(default=True)
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(null=True, blank=True, help_text="Leave blank for no expiry")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    
+    class Meta:
+        ordering = ['-priority', '-created_at']
+        verbose_name_plural = 'Announcements'
+    
+    def __str__(self):
+        return self.title
+    
+    def is_current(self):
+        """Check if announcement is currently active"""
+        if not self.is_active:
+            return False
+        if self.end_date and timezone.now() > self.end_date:
+            return False
+        return True

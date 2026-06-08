@@ -1,8 +1,7 @@
 // fyp-frontend/src/pages/StudentDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import api from '../utils/api';
-import { studentMeetingAPI } from '../utils/api';
+import api, { studentMeetingAPI, proposalAPI } from '../utils/api';
 import './Studentdashboard.css';
 
 function StudentDashboard() {
@@ -37,6 +36,11 @@ function StudentDashboard() {
   const [userInfo, setUserInfo] = useState({ name: '', role: '', email: '' });
   const [myMeetingsData, setMyMeetingsData] = useState(null);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
+  const [proposalData, setProposalData] = useState(null);
+  const [proposalFile, setProposalFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [proposalLoading, setProposalLoading] = useState(false);
+
 
   // Load user info
   useEffect(() => {
@@ -122,6 +126,30 @@ function StudentDashboard() {
     }
   }, [hasSubmittedIdea, existingGroup]);
 
+    // Fetch Proposal Data
+  useEffect(() => {
+    const fetchProposal = async () => {
+      // Sirf tab fetch karein jab group approved ho
+      if (existingGroup && ['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
+        try {
+          setProposalLoading(true);
+          const res = await api.get('/projects/proposals/');
+          // Student ki sirf ek proposal hogi
+          if (res.data && res.data.length > 0) {
+            setProposalData(res.data[0]); 
+          } else {
+            setProposalData(null);
+          }
+        } catch (err) {
+          console.error("Error fetching proposal:", err);
+        } finally {
+          setProposalLoading(false);
+        }
+      }
+    };
+    fetchProposal();
+  }, [existingGroup]);
+
   // Fetch Faculty
   useEffect(() => {
     const fetchFaculty = async () => {
@@ -205,6 +233,102 @@ function StudentDashboard() {
     }
   };
 
+    // Create Proposal Draft (Uses group details to auto-fill)
+  const handleCreateProposal = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const payload = {
+        group: existingGroup.id,
+        title: existingGroup.project_title,
+        domain: existingGroup.domain,
+        nature_of_project: ["New Project"],
+        problem_statement: "See attached proposal file.",
+        proposed_solution: "See attached proposal file.",
+        scope_included: "See attached proposal file.",
+        methodology: "See attached proposal file.",
+        resources_involved: "See attached proposal file.",
+        final_deliverables: "See attached proposal file.",
+        learning_outcomes: "See attached proposal file.",
+      };
+      const res = await api.post('/projects/proposals/', payload);
+      setProposalData(res.data);
+      setSuccess("Proposal draft created. Now upload the filled PDF file.");
+    } catch (err) {
+      console.error("Create failed:", err.response?.data || err.message);
+      setError(err.response?.data?.detail || "Failed to create proposal draft.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //  Handle File Upload
+  const handleFileUpload = async () => {
+    if (!proposalFile) return;
+    
+    setUploading(true);
+    setError('');
+    setSuccess('');
+    
+    const formData = new FormData();
+    formData.append('proposal_file', proposalFile);
+    
+    try {
+      const res = await proposalAPI.uploadProposal(proposalData.id, formData);
+      setSuccess("Proposal uploaded successfully!");
+      setProposalData(res.data.data); // Update state with new data from backend
+      setProposalFile(null); // Clear file input
+    } catch (err) {
+      console.error("Upload failed:", err.response?.data || err.message);
+      setError(err.response?.data?.error || "Upload failed. Check file size (Max 10MB) and format (PDF/DOCX).");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+    // Robust File Download Function using Fetch API
+  const handleFileDownload = async (fileUrl) => {
+    try {
+      // Check if fileUrl is already a full URL or just a path
+      let fullUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        fullUrl = `http://localhost:8000${fileUrl}`;
+      }
+      
+      // Fetch the file as a blob
+      const response = await fetch(fullUrl);
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from URL for the download attribute
+      const filename = fileUrl.split('/').pop() || 'proposal_document';
+      link.setAttribute('download', filename);
+      
+      // Append to body, click, and cleanup
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download file. Please check if the file exists.');
+    }
+  };
+
   // Render Meeting Logs
   const renderMeetingLogs = () => {
     if (loadingMeetings) return <div className="loading-spinner">Loading logs...</div>;
@@ -212,18 +336,18 @@ function StudentDashboard() {
 
     return (
       <div className="content-area">
-        <h2>📅 Meeting Logs & Tasks</h2>
+        <h2> Meeting Logs & Tasks</h2>
 
         {/* Current Task Card */}
         <div className="task-card">
-          <h3>🚀 Current Tasks</h3>
+          <h3> Current Tasks</h3>
           <p>{myMeetingsData.current_task || "No task assigned yet."}</p>
         </div>
 
         {/* Attendance Table */}
         <div className="table-container">
           <div className="attendance-title-card">
-            <h3>📊 Attendance & Tasks</h3>
+            <h3> Attendance & Tasks</h3>
           </div>
           {myMeetingsData.attendance.length > 0 ? (
             <table className="data-table">
@@ -281,10 +405,10 @@ function StudentDashboard() {
           <div className="content-area">
             <h2>Group & Idea Pitch</h2>
             <div className="status-card rejected">
-              <h3>❌ Group Registration Rejected</h3>
+              <h3> Group Registration Rejected</h3>
               <div style={{ background: '#fff', padding: '1rem', borderRadius: '6px', marginBottom: '1rem', border: '1px solid #fecaca' }}>
                 <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.5rem 0', fontWeight: '600', textTransform: 'uppercase' }}>
-                  📝 Admin's Feedback:
+                   Admin's Feedback:
                 </p>
                 <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic', background: '#f8fafc', padding: '0.75rem', borderRadius: '4px', borderLeft: '3px solid #ef4444' }}>
                   {existingGroup.rejection_reason || 'No specific reason provided.'}
@@ -310,7 +434,7 @@ function StudentDashboard() {
                   setSuccess('');
                 }}
               >
-                🔄 Re-apply with New Group
+                 Re-apply with New Group
               </button>
             </div>
           </div>
@@ -323,7 +447,7 @@ function StudentDashboard() {
           <div className="content-area">
             <h2>Group & Idea Pitch</h2>
             <div className="status-card approved">
-              <h3>✅ Group Approved</h3>
+              <h3> Group Approved</h3>
               <p style={{ color: '#64748b', margin: '0 0 1rem 0' }}>
                 {status === 'idea_pitch' ? 'Your idea has been approved. Proceed to submit proposal.' : 
                  status === 'proposal_pending' ? 'Proposal submitted. Waiting for committee review.' :
@@ -363,7 +487,7 @@ function StudentDashboard() {
                         {member.student_name || member.full_name || member.student_email || 'Unknown'}
                       </strong>
                       <span style={{ background: member.role === 'lead' ? '#1e3a8a' : '#64748b', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600' }}>
-                        {member.role === 'lead' ? '👑 Lead' : '👤 Member'}
+                        {member.role === 'lead' ? ' Lead' : ' Member'}
                       </span>
                     </div>
                     <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
@@ -441,7 +565,7 @@ function StudentDashboard() {
               <div key={index} className="member-card">
                 <div className="member-header">
                   <span className="badge" style={{ background: index === 0 ? '#1e3a8a' : '#64748b' }}>
-                    {index === 0 ? '👑 Group Lead' : `👤 Member ${index}`}
+                    {index === 0 ? ' Group Lead' : ` Member ${index}`}
                   </span>
                   {index > 0 && (<button type="button" className="btn-remove" onClick={() => removeMember(index)}>✕</button>)}
                 </div>
@@ -493,12 +617,435 @@ function StudentDashboard() {
     );
   };
 
-  // Render other tabs
-  const renderProposal = () => (<div className="content-area"><h2>Project Proposal</h2><div className="placeholder-card"><p>📄 Upload your project proposal here</p><p className="text-muted">This feature will be available soon</p></div></div>);
-  const renderReports = () => (<div className="content-area"><h2>Reports & Marks</h2><div className="placeholder-card"><p>📊 View your FYP progress and marks</p><p className="text-muted">Coming soon...</p></div></div>);
+    const renderReports = () => (
+    <div className="content-area">
+      <h2>Reports & Marks</h2>
+      
+      {/* Status Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid #3b82f6' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
+            Current Phase
+          </p>
+          <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>
+            {existingGroup?.fydp_phase === 'fydp2' ? 'FYDP-II' : 'FYDP-I'}
+          </p>
+        </div>
+        
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid #10b981' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
+            Proposal Status
+          </p>
+          <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>
+            {proposalData?.status_display || 'Not Submitted'}
+          </p>
+        </div>
+        
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid #f59e0b' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
+            Meetings Conducted
+          </p>
+          <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>
+            {myMeetingsData?.attendance?.length || 0}
+          </p>
+        </div>
+      </div>
+
+      {/* Progress Section */}
+      <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+        <h3 style={{ margin: '0 0 1.5rem 0', color: '#1e293b' }}>FYP Progress Tracker</h3>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {[
+            { label: 'Group Formation', status: existingGroup ? 'completed' : 'pending' },
+            { label: 'Idea Pitch Approval', status: existingGroup?.status === 'idea_pitch' || existingGroup?.status === 'proposal_pending' ? 'completed' : 'pending' },
+            { label: 'Proposal Submission', status: proposalData?.status === 'approved' ? 'completed' : proposalData ? 'in-progress' : 'pending' },
+            { label: 'Mid-Term Evaluation', status: 'pending' },
+            { label: 'Final Evaluation', status: 'pending' },
+            { label: 'Final Report Submission', status: 'pending' },
+          ].map((item, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                background: item.status === 'completed' ? '#10b981' : item.status === 'in-progress' ? '#f59e0b' : '#e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: '700',
+                fontSize: '0.875rem'
+              }}>
+                {item.status === 'completed' ? '✓' : idx + 1}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontWeight: '600', color: '#1e293b' }}>{item.label}</p>
+              </div>
+              <span style={{ 
+                padding: '0.25rem 0.75rem', 
+                borderRadius: '9999px', 
+                fontSize: '0.75rem', 
+                fontWeight: '600',
+                background: item.status === 'completed' ? '#d1fae5' : item.status === 'in-progress' ? '#fef3c7' : '#f1f5f9',
+                color: item.status === 'completed' ? '#065f46' : item.status === 'in-progress' ? '#92400e' : '#64748b'
+              }}>
+                {item.status === 'completed' ? 'Completed' : item.status === 'in-progress' ? 'In Progress' : 'Pending'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Marks Section */}
+      <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginTop: '1.5rem' }}>
+        <h3 style={{ margin: '0 0 1.5rem 0', color: '#1e293b' }}>Evaluation Marks</h3>
+        <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
+          <p style={{ color: '#64748b', margin: 0 }}>
+            Marks will be displayed here after evaluations are conducted by your supervisor and external examiner.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderMaterials = () => {
-    const materials = [{ name: 'Proposal Template', desc: 'FYP project proposal form', icon: '📋' }, { name: 'Brochure Format', desc: 'Official brochure guidelines', icon: '🖼️' }, { name: 'FYP Report Template', desc: 'Report writing format', icon: '📝' }];
-    return (<div className="content-area"><h2>Materials & Downloads</h2><div className="materials-grid">{materials.map((item, idx) => (<div key={idx} className="material-card"><div className="material-icon">{item.icon}</div><div className="material-info"><h4>{item.name}</h4><p className="text-muted">{item.desc}</p></div></div>))}</div></div>);
+    const materials = [
+      {
+        id: 1,
+        title: 'Proposal Template',
+        desc: 'FYP project proposal submission form (Form FP-1)',
+        file: '/Materials/Proposal - Template.pdf',
+        color: '#3b82f6'
+      },
+      {
+        id: 2,
+        title: 'Brochure Format',
+        desc: 'Official brochure size and format guidelines',
+        file: '/Materials/brochure format IU Updated.pdf',
+        color: '#10b981'
+      },
+      {
+        id: 3,
+        title: 'Standee Format',
+        desc: 'Standee design format and dimensions',
+        file: '/Materials/Standee Format IU Updated.pdf',
+        color: '#f59e0b'
+      },
+      {
+        id: 4,
+        title: 'FYP-I Report Template',
+        desc: 'Report writing template for FYP-I',
+        file: '/Materials/FYDP-I Report Template.docx',
+        color: '#8b5cf6'
+      },
+      {
+        id: 5,
+        title: 'FYP Final Report Template (2025)',
+        desc: 'Final report template — updated 2025',
+        file: '/Materials/FYDP Report Template IU Final 2025.pdf',
+        color: '#ef4444'
+      },
+      {
+        id: 6,
+        title: 'Project Completion Form',
+        desc: 'Form to submit upon project completion',
+        file: '/Materials/FYDP Project Completion form (1).pdf',
+        color: '#10b981'
+      },
+      {
+        id: 7,
+        title: 'Title Change Application',
+        desc: 'Application form for changing project title',
+        file: '/Materials/Application for Title change.pdf',
+        color: '#3b82f6'
+      },
+      {
+        id: 8,
+        title: 'Consent Form (Industrial Advisor)',
+        desc: 'F-SOP FYDP-04 consent form for industrial advisors',
+        file: '/Materials/F-SOP FYDP-04 (Consent Form Indus).pdf',
+        color: '#f59e0b'
+      },
+      {
+        id: 9,
+        title: 'Form 3',
+        desc: 'FYP Form 3 — official department form',
+        file: '/Materials/form 3.pdf',
+        color: '#8b5cf6'
+      },
+      {
+        id: 10,
+        title: 'IU Poster Template',
+        desc: 'Official Iqra University poster template',
+        file: '/Materials/IQRA_Poster_Atir.pdf',
+        color: '#ef4444'
+      }
+    ];
+
+    const handleView = (filePath) => {
+      window.open(filePath, '_blank');
+    };
+
+    const handleDownload = async (filePath, fileName) => {
+      try {
+        const response = await fetch(filePath);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Download failed:', error);
+        alert('Failed to download file.');
+      }
+    };
+
+    return (
+      <div className="content-area">
+        <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
+          Materials & Downloads
+        </h2>
+        <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>
+          Download official templates, forms, and format guidelines for your FYP.
+        </p>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gap: '1.25rem'
+        }}>
+          {materials.map((item) => (
+            <div
+              key={item.id}
+              style={{
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '1.25rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+              }}
+            >
+              {/* Header with Title */}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h4 style={{
+                    margin: 0,
+                    fontSize: '1rem',
+                    fontWeight: '700',
+                    color: '#1e293b',
+                    lineHeight: '1.3'
+                  }}>
+                    {item.title}
+                  </h4>
+                  <p style={{
+                    margin: '0.25rem 0 0 0',
+                    fontSize: '0.8rem',
+                    color: '#64748b',
+                    lineHeight: '1.4'
+                  }}>
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+                <button
+                  onClick={() => handleView(item.file)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 1rem',
+                    border: '1px solid #e2e8f0',
+                    background: 'white',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    color: '#475569',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <span>👁</span> View
+                </button>
+                <button
+                  onClick={() => handleDownload(item.file, item.file.split('/').pop())}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem 1rem',
+                    border: 'none',
+                    background: '#1e3a8a',
+                    color: 'white',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <span>⬇</span> Download
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ UPDATED: Render Proposal Upload & Status
+  const renderProposal = () => {
+    // 1. Check if group is approved first
+    if (!existingGroup || !['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
+      return (
+        <div className="content-area">
+          <h2>Project Proposal</h2>
+          <div className="status-card pending">
+            <h3>Group Approval Required</h3>
+            <p>Your group must be approved by the admin before you can submit a proposal.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (proposalLoading) return <div className="content-area"><div className="loading-spinner">Loading proposal...</div></div>;
+
+    // 2. If no proposal exists, show create button
+    if (!proposalData) {
+      return (
+        <div className="content-area">
+          <h2>Project Proposal</h2>
+          {error && <div className="alert alert-error">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
+          <div className="status-card">
+            <h3>Initialize Proposal</h3>
+            <p>Click below to create a proposal draft for your group. After that, you can upload the filled PDF.</p>
+            <button className="btn-submit" onClick={handleCreateProposal} disabled={loading}>
+              {loading ? 'Creating...' : 'Create Proposal Draft'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Proposal exists, show status and upload options
+    const statusColors = {
+      'draft': '#64748b',
+      'submitted': '#3b82f6',
+      'approved_by_supervisor': '#8b5cf6',
+      'revision_needed': '#f59e0b',
+      'approved': '#10b981',
+      'rejected': '#ef4444'
+    };
+
+    const canUpload = ['draft', 'submitted', 'revision_needed'].includes(proposalData.status) && proposalData.submission_count < 3;
+
+    return (
+      <div className="content-area">
+        <h2>Project Proposal</h2>
+        {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+        
+        {/* Status Card */}
+        <div className="status-card" style={{ borderLeft: `4px solid ${statusColors[proposalData.status] || '#64748b'}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0 }}>Proposal Status</h3>
+            <span className="status-badge" style={{ background: statusColors[proposalData.status], color: 'white' }}>
+              {proposalData.status_display}
+            </span>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Submission Attempts</p>
+              <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '1.25rem' }}>
+                {proposalData.submission_count} / 3
+              </p>
+            </div>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Last Submitted</p>
+              <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>
+                {proposalData.submitted_at ? new Date(proposalData.submitted_at).toLocaleDateString() : 'Not submitted yet'}
+              </p>
+            </div>
+          </div>
+
+          {/* Remarks Section */}
+          {proposalData.supervisor_remarks && (
+            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+              <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
+              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{proposalData.supervisor_remarks}</p>
+            </div>
+          )}
+          {proposalData.admin_remarks && (
+            <div style={{ background: '#f3e8ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #8b5cf6' }}>
+              <p style={{ fontSize: '0.8rem', color: '#5b21b6', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Admin Remarks:</p>
+              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{proposalData.admin_remarks}</p>
+            </div>
+          )}
+
+          {/* File Download */}
+          {proposalData.proposal_file && (
+            <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #10b981' }}>
+              <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Uploaded File:</p>
+              <button 
+                onClick={() => handleFileDownload(proposalData.proposal_file)}
+                style={{ background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '1rem' }}
+              >
+                View / Download Proposal File
+              </button>
+            </div>
+          )}
+
+          {/* Upload Section */}
+          {canUpload ? (
+            <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+              <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>Upload Proposal File</h4>
+              <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
+                Please download the template from the "Materials" section, fill it, and upload here. (PDF/DOCX only, Max 10MB)
+              </p>
+              <input 
+                type="file" 
+                accept=".pdf,.docx" 
+                onChange={(e) => setProposalFile(e.target.files[0])}
+                className="form-input"
+                style={{ marginBottom: '1rem' }}
+              />
+              <button 
+                className="btn-submit" 
+                onClick={handleFileUpload}
+                disabled={!proposalFile || uploading}
+              >
+                {uploading ? 'Uploading...' : 'Submit Proposal'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
+              <p style={{ color: '#991b1b', margin: 0, fontWeight: '500' }}>
+                {proposalData.status === 'approved' ? 'Proposal has been finally approved. No further uploads allowed.' :
+                 proposalData.status === 'rejected' ? 'Proposal has been rejected. Contact admin.' :
+                 'Maximum 3 submission attempts reached. Contact admin to reset.'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Main Render
@@ -528,11 +1075,11 @@ function StudentDashboard() {
         
         {/* Navigation */}
         <nav className="sidebar-nav">
-          <button className={`nav-btn ${activeTab === 'group' ? 'active' : ''}`} onClick={() => { setActiveTab('group'); setMenuOpen(false); }}>📝 Group & Idea Pitch</button>
-          <button className={`nav-btn ${activeTab === 'proposal' ? 'active' : ''}`} onClick={() => { setActiveTab('proposal'); setMenuOpen(false); }}>📄 Project Proposal</button>
-          <button className={`nav-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); setMenuOpen(false); }}>📅 Meeting Logs</button>
-          <button className={`nav-btn ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => { setActiveTab('reports'); setMenuOpen(false); }}>📊 Reports & Marks</button>
-          <button className={`nav-btn ${activeTab === 'materials' ? 'active' : ''}`} onClick={() => { setActiveTab('materials'); setMenuOpen(false); }}>📥 Materials</button>
+          <button className={`nav-btn ${activeTab === 'group' ? 'active' : ''}`} onClick={() => { setActiveTab('group'); setMenuOpen(false); }}> Group & Idea Pitch</button>
+          <button className={`nav-btn ${activeTab === 'proposal' ? 'active' : ''}`} onClick={() => { setActiveTab('proposal'); setMenuOpen(false); }}> Project Proposal</button>
+          <button className={`nav-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); setMenuOpen(false); }}> Meeting Logs & Attendance</button>
+          <button className={`nav-btn ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => { setActiveTab('reports'); setMenuOpen(false); }}> Reports & Marks</button>
+          <button className={`nav-btn ${activeTab === 'materials' ? 'active' : ''}`} onClick={() => { setActiveTab('materials'); setMenuOpen(false); }}> Materials & Downloads</button>
         </nav>
       </aside>
 

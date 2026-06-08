@@ -8,8 +8,8 @@ class IsStudent(permissions.BasePermission):
 class IsAdminUser(permissions.BasePermission):
     """Only admin users can access"""
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and getattr(request.user, 'user_type', None) == 'admin'
-
+        return request.user.is_authenticated and request.user.user_type == 'admin'
+    
 class IsGroupMemberOrReadOnly(permissions.BasePermission):
     """Group members can edit, others read-only"""
     def has_object_permission(self, request, view, obj):
