@@ -957,7 +957,7 @@ function SupervisorDashboard() {
                     className={`tab-btn ${detailSubTab === 'marks' ? 'active' : ''}`}
                     onClick={() => setDetailSubTab('marks')}
                   >
-                    📝 Sessional Marks
+                    Sessional Marks
                   </button>
                 </div>
               </div>
@@ -1034,8 +1034,8 @@ function SupervisorDashboard() {
               ) : detailSubTab === 'meetings' ? (
                 renderMeetingsSection()
               ) : detailSubTab === 'marks' ? (
-                <SupervisorSessionalMarkForm 
-                  group={selectedGroup} 
+                <SupervisorSessionalMarkForm
+                  group={selectedGroup}
                   onClose={() => setDetailSubTab('info')}
                 />
               ) : null}

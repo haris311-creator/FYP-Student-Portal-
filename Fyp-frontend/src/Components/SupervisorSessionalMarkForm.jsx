@@ -313,7 +313,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
       {/* Actions */}
       <div className="ssm-actions">
         <button className="ssm-submit-btn" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? 'Submitting...' : '✅ Submit Marks to Admin'}
+          {submitting ? 'Submitting...' : ' Submit Marks to Admin'}
         </button>
         <button className="ssm-cancel-btn" onClick={onClose}>Cancel</button>
       </div>
