@@ -1,281 +1,323 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './SupervisorSessionalMarkForm.css';
 
+const rubricData = [
+  {
+    sno: 1,
+    criteria: 'Project Introduction & Literature Review',
+    clo: 'CLO2',
+    ga: 'GA3: Problem Analysis',
+    weight: 2,
+    maxMarks: 10,
+    descriptions: {
+      1: 'Unclear, lacks objectives and background. No citations, weak sources.',
+      2: 'Weak objectives, vague background, minimal references.',
+      3: 'Basic objectives, some relevant sources, need better structure.',
+      4: 'Clear objectives, well-organized background, mostly relevant literature.',
+      5: 'Well-structured, strong objectives, comprehensive and properly cited literature.'
+    }
+  },
+  {
+    sno: 2,
+    criteria: 'Use Cases, ERD, and Prototyping',
+    clo: 'CLO3',
+    ga: 'GA4: Design/Development of Solution',
+    weight: 4,
+    maxMarks: 20,
+    descriptions: {
+      1: 'No diagrams or incorrect structure.',
+      2: 'Minimal use cases, weak ERD, and prototype lacks usability.',
+      3: 'Basic use cases, partially correct ERD, prototype missing details.',
+      4: 'Clear use cases, mostly correct ERD, functional prototype with minor issues.',
+      5: 'Comprehensive use cases, well-structured ERD, detailed and user-friendly prototype.'
+    }
+  },
+  {
+    sno: 3,
+    criteria: 'Proposed Budgeting',
+    clo: 'CLO6',
+    ga: 'GA8: Computing Professionalism and Society',
+    weight: 2,
+    maxMarks: 10,
+    descriptions: {
+      1: 'No justification, unrealistic estimates.',
+      2: 'Weak justification, inconsistent costs.',
+      3: 'Some realistic estimates but lacks refinement.',
+      4: 'Well-researched costs, mostly well-structured.',
+      5: 'Highly accurate, well-documented budgeting with clear justifications.'
+    }
+  },
+  {
+    sno: 4,
+    criteria: 'Business Canvas Model',
+    clo: 'CLO6',
+    ga: 'GA8: Computing Professionalism and Society',
+    weight: 2,
+    maxMarks: 10,
+    descriptions: {
+      1: 'Missing most components, lacks structure.',
+      2: 'Few components covered, minimal feasibility.',
+      3: 'Some feasibility, lacks strong uniqueness.',
+      4: 'Well-structured, feasible with minor innovation.',
+      5: 'Comprehensive, innovative, and highly feasible model.'
+    }
+  }
+];
+
 const SupervisorSessionalMarkForm = ({ group, onClose }) => {
-  const [groupId, setGroupId] = useState('');
-  const [semester, setSemester] = useState('7');
-  const [evaluations, setEvaluations] = useState({
-    student1: {
-      name: '',
-      regNo: '',
-      scores: {
-        literatureReview: 0,    // 4% policy → proportional
-        useCasesERD: 0,         // 8% policy → proportional
-        budgeting: 0,           // 4% policy → proportional
-        businessCanvas: 0,      // 4% policy → proportional
-      }
-    },
-    student2: {
-      name: '',
-      regNo: '',
-      scores: {
-        literatureReview: 0,
-        useCasesERD: 0,
-        budgeting: 0,
-        businessCanvas: 0,
-      }
-    },
-    student3: {
-      name: '',
-      regNo: '',
-      scores: {
-        literatureReview: 0,
-        useCasesERD: 0,
-        budgeting: 0,
-        businessCanvas: 0,
-      }
-    },
+  const [activeStudent, setActiveStudent] = useState(0);
+  const [showRubric, setShowRubric] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const initStudentMarks = () => ({
+    selections: { 0: null, 1: null, 2: null, 3: null },
+    manualMarks: { 0: '', 1: '', 2: '', 3: '' },
+    comments: ''
   });
 
-  // Policy: 30 marks per component in original policy
-  // Miss S weightage: 20 marks for Sessional
-  // Conversion: (20/30) × component marks
-  const sessionialComponents = [
-    {
-      key: 'literatureReview',
-      label: 'Project Introduction & Literature Review',
-      policyMarks: 30,
-      policyWeight: 4,
-      actualWeight: 5, // (5/30) × 30 = 5 marks in 20
-      maxMarks: 5,
-      description: 'Quality of literature review and project introduction clarity'
-    },
-    {
-      key: 'useCasesERD',
-      label: 'Use Cases, ERD, and Prototyping',
-      policyMarks: 30,
-      policyWeight: 8,
-      actualWeight: 5, // (5/30) × 30 = 5 marks in 20
-      maxMarks: 5,
-      description: 'Completeness of use cases, ER diagrams, and prototype quality'
-    },
-    {
-      key: 'budgeting',
-      label: 'Proposed Budgeting',
-      policyMarks: 30,
-      policyWeight: 4,
-      actualWeight: 5, // (5/30) × 30 = 5 marks in 20
-      maxMarks: 5,
-      description: 'Accuracy and justification of project budget'
-    },
-    {
-      key: 'businessCanvas',
-      label: 'Business Canvas Model',
-      policyMarks: 30,
-      policyWeight: 4,
-      actualWeight: 5, // (5/30) × 30 = 5 marks in 20
-      maxMarks: 5,
-      description: 'Feasibility and innovation in business model'
-    },
-  ];
+  const [studentMarks, setStudentMarks] = useState(
+    group?.members?.map(() => initStudentMarks()) || []
+  );
 
-  const handleStudentChange = (studentKey, field, value) => {
-    setEvaluations(prev => ({
-      ...prev,
-      [studentKey]: {
-        ...prev[studentKey],
-        [field]: value
-      }
-    }));
+  const handleRadioSelect = (studentIdx, criteriaIdx, value) => {
+    const updated = [...studentMarks];
+    updated[studentIdx].selections[criteriaIdx] = value;
+    const maxMarks = rubricData[criteriaIdx].maxMarks;
+    updated[studentIdx].manualMarks[criteriaIdx] = ((value / 5) * maxMarks).toFixed(1);
+    setStudentMarks(updated);
   };
 
-  useEffect(() => {
-    if (!group) return;
-
-    setGroupId(group.group_number?.toString() || '');
-    if (group.phase === 'FYP-1') {
-      setSemester('7');
-    } else if (group.phase === 'FYP-2') {
-      setSemester('8');
+  const handleManualInput = (studentIdx, criteriaIdx, value) => {
+    const updated = [...studentMarks];
+    const maxMarks = rubricData[criteriaIdx].maxMarks;
+    const numVal = parseFloat(value);
+    updated[studentIdx].manualMarks[criteriaIdx] = value;
+    if (!isNaN(numVal) && numVal >= 0 && numVal <= maxMarks) {
+      const perfLevel = Math.round((numVal / maxMarks) * 5);
+      updated[studentIdx].selections[criteriaIdx] = perfLevel || null;
+    } else {
+      updated[studentIdx].selections[criteriaIdx] = null;
     }
+    setStudentMarks(updated);
+  };
 
-    if (group.members?.length) {
-      setEvaluations(prev => {
-        const updated = { ...prev };
-        group.members.slice(0, 3).forEach((member, index) => {
-          const key = `student${index + 1}`;
-          if (updated[key]) {
-            updated[key] = {
-              ...updated[key],
-              name: member.name || updated[key].name,
-              regNo: member.odoo_id || updated[key].regNo
-            };
-          }
-        });
-        return updated;
-      });
+  const handleCommentChange = (studentIdx, value) => {
+    const updated = [...studentMarks];
+    updated[studentIdx].comments = value;
+    setStudentMarks(updated);
+  };
+
+  const getRawTotal = (studentIdx) => {
+    const marks = studentMarks[studentIdx]?.manualMarks || {};
+    let total = 0;
+    Object.values(marks).forEach(m => {
+      const num = parseFloat(m);
+      if (!isNaN(num)) total += num;
+    });
+    return total;
+  };
+
+  const getFinalMarks = (studentIdx) => {
+    const raw = getRawTotal(studentIdx);
+    return ((raw / 50) * 20).toFixed(1);
+  };
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const payload = group.members.map((member, idx) => ({
+        student_id: member.student_db_id,
+        student_name: member.name,
+        raw_marks: getRawTotal(idx),
+        final_marks: parseFloat(getFinalMarks(idx)),
+        criteria_marks: studentMarks[idx].manualMarks,
+        comments: studentMarks[idx].comments
+      }));
+      console.log('Submitting sessional marks:', payload);
+      alert('Sessional marks submitted successfully! Sent to admin for review.');
+      onClose && onClose();
+    } catch (err) {
+      alert('Failed to submit marks. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-  }, [group]);
-
-  if (!group) {
-    return <div className="sessional-form-container"><p>No group selected.</p></div>;
-  }
-
-  const handleScoreChange = (studentKey, componentKey, value) => {
-    const numValue = Math.min(Math.max(parseFloat(value) || 0, 0), 5);
-    setEvaluations(prev => ({
-      ...prev,
-      [studentKey]: {
-        ...prev[studentKey],
-        scores: {
-          ...prev[studentKey].scores,
-          [componentKey]: numValue
-        }
-      }
-    }));
   };
 
-  const calculateTotal = (studentKey) => {
-    const scores = Object.values(evaluations[studentKey].scores);
-    return scores.reduce((a, b) => a + b, 0).toFixed(1);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Sessional Marks Submission:', evaluations);
-    alert('Sessional marks submitted successfully!');
-  };
+  const members = group?.members || [];
 
   return (
-    <div className="sessional-form-container">
-      <div className="form-header">
-        <h1>📋 Sessional Marks Entry Form</h1>
-        <p className="subtitle">FYDP-{semester} | Group Evaluation | Total Marks: 20</p>
+    <div className="ssm-container">
+
+      {/* Header */}
+      <div className="ssm-header">
+        <div>
+          <h2>Sessional Marks</h2>
+          <p>{group?.project || 'Project'} — {group?.name || 'Group'}</p>
+        </div>
+        <button className="ssm-rubric-btn" onClick={() => setShowRubric(!showRubric)}>
+          {showRubric ? '▲ Hide Rubric' : '▼ View Rubric'}
+        </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="evaluation-form">
-        {/* Group & Semester Section */}
-        <div className="form-section group-section">
-          <h2>Group Information</h2>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Group ID</label>
-              <input
-                type="text"
-                value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
-                placeholder="Enter group ID"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Semester</label>
-              <select value={semester} onChange={(e) => setSemester(e.target.value)}>
-                <option value="7">7th Semester (FYDP-1)</option>
-                <option value="8">8th Semester (FYDP-2)</option>
-              </select>
-            </div>
+      {/* Rubric Reference Table */}
+      {showRubric && (
+        <div className="ssm-rubric-section">
+          <h3>Rubric Reference (FYDP-1 Sessional)</h3>
+          <div className="ssm-table-wrapper">
+            <table className="ssm-rubric-table">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Criteria</th>
+                  <th>CLOs</th>
+                  <th>GA</th>
+                  <th>Wt.</th>
+                  <th>Max</th>
+                  <th>1</th>
+                  <th>2</th>
+                  <th>3</th>
+                  <th>4</th>
+                  <th>5</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rubricData.map((row) => (
+                  <tr key={row.sno}>
+                    <td className="center">{row.sno}</td>
+                    <td><strong>{row.criteria}</strong></td>
+                    <td className="center">{row.clo}</td>
+                    <td className="small">{row.ga}</td>
+                    <td className="center">{row.weight}</td>
+                    <td className="center">{row.maxMarks}</td>
+                    {[1,2,3,4,5].map(level => (
+                      <td key={level} className="desc-cell">{row.descriptions[level]}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
+      )}
 
-        {/* Evaluation Rubric Info */}
-        <div className="rubric-info">
-          <h3>📊 Sessional Components (Total: 20 marks)</h3>
-          <div className="rubric-grid">
-            {sessionialComponents.map((comp, idx) => (
-              <div key={comp.key} className="rubric-item">
-                <span className="comp-name">{comp.label}</span>
-                <span className="comp-marks">{comp.actualWeight} marks</span>
-              </div>
-            ))}
+      {/* Student Tabs */}
+      <div className="ssm-student-tabs">
+        {members.map((member, idx) => (
+          <button
+            key={idx}
+            className={`ssm-student-tab ${activeStudent === idx ? 'active' : ''}`}
+            onClick={() => setActiveStudent(idx)}
+          >
+            <span className="ssm-avatar">{member.name?.charAt(0).toUpperCase()}</span>
+            <span>{member.name}</span>
+            {getRawTotal(idx) > 0 && (
+              <span className="ssm-done-badge">✓</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Marks Entry Form per Student */}
+      {members.map((member, sIdx) => (
+        <div key={sIdx} className={`ssm-student-form ${activeStudent === sIdx ? 'active' : 'hidden'}`}>
+          <div className="ssm-student-info">
+            <div className="ssm-avatar-lg">{member.name?.charAt(0).toUpperCase()}</div>
+            <div>
+              <h3>{member.name}</h3>
+              <p>ID: {member.odoo_id}</p>
+            </div>
+            <div className="ssm-total-box">
+              <span className="ssm-total-label">Raw Total</span>
+              <span className="ssm-total-value">{getRawTotal(sIdx).toFixed(1)}/50</span>
+              <span className="ssm-total-label">Final Marks</span>
+              <span className="ssm-final-value">{getFinalMarks(sIdx)}/20</span>
+            </div>
           </div>
-        </div>
 
-        {/* Students Evaluation */}
-        <div className="students-section">
-          {Object.entries(evaluations).map((entry, idx) => {
-            const [studentKey, studentData] = entry;
-            return (
-              <div key={studentKey} className="student-card">
-                <div className="student-header">
-                  <h3>Student {idx + 1}</h3>
-                  <span className={`total-marks ${parseFloat(calculateTotal(studentKey)) >= 10 ? 'good' : 'warning'}`}>
-                    Total: {calculateTotal(studentKey)}/20
-                  </span>
-                </div>
-
-                <div className="student-info">
-                  <div className="info-group">
-                    <label>Student Name</label>
-                    <input
-                      type="text"
-                      value={studentData.name}
-                      onChange={(e) => handleStudentChange(studentKey, 'name', e.target.value)}
-                      placeholder="Enter student name"
-                    />
-                  </div>
-                  <div className="info-group">
-                    <label>Registration No.</label>
-                    <input
-                      type="text"
-                      value={studentData.regNo}
-                      onChange={(e) => handleStudentChange(studentKey, 'regNo', e.target.value)}
-                      placeholder="e.g., CS-2021-123"
-                    />
-                  </div>
-                </div>
-
-                {/* Component Scores */}
-                <div className="scores-grid">
-                  {sessionialComponents.map((comp) => (
-                    <div key={comp.key} className="score-input">
-                      <label>{comp.label}</label>
-                      <div className="input-wrapper">
+          <div className="ssm-table-wrapper">
+            <table className="ssm-marks-table">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Criteria</th>
+                  <th>CLOs</th>
+                  <th>GA</th>
+                  <th>Wt.</th>
+                  <th>Max</th>
+                  <th className="center">1</th>
+                  <th className="center">2</th>
+                  <th className="center">3</th>
+                  <th className="center">4</th>
+                  <th className="center">5</th>
+                  <th>Marks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rubricData.map((row, cIdx) => (
+                  <tr key={cIdx}>
+                    <td className="center">{row.sno}</td>
+                    <td><strong>{row.criteria}</strong></td>
+                    <td className="center">{row.clo}</td>
+                    <td className="small">{row.ga}</td>
+                    <td className="center">{row.weight}</td>
+                    <td className="center">{row.maxMarks}</td>
+                    {[1,2,3,4,5].map(level => (
+                      <td key={level} className="center">
                         <input
-                          type="number"
-                          min="0"
-                          max={comp.maxMarks}
-                          step="0.5"
-                          value={studentData.scores[comp.key]}
-                          onChange={(e) => handleScoreChange(studentKey, comp.key, e.target.value)}
+                          type="radio"
+                          name={`student${sIdx}_criteria${cIdx}`}
+                          value={level}
+                          checked={studentMarks[sIdx]?.selections[cIdx] === level}
+                          onChange={() => handleRadioSelect(sIdx, cIdx, level)}
                         />
-                        <span className="max-marks">/{comp.maxMarks}</span>
-                      </div>
-                      <p className="description">{comp.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                      </td>
+                    ))}
+                    <td>
+                      <input
+                        type="number"
+                        className="ssm-marks-input"
+                        min="0"
+                        max={row.maxMarks}
+                        step="0.5"
+                        value={studentMarks[sIdx]?.manualMarks[cIdx] || ''}
+                        onChange={(e) => handleManualInput(sIdx, cIdx, e.target.value)}
+                        placeholder={`/${row.maxMarks}`}
+                      />
+                    </td>
+                  </tr>
+                ))}
+                <tr className="ssm-total-row">
+                  <td colSpan="11" className="right"><strong>Total (out of 50)</strong></td>
+                  <td className="center"><strong>{getRawTotal(sIdx).toFixed(1)}</strong></td>
+                </tr>
+                <tr className="ssm-final-row">
+                  <td colSpan="11" className="right"><strong>Final Marks (out of 20)</strong></td>
+                  <td className="center"><strong>{getFinalMarks(sIdx)}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-        {/* Policy Reference */}
-        <div className="policy-reference">
-          <h4>📖 FEST Policy Reference</h4>
-          <p>
-            <strong>Policy Weightage (FYDP-1 Sessional = 30 marks):</strong><br/>
-            • Literature Review: 4% → Adjusted to 5 marks<br/>
-            • Use Cases, ERD, Prototype: 8% → Adjusted to 5 marks<br/>
-            • Budgeting: 4% → Adjusted to 5 marks<br/>
-            • Business Canvas: 4% → Adjusted to 5 marks<br/>
-            <strong>Miss S Weightage: 20 marks total for Sessional</strong>
-          </p>
+          <div className="ssm-comments">
+            <label>Comments (optional)</label>
+            <textarea
+              rows="3"
+              placeholder="Any remarks for this student..."
+              value={studentMarks[sIdx]?.comments || ''}
+              onChange={(e) => handleCommentChange(sIdx, e.target.value)}
+            />
+          </div>
         </div>
+      ))}
 
-        {/* Action Buttons */}
-        <div className="form-actions">
-          <button type="submit" className="btn-submit">
-            ✅ Submit Sessional Marks
-          </button>
-          <button type="reset" className="btn-reset">
-            🔄 Reset Form
-          </button>
-          <button type="button" className="btn-secondary" onClick={onClose}>
-            ← Back to Group
-          </button>
-        </div>
-      </form>
+      {/* Actions */}
+      <div className="ssm-actions">
+        <button className="ssm-submit-btn" onClick={handleSubmit} disabled={submitting}>
+          {submitting ? 'Submitting...' : '✅ Submit Marks to Admin'}
+        </button>
+        <button className="ssm-cancel-btn" onClick={onClose}>Cancel</button>
+      </div>
+
     </div>
   );
 };
