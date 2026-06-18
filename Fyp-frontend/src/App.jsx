@@ -12,10 +12,12 @@ import StudentDashboard from './pages/StudentDashboard';
 import SupervisorDashboard from './pages/SupervisorDashboard';
 import AdminDashboard from "./Pages/AdminDashboard";
 import GroupApprovals from './pages/Admin/GroupApprovals';
+import PublicEvaluationPage from './Pages/PublicEvaluationPage';
 
 // Route Guards
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+
 
 function App() {
   return (
@@ -29,6 +31,9 @@ function App() {
         
         {/* Login Route */}
         <Route path="/login" element={<Login />} />
+        
+        {/* Public Evaluation Route */}
+        <Route path="/evaluate/:token" element={<PublicEvaluationPage />} />
         
         {/* ✅ Admin Group Approvals Route - FIXED */}
         <Route 

@@ -5,6 +5,7 @@ import { adminAPI } from "../api/admin";
 import api, { proposalAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import './Admindashboard.css';
+import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -36,6 +37,10 @@ function AdminDashboard() {
   const [selectedFinalProposal, setSelectedFinalProposal] = useState(null);
   const [finalReviewForm, setFinalReviewForm] = useState({ action: 'approve', remarks: '' });
   const [submittingFinalReview, setSubmittingFinalReview] = useState(false);
+
+  const [selectedGroupForEval, setSelectedGroupForEval] = useState(null);
+  const [evalLinks, setEvalLinks] = useState({});
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   useEffect(() => {
     const loadUser = () => {
@@ -401,6 +406,9 @@ const handleAnnouncementSubmit = (e) => {
         <button className="action-btn" onClick={() => setActiveTab('announcements')}>
           <span>Announcements</span>
         </button>        
+        <button className="action-btn" onClick={() => setActiveTab('presentation')}>
+          <span>Presentation Evaluation</span>
+        </button>
       </div>
     </div>
   );
@@ -605,6 +613,201 @@ const handleAnnouncementSubmit = (e) => {
             </button>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  const generateEvalLink = async (groupId) => {
+    setGeneratingLink(true);
+    try {
+      // Backend API call hogi baad mein
+      // const res = await adminAPI.generateEvalLink(groupId);
+      // const token = res.data.token;
+      
+      // Abhi dummy token
+      const token = `eval_${groupId}_${Date.now()}`;
+      const link = `${window.location.origin}/evaluate/${token}`;
+      
+      setEvalLinks(prev => ({
+        ...prev,
+        [groupId]: {
+          link,
+          token,
+          generated_at: new Date().toLocaleString()
+        }
+      }));
+      
+      alert(`Link generated!\n\n${link}\n\nCopy this and share via WhatsApp/Email`);
+    } catch (err) {
+      alert('Failed to generate link');
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const renderPresentation = () => {
+    if (selectedGroupForEval) {
+      return (
+        <div>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <button
+              onClick={() => setSelectedGroupForEval(null)}
+              className="approve-btn"
+              style={{ marginBottom: '1rem' }}
+            >
+              Back to Groups List
+            </button>
+            <h2 className="content-title">
+              Presentation Evaluation — {selectedGroupForEval.title}
+            </h2>
+          </div>
+
+          {/* Generate Link Section */}
+          <div style={{
+            background: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem'
+          }}>
+            <h3 className="sub-title" style={{ marginTop: 0 }}>Committee Evaluation Links</h3>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1rem' }}>
+              Generate unique links for each committee member. Each link can only be used once.
+            </p>
+
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                className="approve-btn"
+                onClick={() => generateEvalLink(selectedGroupForEval.id)}
+                disabled={generatingLink}
+              >
+                {generatingLink ? 'Generating...' : 'Generate New Link'}
+              </button>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                Share generated link with committee member via WhatsApp or Email
+              </span>
+            </div>
+
+            {evalLinks[selectedGroupForEval.id] && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                background: '#f0f9ff',
+                borderRadius: '8px',
+                borderLeft: '3px solid #3b82f6'
+              }}>
+                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', fontWeight: '600', margin: '0 0 0.5rem' }}>
+                  Latest Generated Link:
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <code style={{
+                    fontSize: '0.8rem',
+                    background: 'white',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '4px',
+                    border: '1px solid #bfdbfe',
+                    color: '#1e3a8a',
+                    wordBreak: 'break-all',
+                    flex: 1
+                  }}>
+                    {evalLinks[selectedGroupForEval.id].link}
+                  </code>
+                  <button
+                    className="approve-btn"
+                    style={{ flexShrink: 0 }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(evalLinks[selectedGroupForEval.id].link);
+                      alert('Link copied!');
+                    }}
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.5rem 0 0' }}>
+                  Generated: {evalLinks[selectedGroupForEval.id].generated_at}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Admin own evaluation form */}
+          <div style={{
+            background: 'white',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem'
+          }}>
+            <h3 className="sub-title" style={{ marginTop: 0 }}>Your Evaluation (Admin)</h3>
+            <PresentationEvaluationForm
+              group={selectedGroupForEval}
+              onClose={() => setSelectedGroupForEval(null)}
+              isPublicLink={false}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Groups List View
+    return (
+      <div>
+        {renderPageHeader('Presentation Evaluation')}
+        <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+          Select a group to evaluate their presentation or generate committee evaluation links.
+        </p>
+
+        {loading.groups ? (
+          <div className="loading-state">
+            <p>Loading groups...</p>
+          </div>
+        ) : allGroups.length === 0 ? (
+          <div className="empty-state">
+            <p className="empty-text">No approved groups found.</p>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Group</th>
+                  <th>Project Title</th>
+                  <th>Phase</th>
+                  <th>Supervisor</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allGroups.map(g => (
+                  <tr key={g.id}>
+                    <td><span className="group-name-cell">{g.group}</span></td>
+                    <td>{g.title}</td>
+                    <td>
+                      <span className={`phase-badge ${g.phase === 'FYP-2' ? 'phase-2' : 'phase-1'}`}>
+                        {g.phase}
+                      </span>
+                    </td>
+                    <td>{g.supervisor}</td>
+                    <td>
+                      <span className={`status-pill ${getStatusClass(g.status)}`}>
+                        {g.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="approve-btn"
+                        onClick={() => setSelectedGroupForEval(g)}
+                      >
+                        Evaluate
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     );
   };
@@ -819,6 +1022,12 @@ const handleAnnouncementSubmit = (e) => {
         >
           Announcements
         </button>
+        <button
+          className={`sidebar-btn ${activeTab === 'presentation' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('presentation'); setMenuOpen(false); }}
+        >
+          Presentation Evaluation
+        </button>
       </div>
 
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
@@ -831,6 +1040,7 @@ const handleAnnouncementSubmit = (e) => {
         {activeTab === 'finalProposals' && renderFinalProposals()}
         {activeTab === 'groups' && renderGroups()}
         {activeTab === 'announcements' && renderAnnouncements()}
+        {activeTab === 'presentation' && renderPresentation()}
         {selectedFinalProposal && renderFinalProposalModal()}
       </div>
     </div>
