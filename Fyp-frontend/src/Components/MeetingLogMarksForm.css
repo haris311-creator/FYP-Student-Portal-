@@ -1,0 +1,271 @@
+.mlm-container {
+  padding: 24px;
+  background: #f0f4f8;
+  min-height: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+.mlm-header {
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  color: white;
+  padding: 20px 24px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.mlm-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.mlm-header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.mlm-info-table {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.mlm-info-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mlm-info-table tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mlm-info-table tr:last-child {
+  border-bottom: none;
+}
+
+.mlm-info-label {
+  background: #f8fafc;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  border-right: 1px solid #e2e8f0;
+  width: 180px;
+  white-space: nowrap;
+}
+
+.mlm-info-value {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #1e293b;
+  border-right: 1px solid #e2e8f0;
+}
+
+.mlm-text-input, .mlm-num-input {
+  width: 100%;
+  max-width: 220px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.mlm-text-input:focus, .mlm-num-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+.mlm-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.mlm-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+.mlm-section {
+  margin-bottom: 20px;
+}
+
+.mlm-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.mlm-loading {
+  color: #64748b;
+  font-size: 13px;
+  padding: 16px;
+  text-align: center;
+}
+
+.mlm-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.mlm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: white;
+}
+
+.mlm-table th {
+  background: #1e3a8a;
+  color: white;
+  padding: 10px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.mlm-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #374151;
+}
+
+.mlm-table tr:last-child td {
+  border-bottom: none;
+}
+
+.mlm-center {
+  text-align: center !important;
+}
+
+.mlm-meeting-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mlm-meeting-chip {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+
+.mlm-meeting-num {
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.mlm-meeting-date {
+  color: #64748b;
+}
+
+.mlm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 20px;
+}
+
+.mlm-submit-btn {
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.mlm-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
+.mlm-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mlm-cancel-btn {
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.mlm-cancel-btn:hover {
+  background: #d1d5db;
+}
+
+.mlm-success {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.mlm-success-icon {
+  width: 64px;
+  height: 64px;
+  background: #d1fae5;
+  color: #16a34a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 20px;
+}
+
+.mlm-success h2 {
+  color: #1e3a8a;
+  margin: 0 0 10px;
+}
+
+.mlm-success p {
+  color: #64748b;
+  margin: 0 0 20px;
+}
+
+@media (max-width: 768px) {
+  .mlm-container { padding: 16px; }
+  .mlm-info-label { width: 120px; }
+  .mlm-actions { flex-direction: column; }
+  .mlm-submit-btn, .mlm-cancel-btn { width: 100%; }
+}

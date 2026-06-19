@@ -6,10 +6,12 @@ import api, { proposalAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import './Admindashboard.css';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
+import GroupMarksPage from './GroupMarksPage';
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedGroupForMarks, setSelectedGroupForMarks] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   
   // Backend data states
@@ -406,9 +408,9 @@ const handleAnnouncementSubmit = (e) => {
         <button className="action-btn" onClick={() => setActiveTab('announcements')}>
           <span>Announcements</span>
         </button>        
-        <button className="action-btn" onClick={() => setActiveTab('presentation')}>
-          <span>Presentation Evaluation</span>
-        </button>
+       <button className="action-btn" onClick={() => setActiveTab('marks')}>
+    <span>Marks & Evaluation</span>
+  </button>
       </div>
     </div>
   );
@@ -645,116 +647,21 @@ const handleAnnouncementSubmit = (e) => {
     }
   };
 
-  const renderPresentation = () => {
-    if (selectedGroupForEval) {
+  const renderMarksEvaluation = () => {
+    if (selectedGroupForMarks) {
       return (
-        <div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <button
-              onClick={() => setSelectedGroupForEval(null)}
-              className="approve-btn"
-              style={{ marginBottom: '1rem' }}
-            >
-              Back to Groups List
-            </button>
-            <h2 className="content-title">
-              Presentation Evaluation — {selectedGroupForEval.title}
-            </h2>
-          </div>
-
-          {/* Generate Link Section */}
-          <div style={{
-            background: 'white',
-            border: '1px solid #e2e8f0',
-            borderRadius: '12px',
-            padding: '1.5rem',
-            marginBottom: '1.5rem'
-          }}>
-            <h3 className="sub-title" style={{ marginTop: 0 }}>Committee Evaluation Links</h3>
-            <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1rem' }}>
-              Generate unique links for each committee member. Each link can only be used once.
-            </p>
-
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                className="approve-btn"
-                onClick={() => generateEvalLink(selectedGroupForEval.id)}
-                disabled={generatingLink}
-              >
-                {generatingLink ? 'Generating...' : 'Generate New Link'}
-              </button>
-              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                Share generated link with committee member via WhatsApp or Email
-              </span>
-            </div>
-
-            {evalLinks[selectedGroupForEval.id] && (
-              <div style={{
-                marginTop: '1rem',
-                padding: '1rem',
-                background: '#f0f9ff',
-                borderRadius: '8px',
-                borderLeft: '3px solid #3b82f6'
-              }}>
-                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', fontWeight: '600', margin: '0 0 0.5rem' }}>
-                  Latest Generated Link:
-                </p>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <code style={{
-                    fontSize: '0.8rem',
-                    background: 'white',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '4px',
-                    border: '1px solid #bfdbfe',
-                    color: '#1e3a8a',
-                    wordBreak: 'break-all',
-                    flex: 1
-                  }}>
-                    {evalLinks[selectedGroupForEval.id].link}
-                  </code>
-                  <button
-                    className="approve-btn"
-                    style={{ flexShrink: 0 }}
-                    onClick={() => {
-                      navigator.clipboard.writeText(evalLinks[selectedGroupForEval.id].link);
-                      alert('Link copied!');
-                    }}
-                  >
-                    Copy
-                  </button>
-                </div>
-                <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.5rem 0 0' }}>
-                  Generated: {evalLinks[selectedGroupForEval.id].generated_at}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Admin own evaluation form */}
-          <div style={{
-            background: 'white',
-            border: '1px solid #e2e8f0',
-            borderRadius: '12px',
-            padding: '1.5rem',
-            marginBottom: '1.5rem'
-          }}>
-            <h3 className="sub-title" style={{ marginTop: 0 }}>Your Evaluation (Admin)</h3>
-            <PresentationEvaluationForm
-              group={selectedGroupForEval}
-              onClose={() => setSelectedGroupForEval(null)}
-              isPublicLink={false}
-            />
-          </div>
-        </div>
+        <GroupMarksPage
+          group={selectedGroupForMarks}
+          onBack={() => setSelectedGroupForMarks(null)}
+        />
       );
     }
 
-    // Groups List View
     return (
       <div>
-        {renderPageHeader('Presentation Evaluation')}
+        {renderPageHeader('Marks & Evaluation')}
         <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-          Select a group to evaluate their presentation or generate committee evaluation links.
+          Select a group to enter sessional, report, presentation and meeting log marks.
         </p>
 
         {loading.groups ? (
@@ -797,7 +704,7 @@ const handleAnnouncementSubmit = (e) => {
                     <td>
                       <button
                         className="approve-btn"
-                        onClick={() => setSelectedGroupForEval({
+                        onClick={() => setSelectedGroupForMarks({
                           ...g,
                           project: g.title,
                           members: g._fullData?.members_details?.map(m => ({
@@ -807,7 +714,7 @@ const handleAnnouncementSubmit = (e) => {
                           })) || []
                         })}
                       >
-                        Evaluate
+                        Open
                       </button>
                     </td>
                   </tr>
@@ -1031,11 +938,11 @@ const handleAnnouncementSubmit = (e) => {
           Announcements
         </button>
         <button
-          className={`sidebar-btn ${activeTab === 'presentation' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('presentation'); setMenuOpen(false); }}
-        >
-          Presentation Evaluation
-        </button>
+    className={`sidebar-btn ${activeTab === 'marks' ? 'active' : ''}`}
+    onClick={() => { setActiveTab('marks'); setSelectedGroupForMarks(null); setMenuOpen(false); }}
+  >
+    Marks & Evaluation
+  </button>
       </div>
 
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
@@ -1048,7 +955,7 @@ const handleAnnouncementSubmit = (e) => {
         {activeTab === 'finalProposals' && renderFinalProposals()}
         {activeTab === 'groups' && renderGroups()}
         {activeTab === 'announcements' && renderAnnouncements()}
-        {activeTab === 'presentation' && renderPresentation()}
+        {activeTab === 'marks' && renderMarksEvaluation()}
         {selectedFinalProposal && renderFinalProposalModal()}
       </div>
     </div>
