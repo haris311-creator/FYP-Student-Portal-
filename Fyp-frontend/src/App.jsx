@@ -10,8 +10,8 @@ import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import StudentDashboard from './pages/StudentDashboard';
 import SupervisorDashboard from './pages/SupervisorDashboard';
-import AdminDashboard from "./Pages/AdminDashboard";
-import GroupApprovals from './pages/Admin/GroupApprovals';
+import AdminDashboard from "./Pages/Admindashboard";
+import GroupApprovals from './Pages/Admin/GroupApprovals';
 import PublicEvaluationPage from './Pages/PublicEvaluationPage';
 
 // Route Guards
@@ -24,61 +24,61 @@ function App() {
     <Router>
       {/* Navbar sabhi pages pe dikhayega */}
       <Navbar />
-      
+
       <Routes>
         {/* Home Route */}
         <Route path="/" element={<HomePage />} />
-        
+
         {/* Login Route */}
         <Route path="/login" element={<Login />} />
-        
+
         {/* Public Evaluation Route */}
         <Route path="/evaluate/:token" element={<PublicEvaluationPage />} />
-        
+
         {/* ✅ Admin Group Approvals Route - FIXED */}
-        <Route 
+        <Route
           path="/admin/approvals"
           element={
             <AdminRoute>
               <GroupApprovals />
             </AdminRoute>
-          } 
+          }
         />
-        
+
         {/* Protected Dashboards */}
-        <Route 
-          path="/student-dashboard" 
+        <Route
+          path="/student-dashboard"
           element={
             <ProtectedRoute allowedTypes={['student']}>
               <StudentDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        
-        <Route 
-          path="/supervisor-dashboard" 
+
+        <Route
+          path="/supervisor-dashboard"
           element={
             <ProtectedRoute allowedTypes={['supervisor']}>
               <SupervisorDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        
-        <Route 
-          path="/admin-dashboard" 
+
+        <Route
+          path="/admin-dashboard"
           element={
             <ProtectedRoute allowedTypes={['admin']}>
               <AdminDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        
+
         {/* Fallback Route */}
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
       </Routes>
-      
+
       {/* Toast Notifications */}
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -90,7 +90,7 @@ function App() {
         pauseOnHover
         theme="colored"
       />
-      
+
       {/* Footer sabhi pages pe dikhayega */}
       <Footer />
     </Router>

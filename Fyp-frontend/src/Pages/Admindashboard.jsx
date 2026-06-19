@@ -797,7 +797,15 @@ const handleAnnouncementSubmit = (e) => {
                     <td>
                       <button
                         className="approve-btn"
-                        onClick={() => setSelectedGroupForEval(g)}
+                        onClick={() => setSelectedGroupForEval({
+                          ...g,
+                          project: g.title,
+                          members: g._fullData?.members_details?.map(m => ({
+                            name: m.full_name || m.email || 'Unknown',
+                            odoo_id: m.student_id || m.odoo_id || '',
+                            student_db_id: m.id
+                          })) || []
+                        })}
                       >
                         Evaluate
                       </button>
