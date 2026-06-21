@@ -5,10 +5,13 @@ import { adminAPI } from "../api/admin";
 import api, { proposalAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import './Admindashboard.css';
+import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
+import GroupMarksPage from './GroupMarksPage';
 
 function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedGroupForMarks, setSelectedGroupForMarks] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   
   // Backend data states
@@ -36,6 +39,10 @@ function AdminDashboard() {
   const [selectedFinalProposal, setSelectedFinalProposal] = useState(null);
   const [finalReviewForm, setFinalReviewForm] = useState({ action: 'approve', remarks: '' });
   const [submittingFinalReview, setSubmittingFinalReview] = useState(false);
+
+  const [selectedGroupForEval, setSelectedGroupForEval] = useState(null);
+  const [evalLinks, setEvalLinks] = useState({});
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   useEffect(() => {
     const loadUser = () => {
@@ -401,6 +408,9 @@ const handleAnnouncementSubmit = (e) => {
         <button className="action-btn" onClick={() => setActiveTab('announcements')}>
           <span>Announcements</span>
         </button>        
+       <button className="action-btn" onClick={() => setActiveTab('marks')}>
+    <span>Marks & Evaluation</span>
+  </button>
       </div>
     </div>
   );
@@ -605,6 +615,114 @@ const handleAnnouncementSubmit = (e) => {
             </button>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  const generateEvalLink = async (groupId) => {
+    setGeneratingLink(true);
+    try {
+      // Backend API call hogi baad mein
+      // const res = await adminAPI.generateEvalLink(groupId);
+      // const token = res.data.token;
+      
+      // Abhi dummy token
+      const token = `eval_${groupId}_${Date.now()}`;
+      const link = `${window.location.origin}/evaluate/${token}`;
+      
+      setEvalLinks(prev => ({
+        ...prev,
+        [groupId]: {
+          link,
+          token,
+          generated_at: new Date().toLocaleString()
+        }
+      }));
+      
+      alert(`Link generated!\n\n${link}\n\nCopy this and share via WhatsApp/Email`);
+    } catch (err) {
+      alert('Failed to generate link');
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const renderMarksEvaluation = () => {
+    if (selectedGroupForMarks) {
+      return (
+        <GroupMarksPage
+          group={selectedGroupForMarks}
+          onBack={() => setSelectedGroupForMarks(null)}
+        />
+      );
+    }
+
+    return (
+      <div>
+        {renderPageHeader('Marks & Evaluation')}
+        <p style={{ color: '#64748b', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+          Select a group to enter sessional, report, presentation and meeting log marks.
+        </p>
+
+        {loading.groups ? (
+          <div className="loading-state">
+            <p>Loading groups...</p>
+          </div>
+        ) : allGroups.length === 0 ? (
+          <div className="empty-state">
+            <p className="empty-text">No approved groups found.</p>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Group</th>
+                  <th>Project Title</th>
+                  <th>Phase</th>
+                  <th>Supervisor</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allGroups.map(g => (
+                  <tr key={g.id}>
+                    <td><span className="group-name-cell">{g.group}</span></td>
+                    <td>{g.title}</td>
+                    <td>
+                      <span className={`phase-badge ${g.phase === 'FYP-2' ? 'phase-2' : 'phase-1'}`}>
+                        {g.phase}
+                      </span>
+                    </td>
+                    <td>{g.supervisor}</td>
+                    <td>
+                      <span className={`status-pill ${getStatusClass(g.status)}`}>
+                        {g.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="approve-btn"
+                        onClick={() => setSelectedGroupForMarks({
+                          ...g,
+                          project: g.title,
+                          members: g._fullData?.members_details?.map(m => ({
+                            name: m.full_name || m.email || 'Unknown',
+                            odoo_id: m.student_id || m.odoo_id || '',
+                            student_db_id: m.id
+                          })) || []
+                        })}
+                      >
+                        Open
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     );
   };
@@ -819,6 +937,12 @@ const handleAnnouncementSubmit = (e) => {
         >
           Announcements
         </button>
+        <button
+    className={`sidebar-btn ${activeTab === 'marks' ? 'active' : ''}`}
+    onClick={() => { setActiveTab('marks'); setSelectedGroupForMarks(null); setMenuOpen(false); }}
+  >
+    Marks & Evaluation
+  </button>
       </div>
 
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
@@ -831,6 +955,7 @@ const handleAnnouncementSubmit = (e) => {
         {activeTab === 'finalProposals' && renderFinalProposals()}
         {activeTab === 'groups' && renderGroups()}
         {activeTab === 'announcements' && renderAnnouncements()}
+        {activeTab === 'marks' && renderMarksEvaluation()}
         {selectedFinalProposal && renderFinalProposalModal()}
       </div>
     </div>

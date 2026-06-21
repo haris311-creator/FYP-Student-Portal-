@@ -20,4 +20,8 @@ db.sqlite3
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.dbdb.sqlite3 
+db.sqlite3-journal 
+*.sqlite3 
+media/uploads/ 
+media/proposals/ 

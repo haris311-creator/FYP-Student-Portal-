@@ -1,4 +1,5 @@
 // fyp-frontend/src/Pages/Supervisordashboard.jsx
+import SupervisorSessionalMarkForm from '../Components/SupervisorSessionalMarkForm';
 import React, { useState, useEffect } from 'react';
 import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI } from '../utils/api';
 import './Supervisordashboard.css';
@@ -10,9 +11,10 @@ function SupervisorDashboard() {
   const [assignedGroups, setAssignedGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // New states for Meetings & Attendance
   const [detailSubTab, setDetailSubTab] = useState('info');
+  const [activeSessionalForm, setActiveSessionalForm] = useState(false);
   const [meetingsList, setMeetingsList] = useState([]);
   const [attendanceData, setAttendanceData] = useState(null);
   const [loadingMeetings, setLoadingMeetings] = useState(false);
@@ -27,7 +29,7 @@ function SupervisorDashboard() {
   });
   const [formLoading, setFormLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  
+
   // Proposal Review States
   const [pendingProposals, setPendingProposals] = useState([]);
   const [loadingProposals, setLoadingProposals] = useState(false);
@@ -62,22 +64,22 @@ function SupervisorDashboard() {
       try {
         setLoading(true);
         const response = await supervisorAPI.getAssignedGroups();
-        
+
         console.log("Raw API Response:", response.data);
         console.log("Results:", response.data.results);
-        
+
         const transformedGroups = response.data.results.map(group => {
           console.log(`Processing Group ${group.group_number}:`, group);
-          
+
           return {
             id: group.id,
             group_number: group.group_number,
-            name: `Group ${group.group_number}`, 
+            name: `Group ${group.group_number}`,
             project: group.project_title || 'Untitled Project',
             members: group.members?.map(m => {
               console.log(`  Member:`, m);
               return {
-                name: m.student_first_name && m.student_last_name 
+                name: m.student_first_name && m.student_last_name
                   ? `${m.student_first_name} ${m.student_last_name}`.trim()
                   : m.student_name || m.full_name || m.student?.full_name || 'Unknown',
                 odoo_id: m.student_id || m.odoo_id || m.student?.student_id || 'N/A',
@@ -91,7 +93,7 @@ function SupervisorDashboard() {
             domain: group.domain_display || group.domain || 'N/A',
           };
         });
-        
+
         console.log("Transformed Groups:", transformedGroups);
         setAssignedGroups(transformedGroups);
         setError(null);
@@ -133,16 +135,16 @@ function SupervisorDashboard() {
       try {
         console.log(`Fetching meetings for group ${selectedGroup.id}...`);
         setLoadingMeetings(true);
-        
+
         const [meetingsRes, sheetRes] = await Promise.all([
           meetingAPI.getByGroup(selectedGroup.id),
           attendanceSheetAPI.getSheet(selectedGroup.id)
         ]);
-        
+
         console.log("Meetings API Response:", meetingsRes.data);
         console.log("Meetings Results:", meetingsRes.data.results || meetingsRes.data);
         console.log("Attendance Sheet:", sheetRes.data);
-        
+
         const meetingsData = meetingsRes.data.results || meetingsRes.data || [];
         setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
         setAttendanceData(sheetRes.data);
@@ -153,7 +155,7 @@ function SupervisorDashboard() {
         setLoadingMeetings(false);
       }
     };
-    
+
     fetchMeetingsData();
   }, [selectedGroup]);
 
@@ -167,10 +169,10 @@ function SupervisorDashboard() {
 
   const handleMeetingCardClick = (meetingNum) => {
     const existingMeeting = meetingsList.find(m => m.meeting_number === meetingNum);
-    
+
     console.log("Meeting Clicked:", meetingNum);
     console.log("Existing Meeting:", existingMeeting);
-    
+
     let attendanceMap = {};
     selectedGroup.members.forEach((member, idx) => {
       const key = member.student_db_id;
@@ -182,11 +184,11 @@ function SupervisorDashboard() {
     if (existingMeeting) {
       console.log("Editing existing meeting");
       console.log("Attendance Records:", existingMeeting.attendance_records);
-      
+
       (existingMeeting.attendance_records || []).forEach(rec => {
         const studentKey = rec.student;
         console.log(`Mapping: Student ${studentKey} -> ${rec.status}`);
-        
+
         if (studentKey) {
           attendanceMap[studentKey] = rec.status;
         }
@@ -200,7 +202,7 @@ function SupervisorDashboard() {
         new_task: existingMeeting.new_task,
         attendance: attendanceMap
       });
-      
+
       console.log("Form populated with attendance:", attendanceMap);
     } else {
       console.log("Creating new meeting");
@@ -237,7 +239,7 @@ function SupervisorDashboard() {
     try {
       setFormLoading(true);
       console.log("Starting save process...");
-      
+
       const formattedAttendance = {};
       selectedGroup.members.forEach(member => {
         if (member.student_db_id) {
@@ -260,7 +262,7 @@ function SupervisorDashboard() {
       console.log("Sending payload:", payload);
 
       const existingMeeting = meetingsList.find(m => m.meeting_number === activeMeetingForm);
-      
+
       if (existingMeeting) {
         console.log("Updating meeting", existingMeeting.id);
         await meetingAPI.update(existingMeeting.id, payload);
@@ -272,26 +274,26 @@ function SupervisorDashboard() {
       }
 
       console.log("Refreshing data from server...");
-      
+
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       const meetingsResponse = await meetingAPI.getByGroup(selectedGroup.id);
       const sheetResponse = await attendanceSheetAPI.getSheet(selectedGroup.id);
-      
+
       console.log("Meetings Response:", meetingsResponse.data);
       console.log("Sheet Response:", sheetResponse.data);
-      
+
       const meetingsData = meetingsResponse.data.results || meetingsResponse.data || [];
       const attendanceData = sheetResponse.data;
-      
+
       console.log("Processed Meetings:", meetingsData);
       console.log("Processed Attendance:", attendanceData);
-      
+
       setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
       setAttendanceData(attendanceData);
-      
+
       setActiveMeetingForm(null);
-      
+
       setFormData({
         date: '',
         agenda: '',
@@ -300,9 +302,9 @@ function SupervisorDashboard() {
         new_task: '',
         attendance: {}
       });
-      
+
       console.log("Save complete, UI updated");
-      
+
     } catch (err) {
       console.error("Error saving meeting:", err);
       console.error("Response data:", err.response?.data);
@@ -319,19 +321,19 @@ function SupervisorDashboard() {
   // Handle Proposal Review Submission
   const handleReviewSubmit = async () => {
     if (!selectedProposal) return;
-    
+
     if (reviewForm.action === 'revision' && !reviewForm.remarks.trim()) {
       alert('Remarks are required when requesting a revision.');
       return;
     }
-    
+
     setSubmittingReview(true);
     try {
       await proposalAPI.supervisorReview(selectedProposal.id, reviewForm);
       alert(`Proposal ${reviewForm.action === 'approve' ? 'approved and sent to Admin' : 'sent back to students for revision'}!`);
       setSelectedProposal(null);
       setReviewForm({ action: 'approve', remarks: '' });
-      
+
       // Refresh list
       const res = await proposalAPI.getPendingSupervisor();
       setPendingProposals(res.data.results || []);
@@ -343,7 +345,7 @@ function SupervisorDashboard() {
     }
   };
 
-    // Helper function to force download
+  // Helper function to force download
   // Robust File Download Function using Fetch API
   const handleFileDownload = async (fileUrl) => {
     try {
@@ -352,33 +354,33 @@ function SupervisorDashboard() {
       if (!fileUrl.startsWith('http')) {
         fullUrl = `http://localhost:8000${fileUrl}`;
       }
-      
+
       // Fetch the file as a blob
       const response = await fetch(fullUrl);
-      
+
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      
+
       // Create a temporary link element
       const link = document.createElement('a');
       link.href = url;
-      
+
       // Extract filename from URL for the download attribute
       const filename = fileUrl.split('/').pop() || 'proposal_document';
       link.setAttribute('download', filename);
-      
+
       // Append to body, click, and cleanup
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
     } catch (error) {
       console.error('Download failed:', error);
       alert('Failed to download file. Please check if the file exists.');
@@ -449,9 +451,9 @@ function SupervisorDashboard() {
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
                 Submitted on: {selectedProposal.submitted_at ? new Date(selectedProposal.submitted_at).toLocaleString() : 'N/A'}
               </p>
-              
+
               {selectedProposal.proposal_file ? (
-                <button 
+                <button
                   onClick={() => handleFileDownload(selectedProposal.proposal_file)}
                   className="submit-btn"
                   style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
@@ -467,23 +469,23 @@ function SupervisorDashboard() {
 
             <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
               <h4 style={{ margin: '0 0 1rem 0' }}>Your Decision</h4>
-              
+
               <div className="mform-group" style={{ marginBottom: '1rem' }}>
                 <label className="mform-label">Action</label>
                 <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
                   <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input 
-                      type="radio" 
-                      name="reviewAction" 
+                    <input
+                      type="radio"
+                      name="reviewAction"
                       value="approve"
                       checked={reviewForm.action === 'approve'}
                       onChange={e => setReviewForm({ ...reviewForm, action: e.target.value })}
                     /> Approve (Send to Admin)
                   </label>
                   <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input 
-                      type="radio" 
-                      name="reviewAction" 
+                    <input
+                      type="radio"
+                      name="reviewAction"
                       value="revision"
                       checked={reviewForm.action === 'revision'}
                       onChange={e => setReviewForm({ ...reviewForm, action: e.target.value })}
@@ -508,8 +510,8 @@ function SupervisorDashboard() {
           </div>
 
           <div className="mform-actions">
-            <button 
-              className="submit-btn" 
+            <button
+              className="submit-btn"
               onClick={handleReviewSubmit}
               disabled={submittingReview}
             >
@@ -564,7 +566,7 @@ function SupervisorDashboard() {
                   <div className="group-members">
                     <span className="member-icon">👤</span>
                     <span className="member-names">
-                      {group.members && group.members.length > 0 
+                      {group.members && group.members.length > 0
                         ? group.members.map(m => m.name).join(', ')
                         : 'No members yet'
                       }
@@ -581,7 +583,7 @@ function SupervisorDashboard() {
                       <div className="progress-bar-fill" style={{ width: `${group.progress}%` }}></div>
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="view-details-btn"
                     onClick={() => { setSelectedGroup(group); setActiveTab('groupDetail'); }}
                   >
@@ -604,8 +606,8 @@ function SupervisorDashboard() {
         <div className="attendance-sheet-card">
           <div className="card-header">
             <h3> Attendance Sheet (FP-5)</h3>
-            <button 
-              className="btn-outline" 
+            <button
+              className="btn-outline"
               onClick={async () => {
                 try {
                   const res = await attendanceSheetAPI.exportExcel(selectedGroup.id);
@@ -665,10 +667,10 @@ function SupervisorDashboard() {
               const meeting = meetingsList.find(m => m.meeting_number === meetingNum);
               const isConducted = !!meeting;
               const isActive = activeMeetingForm === meetingNum;
-              
+
               return (
                 <div key={meetingNum}>
-                  <div 
+                  <div
                     className={`meeting-card ${isConducted ? 'meeting-done' : 'meeting-pending'} ${isActive ? 'meeting-active' : ''}`}
                     onClick={() => !isActive && handleMeetingCardClick(meetingNum)}
                   >
@@ -685,7 +687,7 @@ function SupervisorDashboard() {
                       </div>
                     )}
                   </div>
-                  
+
                   {isActive && (
                     <div className="meeting-form-overlay">
                       <div className="meeting-form-container">
@@ -693,7 +695,7 @@ function SupervisorDashboard() {
                           <h3>Meeting #{meetingNum} — Minutes Form</h3>
                           <button className="close-form-btn" onClick={closeForm}>✕</button>
                         </div>
-                        
+
                         <div className="form-info-row">
                           <div className="form-info-item">
                             <span className="form-info-label">Project Title</span>
@@ -733,27 +735,27 @@ function SupervisorDashboard() {
                               <label className="mform-label">Status:</label>
                               <div className="radio-group">
                                 <label className="radio-label">
-                                  <input 
-                                    type="radio" 
-                                    name={`prevStatus-${meetingNum}`} 
+                                  <input
+                                    type="radio"
+                                    name={`prevStatus-${meetingNum}`}
                                     value="complete"
                                     checked={formData.previous_task_status === 'complete'}
                                     onChange={e => handleFormChange('previous_task_status', e.target.value)}
                                   />  Completed
                                 </label>
                                 <label className="radio-label">
-                                  <input 
-                                    type="radio" 
-                                    name={`prevStatus-${meetingNum}`} 
+                                  <input
+                                    type="radio"
+                                    name={`prevStatus-${meetingNum}`}
                                     value="incomplete"
                                     checked={formData.previous_task_status === 'incomplete'}
                                     onChange={e => handleFormChange('previous_task_status', e.target.value)}
                                   />  Incomplete
                                 </label>
                                 <label className="radio-label">
-                                  <input 
-                                    type="radio" 
-                                    name={`prevStatus-${meetingNum}`} 
+                                  <input
+                                    type="radio"
+                                    name={`prevStatus-${meetingNum}`}
                                     value="partial"
                                     checked={formData.previous_task_status === 'partial'}
                                     onChange={e => handleFormChange('previous_task_status', e.target.value)}
@@ -789,16 +791,16 @@ function SupervisorDashboard() {
                               {selectedGroup.members.map((member, idx) => {
                                 const studentKey = member.student_db_id;
                                 const currentStatus = studentKey ? (formData.attendance[studentKey] || 'present') : 'present';
-                                
+
                                 console.log(`Rendering ${member.name}: Key=${studentKey}, Status=${currentStatus}`);
-                                
+
                                 if (!studentKey) {
                                   return (
-                                    <div key={idx} className="attendance-check-row" style={{opacity: 0.6}}>
+                                    <div key={idx} className="attendance-check-row" style={{ opacity: 0.6 }}>
                                       <div className="att-member-info">
                                         <span className="att-member-name">{member.name}</span>
                                         <span className="att-member-id">{member.odoo_id}</span>
-                                        <span style={{color: '#f59e0b', fontSize: '0.75rem'}}> No DB ID</span>
+                                        <span style={{ color: '#f59e0b', fontSize: '0.75rem' }}> No DB ID</span>
                                       </div>
                                       <div className="att-toggle">
                                         <button
@@ -825,7 +827,7 @@ function SupervisorDashboard() {
                                     </div>
                                   );
                                 }
-                                
+
                                 return (
                                   <div key={studentKey} className="attendance-check-row">
                                     <div className="att-member-info">
@@ -859,15 +861,15 @@ function SupervisorDashboard() {
                               })}
                             </div>
                           ) : (
-                            <div style={{padding: '1rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e'}}>
-                               No members found in this group. Please check group data.
+                            <div style={{ padding: '1rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                              No members found in this group. Please check group data.
                             </div>
                           )}
                         </div>
 
                         <div className="mform-actions">
-                          <button 
-                            className="submit-btn" 
+                          <button
+                            className="submit-btn"
                             onClick={handleSubmitMeeting}
                             disabled={formLoading}
                           >
@@ -911,14 +913,14 @@ function SupervisorDashboard() {
             </div>
           </div>
           <nav className="sidebar-nav">
-            <button 
-              className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`} 
+            <button
+              className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
               onClick={() => { setActiveTab('overview'); setMenuOpen(false); }}
             >
               <span className="nav-text">Overview</span>
             </button>
-            <button 
-              className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`} 
+            <button
+              className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
               onClick={() => { setActiveTab('reviews'); setMenuOpen(false); }}
             >
               <span className="nav-text">Pending Reviews</span>
@@ -928,7 +930,7 @@ function SupervisorDashboard() {
 
         <main className="main-content">
           {activeTab === 'overview' && renderOverview()}
-          
+
           {activeTab === 'groupDetail' && selectedGroup && (
             <div className="group-detail-view">
               <div className="detail-header">
@@ -937,19 +939,25 @@ function SupervisorDashboard() {
                 </button>
                 <h1 className="detail-title">{selectedGroup.name}</h1>
                 <p className="detail-subtitle">{selectedGroup.project}</p>
-                
+
                 <div className="detail-tabs">
-                  <button 
+                  <button
                     className={`tab-btn ${detailSubTab === 'info' ? 'active' : ''}`}
                     onClick={() => setDetailSubTab('info')}
                   >
-                     Group Info
+                    Group Info
                   </button>
-                  <button 
+                  <button
                     className={`tab-btn ${detailSubTab === 'meetings' ? 'active' : ''}`}
                     onClick={() => setDetailSubTab('meetings')}
                   >
-                     Manage Meetings
+                    Manage Meetings
+                  </button>
+                  <button
+                    className={`tab-btn ${detailSubTab === 'marks' ? 'active' : ''}`}
+                    onClick={() => setDetailSubTab('marks')}
+                  >
+                    Sessional Marks
                   </button>
                 </div>
               </div>
@@ -985,7 +993,7 @@ function SupervisorDashboard() {
                       <div className="progress-detail">
                         <div className="progress-circle">
                           <svg viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8"/>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8" />
                             <circle cx="50" cy="50" r="45" fill="none" stroke="#1e3a8a" strokeWidth="8"
                               strokeDasharray={`${selectedGroup.progress * 2.83} 283`}
                               strokeLinecap="round" transform="rotate(-90 50 50)" />
@@ -1023,12 +1031,17 @@ function SupervisorDashboard() {
                     </div>
                   </div>
                 </div>
-              ) : (
+              ) : detailSubTab === 'meetings' ? (
                 renderMeetingsSection()
-              )}
+              ) : detailSubTab === 'marks' ? (
+                <SupervisorSessionalMarkForm
+                  group={selectedGroup}
+                  onClose={() => setDetailSubTab('info')}
+                />
+              ) : null}
             </div>
           )}
-          
+
           {activeTab === 'reviews' && renderReviews()}
           {selectedProposal && renderProposalReviewModal()}
         </main>

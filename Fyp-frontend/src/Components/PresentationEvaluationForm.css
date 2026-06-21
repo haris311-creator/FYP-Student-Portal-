@@ -1,0 +1,349 @@
+.pef-container {
+  padding: 24px;
+  background: #f0f4f8;
+  min-height: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+.pef-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  color: white;
+  padding: 20px 24px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.pef-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pef-header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.pef-rubric-btn {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: 16px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.pef-rubric-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Info Table */
+.pef-info-table {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.pef-info-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pef-info-table tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pef-info-table tr:last-child {
+  border-bottom: none;
+}
+
+.pef-info-label {
+  background: #f8fafc;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  border-right: 1px solid #e2e8f0;
+  width: 180px;
+  white-space: nowrap;
+}
+
+.pef-info-value {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #1e293b;
+  border-right: 1px solid #e2e8f0;
+}
+
+.pef-text-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.pef-text-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+/* Section */
+.pef-section {
+  margin-bottom: 20px;
+}
+
+.pef-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e3a8a;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.pef-note {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 10px;
+  font-style: italic;
+}
+
+/* Tables */
+.pef-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.pef-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: white;
+}
+
+.pef-table th {
+  background: #1e3a8a;
+  color: white;
+  padding: 10px 10px;
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.pef-table th:last-child {
+  border-right: none;
+}
+
+.pef-table td {
+  padding: 10px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #f1f5f9;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.pef-table td:last-child {
+  border-right: none;
+}
+
+.pef-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pef-table tr:hover td {
+  background: #f8fafc;
+}
+
+.pef-center {
+  text-align: center !important;
+}
+
+.pef-right {
+  text-align: right !important;
+}
+
+.pef-small {
+  font-size: 11px;
+  color: #64748b;
+  min-width: 120px;
+}
+
+.pef-desc {
+  font-size: 11px;
+  color: #4b5563;
+  min-width: 130px;
+  line-height: 1.4;
+}
+
+.pef-viva-row td {
+  background: #f0f9ff;
+}
+
+/* Marks table */
+.pef-marks-table input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #1e3a8a;
+}
+
+.pef-num-input {
+  width: 60px;
+  padding: 6px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: #1e3a8a;
+  transition: border-color 0.2s;
+}
+
+.pef-num-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+}
+
+.pef-total-row td {
+  background: #f0f4f8 !important;
+  font-size: 13px;
+  color: #1e3a8a;
+  border-top: 2px solid #e2e8f0;
+}
+
+.pef-final {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* Textarea */
+.pef-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  resize: vertical;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.pef-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+/* Actions */
+.pef-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 20px;
+}
+
+.pef-submit-btn {
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.pef-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
+.pef-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pef-cancel-btn {
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.pef-cancel-btn:hover {
+  background: #d1d5db;
+}
+
+/* Success */
+.pef-success {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.pef-success-icon {
+  width: 64px;
+  height: 64px;
+  background: #d1fae5;
+  color: #16a34a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 20px;
+}
+
+.pef-success h2 {
+  color: #1e3a8a;
+  margin: 0 0 10px;
+}
+
+.pef-success p {
+  color: #64748b;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pef-container { padding: 16px; }
+  .pef-header { flex-direction: column; gap: 12px; }
+  .pef-rubric-btn { margin-left: 0; width: 100%; }
+  .pef-info-label { width: 120px; }
+  .pef-actions { flex-direction: column; }
+  .pef-submit-btn, .pef-cancel-btn { width: 100%; }
+}

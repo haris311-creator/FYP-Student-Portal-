@@ -1,0 +1,150 @@
+.gmp-container {
+  padding: 24px;
+  background: #f0f4f8;
+  min-height: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+.gmp-header {
+  margin-bottom: 24px;
+}
+
+.gmp-back-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #374151;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.gmp-back-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.gmp-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.gmp-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.gmp-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.gmp-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.gmp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gmp-card-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.gmp-card-sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.gmp-evaluate-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.gmp-evaluate-btn:hover {
+  background: #1e40af;
+}
+
+.gmp-status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.gmp-status-done {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.gmp-status-pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.gmp-card-body {
+  border-top: 1px solid #f1f5f9;
+  padding: 0 20px;
+}
+
+.gmp-readonly-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.gmp-readonly-table td {
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  color: #374151;
+}
+
+.gmp-readonly-table tr:last-child td {
+  border-bottom: none;
+}
+
+.gmp-right {
+  text-align: right;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.gmp-award-section {
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .gmp-container { padding: 16px; }
+  .gmp-card-header { flex-direction: column; align-items: flex-start; }
+  .gmp-evaluate-btn { width: 100%; }
+}
