@@ -90,6 +90,7 @@ function Navbar() {
               Home
             </Link>
           </li>
+
           <li>
             {/* ✅ Show Login while checking, then show actual state */}
             {isChecking ? (

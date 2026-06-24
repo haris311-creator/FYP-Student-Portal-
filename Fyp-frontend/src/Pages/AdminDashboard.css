@@ -54,6 +54,8 @@
   font-weight: 500;
   transition: all 0.2s ease;
   font-family: 'Inter', sans-serif;
+  text-decoration: none;
+  display: block;  
 }
 
 .sidebar-btn:hover {

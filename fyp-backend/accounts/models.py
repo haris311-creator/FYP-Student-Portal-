@@ -1,60 +1,85 @@
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.models import UserManager
+from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
+from django.utils import timezone
 
-class CustomUserManager(UserManager):
+
+class CustomUserManager(BaseUserManager):
     """
-    Custom manager for creating users with email
+    Custom user model manager where email is the unique identifier
     """
-    def create_superuser(self, email, password, **extra_fields):
+    
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('Email address is required')
+        
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('user_type', 'admin')
         
-        # Username ko email se set karein (Django requirement)
-        extra_fields.setdefault('username', email.split('@')[0])
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
         
-        return super().create_superuser(email, password, **extra_fields)
+        return self.create_user(email, password, **extra_fields)
+
 
 class CustomUser(AbstractUser):
-    """
-    Custom User Model - Email se login hoga
-    User Types: student, supervisor, admin
-    """
+    username = None
     
-    # User type choices
     USER_TYPE_CHOICES = (
         ('student', 'Student'),
         ('supervisor', 'Supervisor'),
         ('admin', 'Admin'),
     )
     
-    # Email unique hoga (login ke liye)
     email = models.EmailField(unique=True)
-    
-    # User type - batayega ke user kis type ka hai
     user_type = models.CharField(
         max_length=20, 
         choices=USER_TYPE_CHOICES,
         default='student'
     )
     
-    # Student ke liye fields
-    student_id = models.CharField(max_length=20, blank=True, null=True)
+    student_id = models.CharField(max_length=20, blank=True, null=True, unique=True)
     department = models.CharField(max_length=100, blank=True)
-    
-    # Supervisor ke liye fields
     designation = models.CharField(max_length=100, blank=True)
-    
-    # Common fields
     phone = models.CharField(max_length=15, blank=True)
     
-    # Username ki jagah email se login hoga
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['user_type']
     
-    # Custom manager set karein
     objects = CustomUserManager()
     
     def __str__(self):
         return f"{self.email} - {self.user_type}"
+
+
+class EnrolledStudent(models.Model):
+    roll_number = models.CharField(max_length=50, unique=True, blank=True)
+    email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=200)
+    is_registered = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Approval system fields
+    approval_status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')],
+        default='pending'
+    )
+    rejected_reason = models.TextField(blank=True, null=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.roll_number or self.email} - {self.full_name}"

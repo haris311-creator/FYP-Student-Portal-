@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loginAPI } from '../utils/api';
 import './Login.css';
 
@@ -89,9 +89,11 @@ function Login() {
 
           <p className="login-info">
             student@iqra.edu.pk · supervisor@iqra.edu.pk · admin@iqra.edu.pk<br />
-            Password: 123456
+            Password: 123456<br />
+            <span style={{ marginTop: '0.5rem', display: 'block' }}>
+              Don't have an account? <Link to="/register" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '600' }}>Register here</Link>
+            </span>
           </p>
-
         </div>
       </div>
     </div>

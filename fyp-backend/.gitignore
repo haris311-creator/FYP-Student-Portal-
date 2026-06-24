@@ -1,27 +1,84 @@
-# Python / Django
+# 🔐 SECURITY & ENVIRONMENT (Never commit these!)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+*.env.*
+*.pem
+*.key
+*.crt
+secrets.json
+credentials.json
+config/settings_local.py
+config/settings_dev.py
+
+# 🗄️ DATABASE & MEDIA
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+collected_static/
+
+# 🐍 PYTHON / DJANGO
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-venv/
-env/
-ENV/
-db.sqlite3
+*.egg-info/
+dist/
+build/
+.egg/
+.tox/
+.pytest_cache/
 *.log
-.env
-*.pot
+celerybeat-schedule
+*.pyc
+*.pyo
 
-# IDE
+# ⚛️ NODE / REACT (FRONTEND)
+node_modules/
+.pnp
+.pnp.js
+.npm
+.yarn
+.cache
+.eslintcache
+.stylelintcache
+coverage/
+.nyc_output
+.next/
+.vercel
+.turbo
+*.tsbuildinfo
+
+# 💻 IDE & EDITOR
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+project.iml
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
 
-# OS
+# 🖥️ OS & SYSTEM
 .DS_Store
-Thumbs.dbdb.sqlite3 
-db.sqlite3-journal 
-*.sqlite3 
-media/uploads/ 
-media/proposals/ 
+Thumbs.db
+desktop.ini
+~$*
+*.lnk
+
+#  LOGS & TEMPORARY
+logs/
+*.tmp
+*.temp
+*.bak
+*.old
+*.orig

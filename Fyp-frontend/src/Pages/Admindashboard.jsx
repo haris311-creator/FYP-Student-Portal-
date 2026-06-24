@@ -1,6 +1,6 @@
 // fyp-frontend/src/pages/Admin/AdminDashboard.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { adminAPI } from "../api/admin"; 
 import api, { proposalAPI } from '../utils/api';
 import { toast } from 'react-toastify';
@@ -44,25 +44,41 @@ function AdminDashboard() {
   const [evalLinks, setEvalLinks] = useState({});
   const [generatingLink, setGeneratingLink] = useState(false);
 
-  useEffect(() => {
-    const loadUser = () => {
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-          setUserInfo({
-            name: fullName || user.email || 'User',
-            role: user.user_type || 'admin',
-            email: user.email || ''
-          });
-        }
-      } catch (e) {
-        console.log('User info not found');
+useEffect(() => {
+  const loadUser = () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+        setUserInfo({
+          name: fullName || user.email || 'User',
+          role: user.user_type || 'admin',
+          email: user.email || ''
+        });
       }
-    };
-    loadUser();
-  }, []);
+    } catch (e) {
+      console.log('User info not found');
+    }
+  };
+  loadUser();
+  
+  // ✅ URL se tab read karein (jab Enrollment page se aayein)
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  if (tabParam) {
+    setActiveTab(tabParam);
+  }
+}, []);
+
+// ✅ Jab URL change ho, tab bhi update karein
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  if (tabParam && tabParam !== activeTab) {
+    setActiveTab(tabParam);
+  }
+}, [window.location.search]);
 
   useEffect(() => {
     fetchPendingProposals();
@@ -943,6 +959,15 @@ const handleAnnouncementSubmit = (e) => {
   >
     Marks & Evaluation
   </button>
+
+  <Link 
+    to="/admin/enrollment" 
+    className="sidebar-btn"
+    style={{ textDecoration: 'none', color: 'inherit' }}
+    onClick={() => setMenuOpen(false)}
+  >
+     Enrollment Management
+  </Link>
       </div>
 
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
