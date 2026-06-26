@@ -82,6 +82,12 @@ function Login() {
               />
             </div>
 
+            <div style={{ textAlign: 'right', marginBottom: '0.1rem' }}>
+              <Link to="/forgot-password" style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '0.875rem' }}>
+                Forgot Password?
+              </Link>
+            </div>
+
             <button type="submit" className="login-button">
               Login
             </button>

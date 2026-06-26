@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 import os
 from pathlib import Path
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -192,3 +193,42 @@ REST_FRAMEWORK = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# ============================================
+# EMAIL CONFIGURATION - PRODUCTION READY
+# ============================================
+
+# Email Backend
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# SMTP Settings
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = int(config('EMAIL_PORT', default=587))
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default='True', cast=bool)
+EMAIL_USE_SSL = False
+
+# Email sender details
+EMAIL_FROM_NAME = config('EMAIL_FROM_NAME', default='FYP Portal')
+DEFAULT_FROM_EMAIL = config('EMAIL_FROM_EMAIL', default=EMAIL_HOST_USER)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+EMAIL_SUBJECT_PREFIX = '[FYP Portal] '
+
+# Email timeout
+EMAIL_TIMEOUT = 30  # seconds
+
+# ============================================
+# DEBUG: Check if email settings are loaded
+# ============================================
+
+#if DEBUG:
+#    print("\n" + "="*60)
+#    print("📧 EMAIL CONFIGURATION DEBUG:")
+#    print(f"✓ EMAIL_HOST: {EMAIL_HOST}")
+#    print(f"✓ EMAIL_PORT: {EMAIL_PORT}")
+#    print(f"✓ EMAIL_HOST_USER: {EMAIL_HOST_USER}")
+#    print(f"✓ EMAIL_USE_TLS: {EMAIL_USE_TLS}")
+#    print(f"✓ DEFAULT_FROM_EMAIL: {DEFAULT_FROM_EMAIL}")
+#    print("="*60 + "\n")

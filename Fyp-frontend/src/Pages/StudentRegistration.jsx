@@ -62,7 +62,7 @@ const handleSubmit = async (e) => {
       
       setTimeout(() => {
         navigate('/login');
-      }, 10000); // Redirect after 10 seconds
+      }, 7000); // Redirect after 7 seconds
     } else {
       setError(response.data?.message || 'Registration failed');
     }

@@ -483,7 +483,7 @@ const handleAnnouncementSubmit = (e) => {
     if (loadingFinalProposals) {
       return (
         <div>
-          {renderPageHeader('Final Proposal Approvals')}
+          {renderPageHeader('Proposal Approvals')}
           <div className="loading-state">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-2 text-gray-600">Loading proposals...</p>
@@ -494,14 +494,14 @@ const handleAnnouncementSubmit = (e) => {
 
     return (
       <div>
-        {renderPageHeader('Final Proposal Approvals')}
+        {renderPageHeader('Proposal Approvals')}
         <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
           These proposals have been approved by the supervisor and require your final review.
         </p>
 
         {pendingFinalProposals.length === 0 ? (
           <div className="empty-state">
-            <p className="empty-text">No proposals pending final approval.</p>
+            <p className="empty-text">No proposals pending approval.</p>
             <button className="refresh-btn" onClick={fetchFinalProposals}>Refresh</button>
           </div>
         ) : (

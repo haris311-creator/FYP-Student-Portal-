@@ -15,6 +15,8 @@ import GroupApprovals from './Pages/Admin/GroupApprovals';
 import PublicEvaluationPage from './Pages/PublicEvaluationPage';
 import StudentRegistration from './Pages/StudentRegistration';
 import EnrollmentManagement from './Pages/EnrollmentManagement';
+import ForgotPassword from './Pages/ForgotPassword';
+import ResetPassword from './Pages/ResetPassword';
 
 // Route Guards
 import ProtectedRoute from './components/ProtectedRoute';
@@ -33,6 +35,9 @@ function App() {
 
         {/* Login Route */}
         <Route path="/login" element={<Login />} />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
 
         {/* Registration Route */}
         <Route path="/register" element={<StudentRegistration />} />

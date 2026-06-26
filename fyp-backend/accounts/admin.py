@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import CustomUser
+from .models import CustomUser, EnrolledStudent
 
+
+# ✅ Bulk Actions
 @admin.action(description='Approve selected users (Activate accounts)')
 def approve_users(modeladmin, request, queryset):
     """
@@ -9,6 +11,7 @@ def approve_users(modeladmin, request, queryset):
     """
     updated_count = queryset.update(is_active=True)
     modeladmin.message_user(request, f'{updated_count} user(s) approved successfully!')
+
 
 @admin.action(description='Disable selected users')
 def disable_users(modeladmin, request, queryset):
@@ -18,6 +21,17 @@ def disable_users(modeladmin, request, queryset):
     updated_count = queryset.update(is_active=False)
     modeladmin.message_user(request, f'{updated_count} user(s) disabled.')
 
+
+@admin.action(description='Reject selected users (Deactivate + Delete enrollment)')
+def reject_users(modeladmin, request, queryset):
+    """
+    Selected users ko reject karein - accounts deactivate ho jayenge
+    """
+    updated_count = queryset.update(is_active=False)
+    modeladmin.message_user(request, f'{updated_count} user(s) rejected.')
+
+
+# ✅ Custom User Admin
 class CustomUserAdmin(BaseUserAdmin):
     # Admin panel mein dikhane wale fields (list view)
     list_display = ['email', 'user_type', 'student_id', 'first_name', 'last_name', 'is_active', 'is_staff', 'date_joined']
@@ -32,9 +46,9 @@ class CustomUserAdmin(BaseUserAdmin):
     ordering = ['-date_joined']
     
     # Actions (bulk operations)
-    actions = [approve_users, disable_users]
+    actions = [approve_users, disable_users, reject_users]
     
-    # Fieldsets - form layout (edit view)
+    # ✅ FIX: Fieldsets - username ko hata diya, email ko primary banaya
     fieldsets = (
         ('Login Credentials', {
             'fields': ('email', 'password', 'user_type')
@@ -59,7 +73,7 @@ class CustomUserAdmin(BaseUserAdmin):
         }),
     )
     
-    # Add user form fields
+    # ✅ FIX: Add user form - email se start, username nahi
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
@@ -69,29 +83,79 @@ class CustomUserAdmin(BaseUserAdmin):
     
     readonly_fields = ['date_joined', 'last_login']
     
-    # ✅ NEW: Auto-generate username before saving
+    # ✅ FIX: save_model - username set karne ki zaroorat nahi
     def save_model(self, request, obj, form, change):
-        if not obj.username:
-            if obj.student_id:
-                obj.username = obj.student_id
-            else:
-                # Email se username banao
-                base = obj.email.split('@')[0]
-                obj.username = base
-                
-                # Unique banane ke liye
-                counter = 1
-                original = obj.username
-                while CustomUser.objects.filter(username=obj.username).exists():
-                    obj.username = f"{original}_{counter}"
-                    counter += 1
+        # Email ko lowercase karein (consistency ke liye)
+        if obj.email:
+            obj.email = obj.email.lower().strip()
+        
+        # Agar student_id hai toh usko bhi clean karein
+        if obj.student_id:
+            obj.student_id = obj.student_id.strip().upper()
         
         super().save_model(request, obj, form, change)
 
-# CustomUser ko register karein
-admin.site.register(CustomUser, CustomUserAdmin)
 
-# Admin panel ka title change karein
+# ✅ Enrolled Student Admin (Bonus - Admin panel se bhi manage kar sakte hain)
+class EnrolledStudentAdmin(admin.ModelAdmin):
+    list_display = ['roll_number', 'email', 'full_name', 'approval_status', 'is_registered', 'created_at']
+    list_filter = ['approval_status', 'is_registered']
+    search_fields = ['email', 'full_name', 'roll_number']
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Student Info', {
+            'fields': ('roll_number', 'email', 'full_name')
+        }),
+        ('Status', {
+            'fields': ('approval_status', 'is_registered', 'rejected_reason', 'approved_at')
+        }),
+    )
+    readonly_fields = ['created_at', 'approved_at']
+    
+    actions = ['approve_students', 'reject_students']
+    
+    @admin.action(description='Approve selected students')
+    def approve_students(self, request, queryset):
+        from django.utils import timezone
+        count = 0
+        for student in queryset.filter(approval_status='pending'):
+            student.approval_status = 'approved'
+            student.approved_at = timezone.now()
+            student.is_registered = True
+            student.save()
+            
+            # User account activate karein
+            user = CustomUser.objects.filter(email=student.email).first()
+            if user:
+                user.is_active = True
+                user.save()
+            count += 1
+        
+        self.message_user(request, f'{count} student(s) approved successfully!')
+    
+    @admin.action(description='Reject selected students')
+    def reject_students(self, request, queryset):
+        count = 0
+        for student in queryset.filter(approval_status='pending'):
+            student.approval_status = 'rejected'
+            student.rejected_reason = 'Rejected via admin panel'
+            student.save()
+            
+            # User account delete karein
+            user = CustomUser.objects.filter(email=student.email).first()
+            if user:
+                user.delete()
+            count += 1
+        
+        self.message_user(request, f'{count} student(s) rejected.')
+
+
+# ✅ Register Models
+admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(EnrolledStudent, EnrolledStudentAdmin)
+
+# ✅ Admin Panel Branding
 admin.site.site_header = "FYP Portal Administration"
 admin.site.site_title = "FYP Admin"
 admin.site.index_title = "Welcome to FYP Portal Admin Panel"

@@ -3,6 +3,10 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import EnrolledStudent
 from django.db import transaction 
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+
 
 CustomUser = get_user_model()
 User = get_user_model()
@@ -162,3 +166,56 @@ class EnrolledStudentSerializer(serializers.ModelSerializer):
         fields = ['id', 'roll_number', 'email', 'full_name', 'is_registered', 
                   'approval_status', 'rejected_reason', 'approved_at', 'created_at']
         read_only_fields = ['id', 'created_at', 'approved_at']
+
+
+
+
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """
+    User apna email dega - reset link chahiye
+    """
+    email = serializers.EmailField(required=True)
+    
+    def validate_email(self, value):
+        email = value.lower().strip()
+        if not User.objects.filter(email=email).exists():
+            # Security: Email exist na kare toh bhi success message denge
+            # (taake koi guess na kar sake ke email registered hai ya nahi)
+            pass
+        return email
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    User naya password set karega (token ke sath)
+    """
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, min_length=8)
+    confirm_password = serializers.CharField(required=True, min_length=8)
+    
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({
+                "confirm_password": "Passwords do not match"
+            })
+        
+        # UID decode karein
+        try:
+            uid = force_str(urlsafe_base64_decode(data['uid']))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError({
+                "uid": "Invalid user ID"
+            })
+        
+        # Token verify karein
+        if not default_token_generator.check_token(user, data['token']):
+            raise serializers.ValidationError({
+                "token": "Invalid or expired token. Please request a new reset link."
+            })
+        
+        data['user'] = user
+        return data 
