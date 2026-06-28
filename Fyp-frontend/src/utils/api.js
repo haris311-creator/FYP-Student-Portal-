@@ -208,3 +208,50 @@ export const attendanceSheetAPI = {
 export const studentMeetingAPI = {
   getMyMeetings: () => api.get('/projects/students/my-meetings/'),
 };
+
+
+
+
+
+// =============================================================================
+// PROJECT REPORT ENDPOINTS
+// =============================================================================
+export const reportAPI = {
+  // Student: Get their report
+  getMyReport: () => api.get('/projects/reports/'),
+  
+  // Student: Upload report file
+  uploadReport: (reportId, formData) => {
+    return api.post(`/projects/reports/${reportId}/upload/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  
+  // Supervisor: Get reports pending their review
+  getPendingSupervisor: () => api.get('/projects/reports/pending-supervisor/'),
+  
+  // Supervisor: Approve or request revision
+  supervisorReview: (reportId, data) => 
+    api.post(`/projects/reports/${reportId}/supervisor-review/`, data),
+  
+  // Admin: Get reports pending final approval
+  getPendingAdmin: () => api.get('/projects/reports/pending-admin/'),
+  
+  // Admin: Final approve or reject
+  adminReview: (reportId, data) => 
+    api.post(`/projects/reports/${reportId}/admin-review/`, data),
+  
+  // Admin: Update Turnitin score
+  updateTurnitinScore: (reportId, score) => 
+    api.post(`/projects/reports/${reportId}/update-turnitin-score/`, {
+      turnitin_similarity_score: score
+    }),
+};
+
+// =============================================================================
+// REPORT DEADLINE ENDPOINTS
+// =============================================================================
+export const deadlineAPI = {
+  getCurrent: (semester, phase) => 
+    api.get(`/projects/deadlines/current/?semester=${semester}&fydp_phase=${phase}`),
+};

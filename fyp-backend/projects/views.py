@@ -11,7 +11,7 @@ from accounts.models import CustomUser
 from django.db import models
 from .models import ProjectGroup, Faculty
 from .serializers import ProjectGroupSerializer
-from .models import MeetingMinute, AttendanceLog
+from .models import MeetingMinute, AttendanceLog, ProjectReportSubmission, ReportDeadline
 
 
 from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest, MeetingMinute, AttendanceLog, Announcement
@@ -31,7 +31,12 @@ from .serializers import (
     AttendanceLogSerializer, 
     AnnouncementSerializer, 
     AnnouncementCreateUpdateSerializer, 
+    ProjectReportSubmissionSerializer,
+    ProjectReportUploadSerializer,
+    ProjectReportReviewSerializer,
+    ReportDeadlineSerializer,    
 )
+from .utils import check_internal_plagiarism
 from .permissions import IsStudent, IsGroupMemberOrReadOnly, IsAdminUser
 
 
@@ -322,13 +327,19 @@ class FYDPProposalViewSet(viewsets.ModelViewSet):
         proposal.proposal_file = serializer.validated_data['proposal_file']
         proposal.status = 'submitted'
         proposal.submitted_at = timezone.now()
-        proposal.supervisor_remarks = '' # Clear old remarks if re-uploading after revision
+        proposal.supervisor_remarks = ''
         proposal.admin_remarks = ''
         
         # Increment submission count
         success, msg = proposal.increment_submission_count()
         if not success:
             return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # ✅ NEW: Group ka status update karein
+        group = proposal.group
+        if group.status in ['idea_pitch', 'pending_approval']:
+            group.status = 'proposal_pending'
+            group.save()
             
         proposal.save()
         
@@ -393,6 +404,30 @@ class FYDPProposalViewSet(viewsets.ModelViewSet):
         success, msg = proposal.admin_review(request.user, action, remarks)
         if not success:
             return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # ✅ NEW: Group ka status update karein + Report submission auto-create karein
+        group = proposal.group
+        
+        if action == 'approve' and proposal.status == 'approved':
+            # Group status update karein
+            group.status = 'proposal_approved'
+            group.save()
+            
+            # ✅ Report submission auto-create karein
+            from .models import ProjectReportSubmission
+            ProjectReportSubmission.objects.get_or_create(
+                group=group,
+                defaults={
+                    'status': 'draft',
+                    'submission_count': 0,
+                }
+            )
+            msg += " | Report submission initialized for students."
+        
+        elif action == 'reject':
+            # Agar reject ho toh status wapas idea_pitch kar dein
+            group.status = 'idea_pitch'
+            group.save()
             
         return Response({
             'message': msg,
@@ -1103,3 +1138,300 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             'count': announcements.count(),
             'results': serializer.data
         })
+    
+
+
+# =============================================================================
+# PROJECT REPORT SUBMISSION VIEWSET
+# =============================================================================
+class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing Project Report Submissions.
+    Handles student uploads, supervisor reviews, and admin final approvals.
+    """
+    serializer_class = ProjectReportSubmissionSerializer
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        """
+        Filter reports based on user role:
+        - Students: Only their own group's report
+        - Supervisors: Reports of their assigned groups
+        - Admins: All reports
+        """
+        user = self.request.user
+        queryset = ProjectReportSubmission.objects.all()
+
+        if user.user_type == 'student':
+            return queryset.filter(group__members__student=user)
+        elif user.user_type == 'supervisor':
+            try:
+                faculty = user.faculty_profile
+                return queryset.filter(
+                    models.Q(group__supervisor=faculty) | models.Q(group__co_supervisor=faculty)
+                ).distinct()
+            except Faculty.DoesNotExist:
+                return ProjectReportSubmission.objects.none()
+        elif user.user_type == 'admin':
+            return queryset
+        
+        return ProjectReportSubmission.objects.none()
+
+    def get_serializer_class(self):
+        if self.action == 'upload':
+            return ProjectReportUploadSerializer
+        if self.action in ['supervisor_review', 'admin_review']:
+            return ProjectReportReviewSerializer
+        return ProjectReportSubmissionSerializer
+
+    @action(detail=False, methods=['get'], url_path='pending-supervisor')
+    def pending_supervisor(self, request):
+        """
+        GET /api/projects/reports/pending-supervisor/
+        For supervisors to see reports pending their review.
+        """
+        if request.user.user_type != 'supervisor':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            faculty = request.user.faculty_profile
+        except Faculty.DoesNotExist:
+            return Response({'error': 'Faculty profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        pending_reports = self.get_queryset().filter(
+            status__in=['submitted', 'revision_needed']
+        )
+        
+        serializer = self.get_serializer(pending_reports, many=True)
+        return Response({'count': pending_reports.count(), 'results': serializer.data})
+
+    @action(detail=False, methods=['get'], url_path='pending-admin')
+    def pending_admin(self, request):
+        """
+        GET /api/projects/reports/pending-admin/
+        For admins to see reports pending final approval.
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        pending_reports = ProjectReportSubmission.objects.filter(status='approved_by_supervisor')
+        serializer = self.get_serializer(pending_reports, many=True)
+        return Response({'count': pending_reports.count(), 'results': serializer.data})
+
+    @action(detail=True, methods=['post'], url_path='upload')
+    def upload(self, request, pk=None):
+        """
+        POST /api/projects/reports/{id}/upload/
+        Student uploads the report file (PDF/DOCX).
+        """
+        if request.user.user_type != 'student':
+            return Response({'error': 'Only students can upload reports'}, status=status.HTTP_403_FORBIDDEN)
+
+        report = self.get_object()
+        
+        # Check if upload is allowed
+        can_upload, reason = report.can_upload()
+        if not can_upload:
+            return Response({'error': reason}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate file
+        serializer = ProjectReportUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Save file and update report
+        report.report_file = serializer.validated_data['report_file']
+        report.status = 'submitted'
+        report.submitted_at = timezone.now()
+        report.supervisor_remarks = ''
+        report.admin_remarks = ''
+        
+        # Check deadline and mark late if needed
+        deadline_obj = ReportDeadline.objects.filter(
+            semester=report.group.semester,
+            fydp_phase=report.group.fydp_phase
+        ).first()
+        
+        if deadline_obj:
+            is_late, msg = report.check_deadline_and_mark_late(deadline_obj.deadline_date)
+        
+        # Increment submission count
+        success, msg = report.increment_submission_count()
+        if not success:
+            return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # ✅ NEW: Group ka status 'in_progress' mein update karein
+        group = report.group
+        if group.status in ['proposal_approved', 'in_progress']:
+            group.status = 'in_progress'
+            group.save()
+        
+        # Run internal plagiarism check
+        try:
+            similarity_score, similarity_report = check_internal_plagiarism(report)
+            report.internal_similarity_score = similarity_score
+            report.internal_similarity_report = similarity_report
+            report.plagiarism_check_completed = True
+            report.save()
+        except Exception as e:
+            print(f"️ Plagiarism check failed: {str(e)}")
+            report.save()
+            
+        return Response({
+            'message': 'Report uploaded successfully',
+            'is_late': report.is_late,
+            'internal_similarity_score': float(report.internal_similarity_score),
+            'data': ProjectReportSubmissionSerializer(report).data
+        }, status=status.HTTP_200_OK)
+
+
+    @action(detail=True, methods=['post'], url_path='supervisor-review')
+    def supervisor_review(self, request, pk=None):
+        """
+        POST /api/projects/reports/{id}/supervisor-review/
+        Supervisor approves or requests revision.
+        """
+        if request.user.user_type != 'supervisor':
+            return Response({'error': 'Only supervisors can review reports'}, status=status.HTTP_403_FORBIDDEN)
+
+        report = self.get_object()
+        
+        # Verify supervisor is assigned to this group
+        try:
+            faculty = request.user.faculty_profile
+            if report.group.supervisor != faculty and report.group.co_supervisor != faculty:
+                return Response({'error': 'You are not assigned to this group'}, status=status.HTTP_403_FORBIDDEN)
+        except Faculty.DoesNotExist:
+            return Response({'error': 'Faculty profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate action
+        serializer = ProjectReportReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        action = serializer.validated_data['action']
+        remarks = serializer.validated_data.get('remarks', '')
+        
+        success, msg = report.supervisor_review(faculty, action, remarks)
+        if not success:
+            return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response({
+            'message': msg,
+            'data': ProjectReportSubmissionSerializer(report).data
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='admin-review')
+    def admin_review(self, request, pk=None):
+        """
+        POST /api/projects/reports/{id}/admin-review/
+        Admin gives final approval or rejection.
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Only admins can give final approval'}, status=status.HTTP_403_FORBIDDEN)
+
+        report = self.get_object()
+        
+        # Validate action
+        serializer = ProjectReportReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        action = serializer.validated_data['action']
+        remarks = serializer.validated_data.get('remarks', '')
+        
+        success, msg = report.admin_review(request.user, action, remarks)
+        if not success:
+            return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # ✅ NEW: Group ka status update karein
+        group = report.group
+        
+        if action == 'approve' and report.status == 'approved':
+            group.status = 'in_progress'
+            group.save()
+            msg += " | Report approved. Project is in progress."
+        
+        elif action == 'reject':
+            # Agar reject ho toh status wapas proposal_approved kar dein
+            group.status = 'proposal_approved'
+            group.save()
+            
+        return Response({
+            'message': msg,
+            'data': ProjectReportSubmissionSerializer(report).data
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='update-turnitin-score')
+    def update_turnitin_score(self, request, pk=None):
+        """
+        POST /api/projects/reports/{id}/update-turnitin-score/
+        Admin manually updates Turnitin similarity score.
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Only admins can update Turnitin score'}, status=status.HTTP_403_FORBIDDEN)
+
+        report = self.get_object()
+        
+        turnitin_score = request.data.get('turnitin_similarity_score')
+        if turnitin_score is None:
+            return Response({'error': 'turnitin_similarity_score is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            turnitin_score = float(turnitin_score)
+            if turnitin_score < 0 or turnitin_score > 100:
+                return Response({'error': 'Score must be between 0 and 100'}, status=status.HTTP_400_BAD_REQUEST)
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid score format'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        report.turnitin_similarity_score = turnitin_score
+        report.save()
+        
+        return Response({
+            'message': 'Turnitin score updated successfully',
+            'turnitin_similarity_score': float(report.turnitin_similarity_score),
+            'data': ProjectReportSubmissionSerializer(report).data
+        }, status=status.HTTP_200_OK)
+
+
+# =============================================================================
+# REPORT DEADLINE VIEWSET (Admin Only)
+# =============================================================================
+class ReportDeadlineViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing report deadlines (Admin only).
+    """
+    queryset = ReportDeadline.objects.all()
+    serializer_class = ReportDeadlineSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_permissions(self):
+        """
+        Only admins can create/update/delete deadlines.
+        Anyone can view active deadlines.
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    
+    @action(detail=False, methods=['get'], url_path='current')
+    def current_deadline(self, request):
+        """
+        GET /api/projects/deadlines/current/
+        Get current active deadline.
+        """
+        semester = request.query_params.get('semester')
+        fydp_phase = request.query_params.get('fydp_phase', 'fydp2')
+        
+        queryset = ReportDeadline.objects.filter(fydp_phase=fydp_phase)
+        
+        if semester:
+            queryset = queryset.filter(semester=semester)
+        
+        deadline = queryset.first()
+        
+        if deadline:
+            serializer = self.get_serializer(deadline)
+            return Response(serializer.data)
+        
+        return Response({'message': 'No deadline set'}, status=status.HTTP_404_NOT_FOUND)

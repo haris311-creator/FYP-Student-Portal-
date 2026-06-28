@@ -1,19 +1,23 @@
 // fyp-frontend/src/pages/StudentDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import api, { studentMeetingAPI, proposalAPI } from '../utils/api';
+import api, { studentMeetingAPI, proposalAPI, reportAPI } from '../utils/api';
 import './Studentdashboard.css';
 
 function StudentDashboard() {
   const [existingGroup, setExistingGroup] = useState(null);
-  const [activeTab, setActiveTab] = useState('group');
+  const [activeTab, setActiveTab] = useState('progress'); // Default to 'progress' tab
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasSubmittedIdea, setHasSubmittedIdea] = useState(false);
   const [facultyList, setFacultyList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+  const [reportData, setReportData] = useState(null);
+  const [reportFile, setReportFile] = useState(null);
+  const [uploadingReport, setUploadingReport] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+    
   const [formData, setFormData] = useState({
     project_title: '',
     domain: '',
@@ -108,6 +112,9 @@ function StudentDashboard() {
     fetchGroupData();
   }, []);
 
+
+  
+
   // Fetch Meetings & Attendance
   useEffect(() => {
     if (hasSubmittedIdea && existingGroup) {
@@ -149,6 +156,28 @@ function StudentDashboard() {
     };
     fetchProposal();
   }, [existingGroup]);
+
+
+  useEffect(() => {
+  const fetchReport = async () => {
+    if (existingGroup && ['proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
+      try {
+        setReportLoading(true);
+        const res = await reportAPI.getMyReport();
+        if (res.data && res.data.length > 0) {
+          setReportData(res.data[0]);
+        } else {
+          setReportData(null);
+        }
+      } catch (err) {
+        console.error("Error fetching report:", err);
+      } finally {
+        setReportLoading(false);
+      }
+    }
+  };
+  fetchReport();
+}, [existingGroup]);
 
   // Fetch Faculty
   useEffect(() => {
@@ -288,6 +317,32 @@ function StudentDashboard() {
     }
   };
 
+
+
+  // handleFileUpload function 
+  const handleReportUpload = async () => {
+    if (!reportFile) return;
+    
+    setUploadingReport(true);
+    setError('');
+    setSuccess('');
+    
+    const formData = new FormData();
+    formData.append('report_file', reportFile);
+    
+    try {
+      const res = await reportAPI.uploadReport(reportData.id, formData);
+      setSuccess("Report uploaded successfully!");
+      setReportData(res.data.data);
+      setReportFile(null);
+    } catch (err) {
+      console.error("Upload failed:", err.response?.data || err.message);
+      setError(err.response?.data?.error || "Upload failed. Check file size (Max 20MB) and format (PDF/DOCX).");
+    } finally {
+      setUploadingReport(false);
+    }
+  };
+
     // Robust File Download Function using Fetch API
   const handleFileDownload = async (fileUrl) => {
     try {
@@ -331,23 +386,47 @@ function StudentDashboard() {
 
   // Render Meeting Logs
   const renderMeetingLogs = () => {
+    // Check if group is approved first
+    if (!existingGroup || !['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
+      return (
+        <div className="content-area">
+          <h2>Meeting Logs & Attendance</h2>
+          <div className="status-card pending">
+            <h3>Group Approval Required</h3>
+            <p>Your group must be approved by the admin before meeting logs and attendance will be available.</p>
+          </div>
+        </div>
+      );
+    }
+
     if (loadingMeetings) return <div className="loading-spinner">Loading logs...</div>;
-    if (!myMeetingsData) return <div className="text-muted">No meeting logs found.</div>;
+    
+    if (!myMeetingsData) {
+      return (
+        <div className="content-area">
+          <h2>Meeting Logs & Attendance</h2>
+          <div className="status-card">
+            <h3>No Meeting Logs Found</h3>
+            <p>Meeting logs will be displayed here once your supervisor conducts meetings.</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="content-area">
-        <h2> Meeting Logs & Tasks</h2>
+        <h2>Meeting Logs & Tasks</h2>
 
         {/* Current Task Card */}
         <div className="task-card">
-          <h3> Current Tasks</h3>
+          <h3>Current Tasks</h3>
           <p>{myMeetingsData.current_task || "No task assigned yet."}</p>
         </div>
 
         {/* Attendance Table */}
         <div className="table-container">
           <div className="attendance-title-card">
-            <h3> Attendance & Tasks</h3>
+            <h3>Attendance & Tasks</h3>
           </div>
           {myMeetingsData.attendance.length > 0 ? (
             <table className="data-table">
@@ -366,7 +445,7 @@ function StudentDashboard() {
                     <td>{log.date}</td>
                     <td>
                       <span className={`badge ${log.status.toLowerCase() === 'present' ? 'badge-approved' : 'badge-pending'}`}>
-                        {log.status.toLowerCase() === 'present' ? ' Present' : ' Absent'}
+                        {log.status.toLowerCase() === 'present' ? 'Present' : 'Absent'}
                       </span>
                     </td>
                     <td>{log.task_assigned || "N/A"}</td>
@@ -408,7 +487,7 @@ function StudentDashboard() {
               <h3> Group Registration Rejected</h3>
               <div style={{ background: '#fff', padding: '1rem', borderRadius: '6px', marginBottom: '1rem', border: '1px solid #fecaca' }}>
                 <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 0.5rem 0', fontWeight: '600', textTransform: 'uppercase' }}>
-                   Admin's Feedback:
+                  Admin's Feedback:
                 </p>
                 <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic', background: '#f8fafc', padding: '0.75rem', borderRadius: '4px', borderLeft: '3px solid #ef4444' }}>
                   {existingGroup.rejection_reason || 'No specific reason provided.'}
@@ -441,8 +520,8 @@ function StudentDashboard() {
         );
       }
       
-      // Approved/Active Status
-      if (status === 'idea_pitch' || status === 'approved' || status === 'proposal_pending') {
+      // ✅ UPDATED: Approved/Active Status - All valid statuses included
+      if (['idea_pitch', 'approved', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(status)) {
         return (
           <div className="content-area">
             <h2>Group & Idea Pitch</h2>
@@ -450,11 +529,24 @@ function StudentDashboard() {
               <h3> Group Approved</h3>
               <p style={{ color: '#64748b', margin: '0 0 1rem 0' }}>
                 {status === 'idea_pitch' ? 'Your idea has been approved. Proceed to submit proposal.' : 
-                 status === 'proposal_pending' ? 'Proposal submitted. Waiting for committee review.' :
-                 'Your group is active.'}
+                status === 'proposal_pending' ? 'Proposal submitted. Waiting for supervisor review.' :
+                status === 'proposal_approved' ? 'Proposal approved! You can now submit your project report.' :
+                status === 'in_progress' ? 'Project in progress. Continue working on your FYP.' :
+                status === 'completed' ? 'Project completed successfully! ' :
+                'Your group is active.'}
               </p>
-              <span className="status-badge">
-                {status === 'idea_pitch' ? 'Approved' : status === 'proposal_pending' ? 'Proposal Pending' : 'Active'}
+              <span className="status-badge" style={{ 
+                background: status === 'completed' ? '#10b981' : 
+                          status === 'in_progress' ? '#3b82f6' : 
+                          status === 'proposal_approved' ? '#8b5cf6' :
+                          status === 'proposal_pending' ? '#f59e0b' : '#10b981',
+                color: 'white'
+              }}>
+                {status === 'idea_pitch' ? ' Approved' : 
+                status === 'proposal_pending' ? ' Proposal Pending' :
+                status === 'proposal_approved' ? ' Proposal Approved' :
+                status === 'in_progress' ? ' In Progress' :
+                status === 'completed' ? ' Completed' : 'Active'}
               </span>
               {existingGroup.group_number && (
                 <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'white', borderRadius: '8px' }}>
@@ -476,6 +568,10 @@ function StudentDashboard() {
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
                   <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Supervisor</p>
                   <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{existingGroup.supervisor_name || 'Not Assigned'}</p>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Current Status</p>
+                  <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{status.replace('_', ' ').toUpperCase()}</p>
                 </div>
               </div>
               <div>
@@ -505,16 +601,29 @@ function StudentDashboard() {
         );
       }
       
-      // Pending Approval
+      // Pending Approval - Sirf tab jab status pending_approval ho
+      if (status === 'pending_approval') {
+        return (
+          <div className="content-area">
+            <h2>Group & Idea Pitch</h2>
+            <div className="status-card pending" style={{ borderLeft: '4px solid #f59e0b', background: '#fef9c3', padding: '1.5rem', borderRadius: '8px' }}>
+              <h3 style={{ color: '#92400e', margin: '0 0 0.5rem 0' }}>⏳ Pending Approval</h3>
+              <p style={{ color: '#64748b', margin: '0 0 1rem 0' }}>Your idea has been pitched. Waiting for Admin approval.</p>
+              <span className="status-badge" style={{ display: 'inline-block', background: '#fef9c3', color: '#92400e', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '600' }}>
+                Pending
+              </span>
+            </div>
+          </div>
+        );
+      }
+      
+      // Fallback - Agar koi unknown status ho
       return (
         <div className="content-area">
           <h2>Group & Idea Pitch</h2>
-          <div className="status-card pending" style={{ borderLeft: '4px solid #f59e0b', background: '#fef9c3', padding: '1.5rem', borderRadius: '8px' }}>
-            <h3 style={{ color: '#92400e', margin: '0 0 0.5rem 0' }}>⏳ Pending Approval</h3>
-            <p style={{ color: '#64748b', margin: '0 0 1rem 0' }}>Your idea has been pitched. Waiting for Admin approval.</p>
-            <span className="status-badge" style={{ display: 'inline-block', background: '#fef9c3', color: '#92400e', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '600' }}>
-              Pending
-            </span>
+          <div className="status-card">
+            <h3>Unknown Status</h3>
+            <p style={{ color: '#64748b', margin: '0 0 1rem 0' }}>Current status: {status}</p>
           </div>
         </div>
       );
@@ -555,7 +664,7 @@ function StudentDashboard() {
                 <option value="">-- Choose Supervisor --</option>
                 {facultyList.map(fac => (<option key={fac.id} value={fac.id}>{fac.full_name} - {fac.designation}</option>))}
               </select>
-              <p className="form-note">💡 Meet your supervisor physically before selecting</p>
+              <p className="form-note"> Meet your supervisor physically before selecting</p>
             </div>
           </div>
           {/* Group Members */}
@@ -617,35 +726,73 @@ function StudentDashboard() {
     );
   };
 
-    const renderReports = () => (
+
+  //Project Progress Function
+const renderProjectProgress = () => {
+  // Helper variables
+  const isProposalApproved = proposalData?.status === 'approved';
+  const isReportApproved = reportData?.status === 'approved';
+  
+  // Idea Pitch status check
+  const ideaPitchStatus = existingGroup?.status === 'idea_pitch' || 
+                          existingGroup?.status === 'proposal_pending' || 
+                          existingGroup?.status === 'proposal_approved' ||
+                          existingGroup?.status === 'in_progress' ||
+                          existingGroup?.status === 'completed' ? 'approved' : 
+                          existingGroup?.status === 'pending_approval' ? 'pending' : 'not_submitted';
+  
+  return (
     <div className="content-area">
-      <h2>Reports & Marks</h2>
+      <h2>Project Progress</h2>
       
-      {/* Status Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid #3b82f6' }}>
+      {/* Status Cards - 5 cards ab */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+        {/* Current Phase */}
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Current Phase
           </p>
-          <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
             {existingGroup?.fydp_phase === 'fydp2' ? 'FYDP-II' : 'FYDP-I'}
           </p>
         </div>
         
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid #10b981' }}>
+        {/* Idea Pitch Status */}
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
-            Proposal Status
+            Idea Pitch
           </p>
-          <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
+            {ideaPitchStatus === 'approved' ? 'Approved' : ideaPitchStatus === 'pending' ? 'Pending' : 'Not Submitted'}
+          </p>
+        </div>
+        
+        {/* Proposal Status */}
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
+            Proposal
+          </p>
+          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
             {proposalData?.status_display || 'Not Submitted'}
           </p>
         </div>
         
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid #f59e0b' }}>
+        {/* Report Status */}
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
-            Meetings Conducted
+            Report
           </p>
-          <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
+            {reportData?.status_display || 'Not Submitted'}
+          </p>
+        </div>
+        
+        {/* Meetings Conducted */}
+        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
+            Meetings
+          </p>
+          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
             {myMeetingsData?.attendance?.length || 0}
           </p>
         </div>
@@ -657,19 +804,34 @@ function StudentDashboard() {
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {[
-            { label: 'Group Formation', status: existingGroup ? 'completed' : 'pending' },
-            { label: 'Idea Pitch Approval', status: existingGroup?.status === 'idea_pitch' || existingGroup?.status === 'proposal_pending' ? 'completed' : 'pending' },
-            { label: 'Proposal Submission', status: proposalData?.status === 'approved' ? 'completed' : proposalData ? 'in-progress' : 'pending' },
-            { label: 'Mid-Term Evaluation', status: 'pending' },
-            { label: 'Final Evaluation', status: 'pending' },
-            { label: 'Final Report Submission', status: 'pending' },
+            { 
+              label: 'Group Formation & Idea Pitch', 
+              status: existingGroup ? 'completed' : 'pending',
+              icon: '1'
+            },
+            { 
+              label: 'Proposal Submission', 
+              status: isProposalApproved ? 'completed' : proposalData ? 'in-progress' : 'pending',
+              icon: '2'
+            },
+            { 
+              label: 'Final Report Submission', 
+              status: isReportApproved ? 'completed' : reportData ? 'in-progress' : 'pending',
+              icon: '3'
+            },
+            { 
+              label: 'Final Evaluation', 
+              status: isReportApproved ? 'in-progress' : 'pending',
+              icon: '4'
+            },
           ].map((item, idx) => (
             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
               <div style={{ 
                 width: '32px', 
                 height: '32px', 
                 borderRadius: '50%', 
-                background: item.status === 'completed' ? '#10b981' : item.status === 'in-progress' ? '#f59e0b' : '#e2e8f0',
+                background: item.status === 'completed' ? '#10b981' : 
+                          item.status === 'in-progress' ? '#f59e0b' : '#e2e8f0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -677,37 +839,33 @@ function StudentDashboard() {
                 fontWeight: '700',
                 fontSize: '0.875rem'
               }}>
-                {item.status === 'completed' ? '✓' : idx + 1}
+                {item.status === 'completed' ? '✓' : item.icon}
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontWeight: '600', color: '#1e293b' }}>{item.label}</p>
+                <p style={{ margin: 0, fontWeight: '600', color: '#000000', fontSize: '0.9rem' }}>
+                  {item.label}
+                </p>
               </div>
               <span style={{ 
                 padding: '0.25rem 0.75rem', 
                 borderRadius: '9999px', 
                 fontSize: '0.75rem', 
                 fontWeight: '600',
-                background: item.status === 'completed' ? '#d1fae5' : item.status === 'in-progress' ? '#fef3c7' : '#f1f5f9',
-                color: item.status === 'completed' ? '#065f46' : item.status === 'in-progress' ? '#92400e' : '#64748b'
+                background: item.status === 'completed' ? '#d1fae5' : 
+                          item.status === 'in-progress' ? '#fef3c7' : '#f1f5f9',
+                color: '#000000',
+                border: '1px solid #e2e8f0'
               }}>
-                {item.status === 'completed' ? 'Completed' : item.status === 'in-progress' ? 'In Progress' : 'Pending'}
+                {item.status === 'completed' ? 'Completed' : 
+                item.status === 'in-progress' ? 'In Progress' : 'Pending'}
               </span>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Marks Section */}
-      <div style={{ background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginTop: '1.5rem' }}>
-        <h3 style={{ margin: '0 0 1.5rem 0', color: '#1e293b' }}>Evaluation Marks</h3>
-        <div style={{ padding: '2rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px' }}>
-          <p style={{ color: '#64748b', margin: 0 }}>
-            Marks will be displayed here after evaluations are conducted by your supervisor and external examiner.
-          </p>
-        </div>
-      </div>
     </div>
   );
+};
 
   const renderMaterials = () => {
     const materials = [
@@ -878,7 +1036,7 @@ function StudentDashboard() {
                     gap: '0.4rem'
                   }}
                 >
-                  <span>👁</span> View
+                  <span></span> View
                 </button>
                 <button
                   onClick={() => handleDownload(item.file, item.file.split('/').pop())}
@@ -910,18 +1068,18 @@ function StudentDashboard() {
 
   // ✅ UPDATED: Render Proposal Upload & Status
   const renderProposal = () => {
-    // 1. Check if group is approved first
-    if (!existingGroup || !['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
-      return (
-        <div className="content-area">
-          <h2>Project Proposal</h2>
-          <div className="status-card pending">
-            <h3>Group Approval Required</h3>
-            <p>Your group must be approved by the admin before you can submit a proposal.</p>
+      // 1. Check if group is approved first
+      if (!existingGroup || !['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
+        return (
+          <div className="content-area">
+            <h2>Project Proposal</h2>                    
+            <div className="status-card pending">
+              <h3>Group Approval Required</h3>          
+              <p>Your group must be approved by the admin before you can submit a proposal.</p>  
+            </div>
           </div>
-        </div>
-      );
-    }
+        );
+      }
 
     if (proposalLoading) return <div className="content-area"><div className="loading-spinner">Loading proposal...</div></div>;
 
@@ -1048,6 +1206,154 @@ function StudentDashboard() {
     );
   };
 
+
+  // renderProjectReport function 
+  const renderProjectReport = () => {
+    if (!existingGroup || !['proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
+      return (
+        <div className="content-area">
+          <h2>Project Report</h2>
+          <div className="status-card pending">
+            <h3>Project Not Ready for Report Submission</h3>
+            <p>Your proposal must be approved before you can submit the final report.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (reportLoading) return <div className="content-area"><div className="loading-spinner">Loading report...</div></div>;
+
+    if (!reportData) {
+      return (
+        <div className="content-area">
+          <h2>Project Report</h2>
+          <div className="status-card">
+            <h3>No Report Submission Found</h3>
+            <p>Contact admin to initialize report submission for your group.</p>
+          </div>
+        </div>
+      );
+    }
+
+    const statusColors = {
+      'draft': '#64748b',
+      'submitted': '#3b82f6',
+      'approved_by_supervisor': '#8b5cf6',
+      'revision_needed': '#f59e0b',
+      'approved': '#10b981',
+      'rejected': '#ef4444'
+    };
+
+    const canUpload = ['draft', 'submitted', 'revision_needed'].includes(reportData.status) && reportData.submission_count < 3;
+
+    return (
+      <div className="content-area">
+        <h2>Project Report</h2>
+        {error && <div className="alert alert-error">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
+        
+        {/* Status Card */}
+        <div className="status-card" style={{ borderLeft: `4px solid ${statusColors[reportData.status] || '#64748b'}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0 }}>Report Status</h3>
+            <span className="status-badge" style={{ background: statusColors[reportData.status], color: 'white' }}>
+              {reportData.status_display}
+            </span>
+          </div>
+          
+          {/* Late Submission Warning */}
+          {reportData.is_late && (
+            <div style={{ background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
+              <p style={{ color: '#92400e', margin: 0, fontWeight: '600' }}>
+                 Late Submission - This report was submitted after the deadline
+              </p>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Submission Attempts</p>
+              <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '1.25rem' }}>
+                {reportData.submission_count} / 3
+              </p>
+            </div>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Last Submitted</p>
+              <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>
+                {reportData.submitted_at ? new Date(reportData.submitted_at).toLocaleDateString() : 'Not submitted yet'}
+              </p>
+            </div>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Plagiarism Score</p>
+              <p style={{ fontWeight: '700', color: reportData.internal_similarity_score > 30 ? '#ef4444' : '#10b981', margin: 0, fontSize: '1.25rem' }}>
+                {reportData.internal_similarity_score}%
+              </p>
+            </div>
+          </div>
+
+          {/* Remarks Section */}
+          {reportData.supervisor_remarks && (
+            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+              <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
+              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{reportData.supervisor_remarks}</p>
+            </div>
+          )}
+          {reportData.admin_remarks && (
+            <div style={{ background: '#f3e8ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #8b5cf6' }}>
+              <p style={{ fontSize: '0.8rem', color: '#5b21b6', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Admin Remarks:</p>
+              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{reportData.admin_remarks}</p>
+            </div>
+          )}
+
+          {/* File Download */}
+          {reportData.report_file && (
+            <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #10b981' }}>
+              <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Uploaded Report:</p>
+              <button 
+                onClick={() => handleFileDownload(reportData.report_file)}
+                style={{ background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '1rem' }}
+              >
+                View / Download Report File
+              </button>
+            </div>
+          )}
+
+          {/* Upload Section */}
+          {canUpload ? (
+            <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+              <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>Upload Report File</h4>
+              <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
+                Upload your final project report (PDF/DOCX only, Max 20MB)
+              </p>
+              <input 
+                type="file" 
+                accept=".pdf,.docx" 
+                onChange={(e) => setReportFile(e.target.files[0])}
+                className="form-input"
+                style={{ marginBottom: '1rem' }}
+              />
+              <button 
+                className="btn-submit" 
+                onClick={handleReportUpload}
+                disabled={!reportFile || uploadingReport}
+              >
+                {uploadingReport ? 'Uploading...' : 'Submit Report'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
+              <p style={{ color: '#991b1b', margin: 0, fontWeight: '500' }}>
+                {reportData.status === 'approved' ? ' Report has been finally approved. No further uploads allowed.' :
+                reportData.status === 'rejected' ? ' Report has been rejected. Contact admin.' :
+                ' Maximum 3 submission attempts reached. Contact admin to reset.'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Main Render
   return (
     <div className="dashboard-container">
@@ -1075,10 +1381,11 @@ function StudentDashboard() {
         
         {/* Navigation */}
         <nav className="sidebar-nav">
+          <button className={`nav-btn ${activeTab === 'progress' ? 'active' : ''}`} onClick={() => { setActiveTab('progress'); setMenuOpen(false); }}> Project Progress </button>
           <button className={`nav-btn ${activeTab === 'group' ? 'active' : ''}`} onClick={() => { setActiveTab('group'); setMenuOpen(false); }}> Group & Idea Pitch</button>
           <button className={`nav-btn ${activeTab === 'proposal' ? 'active' : ''}`} onClick={() => { setActiveTab('proposal'); setMenuOpen(false); }}> Project Proposal</button>
+          <button className={`nav-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => { setActiveTab('report'); setMenuOpen(false); }}> Project Report</button>
           <button className={`nav-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); setMenuOpen(false); }}> Meeting Logs & Attendance</button>
-          <button className={`nav-btn ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => { setActiveTab('reports'); setMenuOpen(false); }}> Reports & Marks</button>
           <button className={`nav-btn ${activeTab === 'materials' ? 'active' : ''}`} onClick={() => { setActiveTab('materials'); setMenuOpen(false); }}> Materials & Downloads</button>
         </nav>
       </aside>
@@ -1091,8 +1398,9 @@ function StudentDashboard() {
         <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>☰ Menu</button>
         {activeTab === 'group' && renderGroupFormation()}
         {activeTab === 'proposal' && renderProposal()}
+        {activeTab === 'report' && renderProjectReport()}
         {activeTab === 'logs' && renderMeetingLogs()}
-        {activeTab === 'reports' && renderReports()}
+        {activeTab === 'progress' && renderProjectProgress()} 
         {activeTab === 'materials' && renderMaterials()}
       </main>
     </div>

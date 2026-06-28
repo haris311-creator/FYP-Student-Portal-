@@ -1,7 +1,7 @@
 // fyp-frontend/src/Pages/Supervisordashboard.jsx
 import SupervisorSessionalMarkForm from '../Components/SupervisorSessionalMarkForm';
 import React, { useState, useEffect } from 'react';
-import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI } from '../utils/api';
+import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI, reportAPI  } from '../utils/api';
 import './Supervisordashboard.css';
 
 function SupervisorDashboard() {
@@ -11,6 +11,11 @@ function SupervisorDashboard() {
   const [assignedGroups, setAssignedGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pendingReports, setPendingReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [reportReviewForm, setReportReviewForm] = useState({ action: 'approve', remarks: '' });
+  const [submittingReportReview, setSubmittingReportReview] = useState(false);
 
   // New states for Meetings & Attendance
   const [detailSubTab, setDetailSubTab] = useState('info');
@@ -122,6 +127,22 @@ function SupervisorDashboard() {
       }
     };
     fetchProposals();
+  }, []);
+
+  // Proposal fetch useEffect 
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoadingReports(true);
+        const res = await reportAPI.getPendingSupervisor();
+        setPendingReports(res.data.results || []);
+      } catch (err) {
+        console.error("Error fetching reports:", err);
+      } finally {
+        setLoadingReports(false);
+      }
+    };
+    fetchReports();
   }, []);
 
   // Fetch meetings & attendance data when group is selected
@@ -345,6 +366,34 @@ function SupervisorDashboard() {
     }
   };
 
+
+  // handleReportReviewSubmit function 
+const handleReportReviewSubmit = async () => {
+  if (!selectedReport) return;
+
+  if (reportReviewForm.action === 'revision' && !reportReviewForm.remarks.trim()) {
+    alert('Remarks are required when requesting a revision.');
+    return;
+  }
+
+  setSubmittingReportReview(true);
+  try {
+    await reportAPI.supervisorReview(selectedReport.id, reportReviewForm);
+    alert(`Report ${reportReviewForm.action === 'approve' ? 'approved and sent to Admin' : 'sent back to students for revision'}!`);
+    setSelectedReport(null);
+    setReportReviewForm({ action: 'approve', remarks: '' });
+
+    // Refresh list
+    const res = await reportAPI.getPendingSupervisor();
+    setPendingReports(res.data.results || []);
+  } catch (err) {
+    console.error("Review failed:", err);
+    alert(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
+  } finally {
+    setSubmittingReportReview(false);
+  }
+};
+
   // Helper function to force download
   // Robust File Download Function using Fetch API
   const handleFileDownload = async (fileUrl) => {
@@ -431,6 +480,168 @@ function SupervisorDashboard() {
             ))}
           </div>
         )}
+      </div>
+    );
+  };
+
+  // renderReportReviews function 
+  const renderReportReviews = () => {
+    if (loadingReports) return <div className="overview-content"><div className="loading-spinner">Loading reports...</div></div>;
+
+    return (
+      <div className="overview-content">
+        <h1 className="page-title">Pending Report Reviews</h1>
+        <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+          Review and approve final project reports submitted by your assigned groups.
+        </p>
+
+        {pendingReports.length === 0 ? (
+          <div className="empty-state" style={{ padding: '3rem', textAlign: 'center', background: '#f8fafc', borderRadius: '12px' }}>
+            <p style={{ fontSize: '2rem', marginBottom: '1rem' }}>&#10004;</p>
+            <p style={{ color: '#64748b' }}>No reports pending your review.</p>
+          </div>
+        ) : (
+          <div className="groups-list-horizontal" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {pendingReports.map(report => (
+              <div key={report.id} className="group-card-horizontal" style={{ cursor: 'pointer' }} onClick={() => setSelectedReport(report)}>
+                <div className="group-info">
+                  <div className="group-header">
+                    <h3 className="group-name">{report.project_title}</h3>
+                    <span className="badge badge-blue" style={{ fontSize: '0.75rem' }}>
+                      Attempt {report.submission_count}/3
+                    </span>
+                  </div>
+                  <p className="group-project" style={{ color: '#64748b', fontSize: '0.875rem' }}>Group: {report.group_number}</p>
+                  <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#eff6ff', borderRadius: '6px' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#1e3a8a', fontWeight: '600', margin: 0 }}>
+                      Status: {report.status_display}
+                    </p>
+                    {report.is_late && (
+                      <p style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: '600', margin: '0.25rem 0 0 0' }}>
+                        ⚠️ Late Submission
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f0fdf4', borderRadius: '6px' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#065f46', fontWeight: '600', margin: 0 }}>
+                      Plagiarism: {report.internal_similarity_score}%
+                    </p>
+                  </div>
+                </div>
+                <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                  <button className="view-details-btn">Review &rarr;</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderReportReviewModal = () => {
+    return (
+      <div className="meeting-form-overlay" style={{ zIndex: 1000 }}>
+        <div className="meeting-form-container" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="form-header">
+            <h3>Review Report</h3>
+            <button className="close-form-btn" onClick={() => setSelectedReport(null)}>&#10005;</button>
+          </div>
+
+          <div style={{ padding: '1rem 0' }}>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedReport.project_title}</h4>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
+                Group: {selectedReport.group_number} | Submitted: {selectedReport.submitted_at ? new Date(selectedReport.submitted_at).toLocaleString() : 'N/A'}
+              </p>
+
+              {selectedReport.is_late && (
+                <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '1rem', color: '#92400e' }}>
+                  ⚠️ Warning: This is a late submission.
+                </div>
+              )}
+
+              <div style={{ padding: '0.75rem', background: '#f0fdf4', borderRadius: '6px', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>
+                  Internal Plagiarism Check: {selectedReport.internal_similarity_score}%
+                </p>
+                {selectedReport.turnitin_similarity_score > 0 && (
+                  <p style={{ fontSize: '0.875rem', color: '#065f46', margin: 0 }}>
+                    Turnitin Score: {selectedReport.turnitin_similarity_score}%
+                  </p>
+                )}
+              </div>
+
+              {selectedReport.report_file ? (
+                <button
+                  onClick={() => handleFileDownload(selectedReport.report_file)}
+                  className="submit-btn"
+                  style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+                >
+                  Download Uploaded Report
+                </button>
+              ) : (
+                <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                  Warning: No file uploaded by students.
+                </div>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 1rem 0' }}>Your Decision</h4>
+
+              <div className="mform-group" style={{ marginBottom: '1rem' }}>
+                <label className="mform-label">Action</label>
+                <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                  <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="radio"
+                      name="reportReviewAction"
+                      value="approve"
+                      checked={reportReviewForm.action === 'approve'}
+                      onChange={e => setReportReviewForm({ ...reportReviewForm, action: e.target.value })}
+                    /> Approve (Send to Admin)
+                  </label>
+                  <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="radio"
+                      name="reportReviewAction"
+                      value="revision"
+                      checked={reportReviewForm.action === 'revision'}
+                      onChange={e => setReportReviewForm({ ...reportReviewForm, action: e.target.value })}
+                    /> Request Revision
+                  </label>
+                </div>
+              </div>
+
+              <div className="mform-group">
+                <label className="mform-label">
+                  Remarks {reportReviewForm.action === 'revision' && <span className="required">*</span>}
+                </label>
+                <textarea
+                  className="mform-textarea"
+                  placeholder={reportReviewForm.action === 'approve' ? "Optional: Any feedback..." : "Required: What needs to be changed?"}
+                  value={reportReviewForm.remarks}
+                  onChange={e => setReportReviewForm({ ...reportReviewForm, remarks: e.target.value })}
+                  rows="4"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mform-actions">
+            <button
+              className="submit-btn"
+              onClick={handleReportReviewSubmit}
+              disabled={submittingReportReview}
+            >
+              {submittingReportReview ? 'Submitting...' : 'Submit Review'}
+            </button>
+            <button className="back-btn" onClick={() => setSelectedReport(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
       </div>
     );
   };
@@ -925,6 +1136,12 @@ function SupervisorDashboard() {
             >
               <span className="nav-text">Pending Reviews</span>
             </button>
+            <button
+              className={`nav-item ${activeTab === 'reportReviews' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('reportReviews'); setMenuOpen(false); }}
+            >
+              <span className="nav-text">Report Reviews</span>
+            </button>
           </nav>
         </aside>
 
@@ -1044,6 +1261,8 @@ function SupervisorDashboard() {
 
           {activeTab === 'reviews' && renderReviews()}
           {selectedProposal && renderProposalReviewModal()}
+          {activeTab === 'reportReviews' && renderReportReviews()}
+          {selectedReport && renderReportReviewModal()}
         </main>
       </div>
     </div>

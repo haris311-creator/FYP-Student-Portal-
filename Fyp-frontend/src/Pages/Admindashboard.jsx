@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { adminAPI } from "../api/admin"; 
-import api, { proposalAPI } from '../utils/api';
+import api, { proposalAPI, reportAPI  } from '../utils/api';
 import { toast } from 'react-toastify';
 import './Admindashboard.css';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
@@ -21,6 +21,12 @@ function AdminDashboard() {
   const [activeSupervisors, setActiveSupervisors] = useState(0);
   const [inProgressProjects, setInProgressProjects] = useState(0);
   const [completedProjects, setCompletedProjects] = useState(0);
+  const [pendingFinalReports, setPendingFinalReports] = useState([]);
+  const [loadingFinalReports, setLoadingFinalReports] = useState(false);
+  const [selectedFinalReport, setSelectedFinalReport] = useState(null);
+  const [finalReportReviewForm, setFinalReportReviewForm] = useState({ action: 'approve', remarks: '' });
+  const [submittingFinalReportReview, setSubmittingFinalReportReview] = useState(false);
+  const [turnitinScore, setTurnitinScore] = useState('');
   
   // Local states
   const [announcement, setAnnouncement] = useState('');
@@ -84,6 +90,7 @@ useEffect(() => {
     fetchPendingProposals();
     fetchAllGroups();
     fetchFinalProposals();
+    fetchFinalReports();
     fetchActiveSupervisors(); 
     fetchAnnouncements();   
   }, []);
@@ -244,6 +251,19 @@ const fetchAnnouncements = async () => {
     }
   };
 
+  // fetchFinalReports function
+  const fetchFinalReports = async () => {
+    try {
+      setLoadingFinalReports(true);
+      const res = await reportAPI.getPendingAdmin();
+      setPendingFinalReports(res.data.results || []);
+    } catch (err) {
+      console.error("Error fetching final reports:", err);
+    } finally {
+      setLoadingFinalReports(false);
+    }
+  };
+
   const handleApprove = async (proposal) => {
     if (!window.confirm(`Approve "${proposal.title}" for ${proposal.group}?`)) return;
     
@@ -297,6 +317,44 @@ const fetchAnnouncements = async () => {
       toast.error(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
     } finally {
       setSubmittingFinalReview(false);
+    }
+  };
+
+  // handleFinalReportReviewSubmit function
+  const handleFinalReportReviewSubmit = async () => {
+    if (!selectedFinalReport) return;
+    
+    if (finalReportReviewForm.action === 'reject' && !finalReportReviewForm.remarks.trim()) {
+      toast.error('Remarks are required when rejecting a report.');
+      return;
+    }
+    
+    setSubmittingFinalReportReview(true);
+    try {
+      await reportAPI.adminReview(selectedFinalReport.id, finalReportReviewForm);
+      toast.success(`Report ${finalReportReviewForm.action === 'approve' ? 'finally approved' : 'rejected'}!`);
+      setSelectedFinalReport(null);
+      setFinalReportReviewForm({ action: 'approve', remarks: '' });
+      fetchFinalReports();
+    } catch (err) {
+      console.error("Final report review failed:", err);
+      toast.error(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
+    } finally {
+      setSubmittingFinalReportReview(false);
+    }
+  };
+
+  const handleUpdateTurnitinScore = async () => {
+    if (!selectedFinalReport || !turnitinScore) return;
+    
+    try {
+      await reportAPI.updateTurnitinScore(selectedFinalReport.id, parseFloat(turnitinScore));
+      toast.success('Turnitin score updated successfully!');
+      setTurnitinScore('');
+      fetchFinalReports();
+    } catch (err) {
+      console.error("Turnitin update failed:", err);
+      toast.error("Failed to update Turnitin score.");
     }
   };
 
@@ -635,6 +693,235 @@ const handleAnnouncementSubmit = (e) => {
     );
   };
 
+
+  // renderFinalReports function
+  const renderFinalReports = () => {
+    if (loadingFinalReports) {
+      return (
+        <div>
+          {renderPageHeader('Report Approvals')}
+          <div className="loading-state">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading reports...</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        {renderPageHeader('Report Approvals')}
+        <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
+          These reports have been approved by supervisors and require your final review.
+        </p>
+
+        {pendingFinalReports.length === 0 ? (
+          <div className="empty-state">
+            <p className="empty-text">No reports pending approval.</p>
+            <button className="refresh-btn" onClick={fetchFinalReports}>Refresh</button>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Project Title</th>
+                  <th>Group</th>
+                  <th>Supervisor</th>
+                  <th>Plagiarism</th>
+                  <th>Late?</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingFinalReports.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.project_title}</td>
+                    <td>{r.group_number}</td>
+                    <td>{r.approved_by_supervisor_name || 'N/A'}</td>
+                    <td>
+                      <span style={{ 
+                        color: r.internal_similarity_score > 30 ? '#ef4444' : '#10b981',
+                        fontWeight: '600'
+                      }}>
+                        {r.internal_similarity_score}%
+                      </span>
+                    </td>
+                    <td>
+                      {r.is_late ? (
+                        <span style={{ color: '#f59e0b', fontWeight: '600' }}>⚠️ Yes</span>
+                      ) : (
+                        <span style={{ color: '#10b981' }}>No</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="action-btns">
+                        <button className="approve-btn" onClick={() => setSelectedFinalReport(r)}>Review</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFinalReportModal = () => {
+    if (!selectedFinalReport) return null;
+
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+        <div className="meeting-form-container" style={{ maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderRadius: '12px', padding: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h3 style={{ margin: 0 }}>Final Report Review</h3>
+            <button className="close-form-btn" onClick={() => { setSelectedFinalReport(null); setTurnitinScore(''); }}>X</button>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedFinalReport.project_title}</h4>
+            <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
+              Group: {selectedFinalReport.group_number} | Submitted: {selectedFinalReport.submitted_at ? new Date(selectedFinalReport.submitted_at).toLocaleString() : 'N/A'}
+            </p>
+            
+            {selectedFinalReport.is_late && (
+              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
+                <p style={{ fontSize: '0.875rem', color: '#92400e', margin: 0, fontWeight: '600' }}>
+                  ⚠️ Late Submission
+                </p>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{ padding: '0.75rem', background: '#f0fdf4', borderRadius: '6px' }}>
+                <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Internal Plagiarism</p>
+                <p style={{ fontSize: '1.25rem', fontWeight: '700', color: selectedFinalReport.internal_similarity_score > 30 ? '#ef4444' : '#10b981', margin: 0 }}>
+                  {selectedFinalReport.internal_similarity_score}%
+                </p>
+              </div>
+              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px' }}>
+                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Turnitin Score</p>
+                <p style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e3a8a', margin: 0 }}>
+                  {selectedFinalReport.turnitin_similarity_score || 'Not set'}%
+                </p>
+              </div>
+            </div>
+
+            {selectedFinalReport.supervisor_remarks && (
+              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
+                <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{selectedFinalReport.supervisor_remarks}</p>
+              </div>
+            )}
+            
+            {selectedFinalReport.report_file ? (
+              <button 
+                onClick={() => handleFileDownload(selectedFinalReport.report_file)}
+                className="submit-btn"
+                style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+              >
+                Download Uploaded Report
+              </button>
+            ) : (
+              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                Warning: No file uploaded by students.
+              </div>
+            )}
+          </div>
+
+          {/* Turnitin Score Update Section */}
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem 0' }}>Update Turnitin Score (Optional)</h4>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="Enter Turnitin %"
+                value={turnitinScore}
+                onChange={e => setTurnitinScore(e.target.value)}
+                className="form-input"
+                style={{ flex: 1 }}
+              />
+              <button
+                onClick={handleUpdateTurnitinScore}
+                disabled={!turnitinScore}
+                style={{
+                  padding: '0.5rem 1rem',
+                  background: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Update
+              </button>
+            </div>
+          </div>
+
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem 0' }}>Your Final Decision</h4>
+            
+            <div className="mform-group" style={{ marginBottom: '1rem' }}>
+              <label className="mform-label">Action</label>
+              <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input 
+                    type="radio" 
+                    name="finalReportReviewAction" 
+                    value="approve"
+                    checked={finalReportReviewForm.action === 'approve'}
+                    onChange={e => setFinalReportReviewForm({ ...finalReportReviewForm, action: e.target.value })}
+                  /> Final Approve
+                </label>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input 
+                    type="radio" 
+                    name="finalReportReviewAction" 
+                    value="reject"
+                    checked={finalReportReviewForm.action === 'reject'}
+                    onChange={e => setFinalReportReviewForm({ ...finalReportReviewForm, action: e.target.value })}
+                  /> Reject
+                </label>
+              </div>
+            </div>
+
+            <div className="mform-group">
+              <label className="mform-label">
+                Remarks {finalReportReviewForm.action === 'reject' && <span className="required">*</span>}
+              </label>
+              <textarea
+                className="mform-textarea"
+                placeholder={finalReportReviewForm.action === 'approve' ? "Optional: Any final comments..." : "Required: Reason for rejection?"}
+                value={finalReportReviewForm.remarks}
+                onChange={e => setFinalReportReviewForm({ ...finalReportReviewForm, remarks: e.target.value })}
+                rows="4"
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+            <button 
+              className="submit-btn" 
+              onClick={handleFinalReportReviewSubmit}
+              disabled={submittingFinalReportReview}
+            >
+              {submittingFinalReportReview ? 'Submitting...' : 'Submit Decision'}
+            </button>
+            <button className="back-btn" onClick={() => { setSelectedFinalReport(null); setTurnitinScore(''); }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const generateEvalLink = async (groupId) => {
     setGeneratingLink(true);
     try {
@@ -942,6 +1229,12 @@ const handleAnnouncementSubmit = (e) => {
           Proposal Approval
         </button>
         <button
+          className={`sidebar-btn ${activeTab === 'finalReports' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('finalReports'); setMenuOpen(false); }}
+        >
+          Report Approval
+        </button>
+        <button
           className={`sidebar-btn ${activeTab === 'groups' ? 'active' : ''}`}
           onClick={() => { setActiveTab('groups'); setMenuOpen(false); }}
         >
@@ -978,6 +1271,8 @@ const handleAnnouncementSubmit = (e) => {
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'proposals' && renderProposals()}
         {activeTab === 'finalProposals' && renderFinalProposals()}
+        {activeTab === 'finalReports' && renderFinalReports()}
+        {selectedFinalReport && renderFinalReportModal()}
         {activeTab === 'groups' && renderGroups()}
         {activeTab === 'announcements' && renderAnnouncements()}
         {activeTab === 'marks' && renderMarksEvaluation()}

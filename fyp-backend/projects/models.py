@@ -641,3 +641,234 @@ class Announcement(models.Model):
         if self.end_date and timezone.now() > self.end_date:
             return False
         return True
+
+
+
+
+
+
+# =============================================================================
+# PROJECT REPORT SUBMISSION MODEL
+# =============================================================================
+class ProjectReportSubmission(models.Model):
+    """
+    Final Project Report submission system.
+    - Students 3 attempts mein report submit kar sakte hain
+    - Deadline tracking with late submission flag
+    - Supervisor review -> Admin final approval
+    - Internal plagiarism check + Manual Turnitin entry
+    """
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('submitted', 'Submitted'),
+        ('under_review', 'Under Review'),
+        ('approved_by_supervisor', 'Approved by Supervisor'),
+        ('revision_needed', 'Revision Needed'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    group = models.OneToOneField(
+        ProjectGroup,
+        on_delete=models.CASCADE,
+        related_name='report_submission'
+    )
+    
+    # Report file
+    report_file = models.FileField(
+        upload_to='project_reports/',
+        blank=True,
+        null=True,
+        help_text="Upload final project report (PDF/DOCX only, Max 20MB)"
+    )
+    
+    # Submission tracking
+    submission_count = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    
+    # Deadline tracking
+    is_late = models.BooleanField(default=False)
+    late_reason = models.TextField(blank=True, help_text="Reason for late submission (if any)")
+    
+    # Supervisor review fields
+    supervisor_remarks = models.TextField(blank=True, help_text="Supervisor's feedback")
+    approved_by_supervisor = models.ForeignKey(
+        Faculty,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_reports',
+        help_text="Supervisor who approved this report"
+    )
+    supervisor_reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Admin final review fields
+    admin_remarks = models.TextField(blank=True, help_text="Admin's final decision remarks")
+    finally_approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='finally_approved_reports',
+        limit_choices_to={'user_type': 'admin'},
+        help_text="Admin who gave final approval"
+    )
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Plagiarism check fields
+    internal_similarity_score = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Internal plagiarism check score (0-100%)"
+    )
+    internal_similarity_report = models.JSONField(
+        default=dict, 
+        blank=True,
+        help_text="Detailed similarity report with matched groups"
+    )
+    turnitin_similarity_score = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0.00,
+        blank=True,
+        null=True,
+        help_text="Manual Turnitin similarity score (admin enters)"
+    )
+    plagiarism_check_completed = models.BooleanField(default=False)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-submitted_at']
+        verbose_name = 'Project Report Submission'
+        verbose_name_plural = 'Project Report Submissions'
+    
+    def __str__(self):
+        return f"{self.group.group_number} - Report ({self.get_status_display()})"
+    
+    def can_upload(self):
+        """
+        Check if student can upload/modify report.
+        Returns: (can_upload: bool, reason: str)
+        """
+        if self.status == 'approved':
+            return False, "Report already approved. Cannot modify."
+        
+        if self.status == 'rejected':
+            return False, "Report rejected. Contact admin."
+        
+        if self.submission_count >= 3:
+            return False, "Maximum 3 submission attempts reached."
+        
+        return True, "Upload allowed"
+    
+    def increment_submission_count(self):
+        """Increment submission count and check limit"""
+        if self.submission_count >= 3:
+            return False, "Maximum submission attempts (3) reached"
+        
+        self.submission_count += 1
+        self.save()
+        return True, f"Submission #{self.submission_count}"
+    
+    def check_deadline_and_mark_late(self, deadline):
+        """
+        Check if submission is late and mark accordingly.
+        deadline: datetime object
+        """
+        if deadline and timezone.now() > deadline:
+            self.is_late = True
+            self.save()
+            return True, "Submission marked as LATE"
+        return False, "Submission on time"
+    
+    def supervisor_review(self, faculty, action, remarks=''):
+        """
+        Supervisor review action.
+        action: 'approve' or 'revision'
+        """
+        if self.status not in ['submitted', 'under_review', 'revision_needed']:
+            return False, f"Cannot review. Current status: {self.status}"
+        
+        if action == 'approve':
+            self.status = 'approved_by_supervisor'
+            self.supervisor_remarks = remarks
+            self.approved_by_supervisor = faculty
+            self.supervisor_reviewed_at = timezone.now()
+        elif action == 'revision':
+            self.status = 'revision_needed'
+            self.supervisor_remarks = remarks
+            self.supervisor_reviewed_at = timezone.now()
+        else:
+            return False, "Invalid action. Use 'approve' or 'revision'"
+        
+        self.save()
+        return True, f"Report {action}d by supervisor"
+    
+    def admin_review(self, admin_user, action, remarks=''):
+        """
+        Admin final review action.
+        action: 'approve' or 'reject'
+        """
+        if self.status != 'approved_by_supervisor':
+            return False, f"Cannot review. Status must be 'approved_by_supervisor', current: {self.status}"
+        
+        if action == 'approve':
+            self.status = 'approved'
+            self.admin_remarks = remarks
+            self.finally_approved_by = admin_user
+            self.admin_reviewed_at = timezone.now()
+        elif action == 'reject':
+            self.status = 'rejected'
+            self.admin_remarks = remarks
+            self.finally_approved_by = admin_user
+            self.admin_reviewed_at = timezone.now()
+        else:
+            return False, "Invalid action. Use 'approve' or 'reject'"
+        
+        self.save()
+        return True, f"Report finally {action}d by admin"
+
+
+# =============================================================================
+# REPORT DEADLINE MODEL (Optional - Global Deadline Management)
+# =============================================================================
+class ReportDeadline(models.Model):
+    """
+    Global deadline for project report submissions.
+    Admin can set/manage deadlines.
+    """
+    semester = models.CharField(max_length=20, help_text="e.g., 'Fall 2024'")
+    fydp_phase = models.CharField(
+        max_length=20,
+        choices=[('fydp1', 'FYDP-I'), ('fydp2', 'FYDP-II')],
+        default='fydp2'
+    )
+    deadline_date = models.DateTimeField(help_text="Report submission deadline")
+    late_submission_allowed = models.BooleanField(
+        default=True,
+        help_text="Allow late submissions with penalty/tag"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['semester', 'fydp_phase']
+        ordering = ['-deadline_date']
+        verbose_name = 'Report Deadline'
+        verbose_name_plural = 'Report Deadlines'
+    
+    def __str__(self):
+        return f"{self.semester} - {self.get_fydp_phase_display()} Deadline: {self.deadline_date}"
+    
+    def is_active(self):
+        """Check if deadline is still active"""
+        return timezone.now() <= self.deadline_date
+    
+    def is_expired(self):
+        """Check if deadline has passed"""
+        return timezone.now() > self.deadline_date

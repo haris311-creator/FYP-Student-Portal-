@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest, MeetingMinute, AttendanceLog, Announcement
+from .models import ProjectGroup, GroupMember, Faculty, FYDPProposal, ChangeRequest, MeetingMinute, AttendanceLog, Announcement, ReportDeadline, ProjectReportSubmission
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from accounts.models import CustomUser
@@ -578,3 +578,137 @@ class AnnouncementCreateUpdateSerializer(serializers.ModelSerializer):
             })
         
         return data
+    
+
+
+
+
+# =============================================================================
+# PROJECT REPORT SUBMISSION SERIALIZERS
+# =============================================================================
+class ProjectReportSubmissionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Project Report Submission.
+    Includes all fields for frontend display.
+    """
+    group_number = serializers.CharField(source='group.group_number', read_only=True)
+    project_title = serializers.CharField(source='group.project_title', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    
+    # Read-only fields for frontend display
+    submission_count = serializers.IntegerField(read_only=True)
+    is_late = serializers.BooleanField(read_only=True)
+    supervisor_remarks = serializers.CharField(read_only=True)
+    admin_remarks = serializers.CharField(read_only=True)
+    approved_by_supervisor_name = serializers.CharField(
+        source='approved_by_supervisor.full_name', read_only=True, default=None
+    )
+    finally_approved_by_name = serializers.CharField(
+        source='finally_approved_by.full_name', read_only=True, default=None
+    )
+    
+    # Plagiarism fields
+    internal_similarity_score = serializers.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        read_only=True
+    )
+    turnitin_similarity_score = serializers.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        read_only=True
+    )
+    plagiarism_check_completed = serializers.BooleanField(read_only=True)
+    
+    class Meta:
+        model = ProjectReportSubmission
+        fields = [
+            'id', 'group', 'group_number', 'project_title',
+            'report_file', 'submission_count', 'status', 'status_display',
+            'submitted_at', 'is_late', 'late_reason',
+            'supervisor_remarks', 'approved_by_supervisor_name', 'supervisor_reviewed_at',
+            'admin_remarks', 'finally_approved_by_name', 'admin_reviewed_at',
+            'internal_similarity_score', 'internal_similarity_report',
+            'turnitin_similarity_score', 'plagiarism_check_completed',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'status', 'submitted_at', 'submission_count', 'is_late',
+            'supervisor_remarks', 'admin_remarks',
+            'approved_by_supervisor_name', 'finally_approved_by_name',
+            'supervisor_reviewed_at', 'admin_reviewed_at',
+            'internal_similarity_score', 'internal_similarity_report',
+            'turnitin_similarity_score', 'plagiarism_check_completed'
+        ]
+
+
+class ProjectReportUploadSerializer(serializers.ModelSerializer):
+    """
+    Serializer specifically for handling report file uploads.
+    Validates file type (PDF/DOCX) and size (Max 20MB).
+    """
+    report_file = serializers.FileField(required=True)
+
+    class Meta:
+        model = ProjectReportSubmission
+        fields = ['report_file']
+
+    def validate_report_file(self, value):
+        # Check file extension
+        file_extension = value.name.split('.')[-1].lower()
+        allowed_extensions = ['pdf', 'docx']
+        
+        if file_extension not in allowed_extensions:
+            raise serializers.ValidationError(
+                f"Only {', '.join(allowed_extensions)} files are allowed."
+            )
+        
+        # Check file size (20MB limit)
+        max_size = 20 * 1024 * 1024  # 20MB in bytes
+        if value.size > max_size:
+            raise serializers.ValidationError("File size cannot exceed 20MB.")
+            
+        return value
+
+
+class ProjectReportReviewSerializer(serializers.Serializer):
+    """
+    Serializer for Supervisor and Admin review actions.
+    """
+    action = serializers.ChoiceField(choices=['approve', 'revision', 'reject'])
+    remarks = serializers.CharField(
+        required=False, 
+        allow_blank=True, 
+        max_length=1000,
+        help_text="Remarks for the review action"
+    )
+
+    def validate(self, data):
+        action = data.get('action')
+        remarks = data.get('remarks', '').strip()
+        
+        # If rejecting or asking for revision, remarks should ideally be provided
+        if action in ['reject', 'revision'] and not remarks:
+            raise serializers.ValidationError({
+                'remarks': 'Remarks are required when rejecting or requesting revision.'
+            })
+            
+        return data
+
+
+class ReportDeadlineSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Report Deadline management (Admin only).
+    """
+    is_active = serializers.BooleanField(read_only=True)
+    is_expired = serializers.BooleanField(read_only=True)
+    fydp_phase_display = serializers.CharField(source='get_fydp_phase_display', read_only=True)
+    
+    class Meta:
+        model = ReportDeadline
+        fields = [
+            'id', 'semester', 'fydp_phase', 'fydp_phase_display',
+            'deadline_date', 'late_submission_allowed',
+            'is_active', 'is_expired', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']

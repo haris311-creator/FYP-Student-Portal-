@@ -11,6 +11,8 @@ from .views import (
     AttendanceSheetViewSet,
     StudentMeetingDataView,
     AnnouncementViewSet,
+    ProjectReportSubmissionViewSet,  
+    ReportDeadlineViewSet, 
 )
 
 router = DefaultRouter()
@@ -24,6 +26,8 @@ router.register(r'meetings', MeetingMinuteViewSet, basename='meeting')
 router.register(r'attendance-sheet', AttendanceSheetViewSet, basename='attendance')
 router.register(r'students/my-meetings', StudentMeetingDataView, basename='student-meetings')
 router.register(r'announcements', AnnouncementViewSet, basename='announcement')
+router.register(r'reports', ProjectReportSubmissionViewSet, basename='report')
+router.register(r'deadlines', ReportDeadlineViewSet, basename='deadline')
 
 urlpatterns = [
     path('', include(router.urls)),
