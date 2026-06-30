@@ -536,8 +536,8 @@ function StudentDashboard() {
                 'Your group is active.'}
               </p>
               <span className="status-badge" style={{ 
-                background: status === 'completed' ? '#10b981' : 
-                          status === 'in_progress' ? '#3b82f6' : 
+                background: status === 'completed' ? '#16a34a' : 
+                          status === 'in_progress' ? '#1e3a8a' : 
                           status === 'proposal_approved' ? '#8b5cf6' :
                           status === 'proposal_pending' ? '#f59e0b' : '#10b981',
                 color: 'white'
@@ -577,7 +577,7 @@ function StudentDashboard() {
               <div>
                 <h4 style={{ marginBottom: '1rem', color: '#1e293b', fontSize: '1rem' }}>Group Members:</h4>
                 {existingGroup.members?.map((member, idx) => (
-                  <div key={idx} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '0.75rem', borderLeft: '3px solid #3b82f6' }}>
+                  <div key={idx} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '0.75rem', borderLeft: '3px solid #1e3a8a' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong style={{ color: '#1e293b' }}>
                         {member.student_name || member.full_name || member.student_email || 'Unknown'}
@@ -830,7 +830,7 @@ const renderProjectProgress = () => {
                 width: '32px', 
                 height: '32px', 
                 borderRadius: '50%', 
-                background: item.status === 'completed' ? '#10b981' : 
+                background: item.status === 'completed' ? '#000000' : 
                           item.status === 'in-progress' ? '#f59e0b' : '#e2e8f0',
                 display: 'flex',
                 alignItems: 'center',
@@ -1107,7 +1107,7 @@ const renderProjectProgress = () => {
       'submitted': '#3b82f6',
       'approved_by_supervisor': '#8b5cf6',
       'revision_needed': '#f59e0b',
-      'approved': '#10b981',
+      'approved': '#15803d',
       'rejected': '#ef4444'
     };
 
@@ -1120,10 +1120,10 @@ const renderProjectProgress = () => {
         {success && <div className="alert alert-success">{success}</div>}
         
         {/* Status Card */}
-        <div className="status-card" style={{ borderLeft: `4px solid ${statusColors[proposalData.status] || '#64748b'}` }}>
+        <div className="status-card" style={{ border: '1px solid #e2e8f0', borderLeft: `4px solid ${statusColors[proposalData.status] || '#64748b'}`, background: '#ffffff', borderRadius: '10px', padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0 }}>Proposal Status</h3>
-            <span className="status-badge" style={{ background: statusColors[proposalData.status], color: 'white' }}>
+           <span className="status-badge" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' }}>
               {proposalData.status_display}
             </span>
           </div>
@@ -1151,7 +1151,7 @@ const renderProjectProgress = () => {
             </div>
           )}
           {proposalData.admin_remarks && (
-            <div style={{ background: '#f3e8ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #8b5cf6' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #1e40af', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
               <p style={{ fontSize: '0.8rem', color: '#5b21b6', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Admin Remarks:</p>
               <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{proposalData.admin_remarks}</p>
             </div>
@@ -1159,7 +1159,7 @@ const renderProjectProgress = () => {
 
           {/* File Download */}
           {proposalData.proposal_file && (
-            <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #10b981' }}>
+           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #15803d', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
               <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Uploaded File:</p>
               <button 
                 onClick={() => handleFileDownload(proposalData.proposal_file)}
@@ -1193,8 +1193,8 @@ const renderProjectProgress = () => {
               </button>
             </div>
           ) : (
-            <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
-              <p style={{ color: '#991b1b', margin: 0, fontWeight: '500' }}>
+            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+              <p style={{ color: '#9a3412', margin: 0, fontWeight: '500' }}>
                 {proposalData.status === 'approved' ? 'Proposal has been finally approved. No further uploads allowed.' :
                  proposalData.status === 'rejected' ? 'Proposal has been rejected. Contact admin.' :
                  'Maximum 3 submission attempts reached. Contact admin to reset.'}
@@ -1240,7 +1240,7 @@ const renderProjectProgress = () => {
       'submitted': '#3b82f6',
       'approved_by_supervisor': '#8b5cf6',
       'revision_needed': '#f59e0b',
-      'approved': '#10b981',
+      'approved': '#15803d',
       'rejected': '#ef4444'
     };
 
@@ -1253,10 +1253,10 @@ const renderProjectProgress = () => {
         {success && <div className="alert alert-success">{success}</div>}
         
         {/* Status Card */}
-        <div className="status-card" style={{ borderLeft: `4px solid ${statusColors[reportData.status] || '#64748b'}` }}>
+       <div className="status-card" style={{ border: '1px solid #e2e8f0', borderLeft: `4px solid ${statusColors[reportData.status] || '#64748b'}`, background: '#ffffff', borderRadius: '10px', padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0 }}>Report Status</h3>
-            <span className="status-badge" style={{ background: statusColors[reportData.status], color: 'white' }}>
+           <span className="status-badge" style={{ background: reportData.status === 'approved' ? '#dcfce7' : statusColors[reportData.status], color: reportData.status === 'approved' ? '#166534' : 'white', border: reportData.status === 'approved' ? '1px solid #bbf7d0' : 'none' }}>
               {reportData.status_display}
             </span>
           </div>
@@ -1299,7 +1299,7 @@ const renderProjectProgress = () => {
             </div>
           )}
           {reportData.admin_remarks && (
-            <div style={{ background: '#f3e8ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #8b5cf6' }}>
+           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #1e40af', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
               <p style={{ fontSize: '0.8rem', color: '#5b21b6', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Admin Remarks:</p>
               <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{reportData.admin_remarks}</p>
             </div>
@@ -1307,7 +1307,7 @@ const renderProjectProgress = () => {
 
           {/* File Download */}
           {reportData.report_file && (
-            <div style={{ background: '#f0fdf4', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #10b981' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #15803d', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
               <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Uploaded Report:</p>
               <button 
                 onClick={() => handleFileDownload(reportData.report_file)}
@@ -1341,8 +1341,8 @@ const renderProjectProgress = () => {
               </button>
             </div>
           ) : (
-            <div style={{ background: '#fef2f2', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
-              <p style={{ color: '#991b1b', margin: 0, fontWeight: '500' }}>
+           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+              <p style={{ color: '#9a3412', margin: 0, fontWeight: '500' }}>
                 {reportData.status === 'approved' ? ' Report has been finally approved. No further uploads allowed.' :
                 reportData.status === 'rejected' ? ' Report has been rejected. Contact admin.' :
                 ' Maximum 3 submission attempts reached. Contact admin to reset.'}
@@ -1365,7 +1365,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* User Profile */}
-        <div style={{ padding: '1rem', background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)', borderRadius: '12px', margin: '0 0.75rem 1rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', color: 'white' }}>
+        <div style={{ padding: '1rem', background: '#1e3a8a', borderRadius: '12px', margin: '0 0.75rem 1rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', color: 'white' }}>
           <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '1.1rem', flexShrink: 0 }}>
             {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
           </div>

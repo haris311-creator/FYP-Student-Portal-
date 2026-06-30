@@ -1,7 +1,7 @@
 /* =========================================
    1. GLOBAL LAYOUT & RESET
    ========================================= */
-* {
+*{
   box-sizing: border-box;
 }
 
@@ -146,7 +146,7 @@
   border-color: #eff6ff;
   color: #1e3a8a;
   font-weight: 600;
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid #1e3a8a;
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
 }
 
@@ -556,8 +556,8 @@
 }
 
 .status-card.approved {
-  border-left: 4px solid #22c55e;
-  background: #f0fdf4;
+  border-left: 4px solid #15803d;
+  background: #dcfce7;
   padding: 1.5rem;
   border-radius: 8px;
 }
@@ -566,12 +566,13 @@
    11. MEETING LOGS TABLE STYLING
    ========================================= */
 .table-container {
-  background: white;
-  border-radius: 12px;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  margin-bottom: 2rem;
+  border-left: 4px solid #1e40af;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .data-table {
@@ -628,7 +629,7 @@
 }
 
 .data-table .badge-approved {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  background: #dcfce7;
   color: #15803d;
   border: 1px solid #86efac;
 }
@@ -670,22 +671,23 @@
    12. ATTENDANCE TITLE CARD
    ========================================= */
 .attendance-title-card {
-  background: #eff6ff;
-  border-left: 5px solid #3b82f6;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
-  margin: 2rem 0 1.5rem 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0 0 0.75rem 0;
+  margin: 0 0 1rem 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: none;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .attendance-title-card h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: #1e3a8a;
+  color: #1e40af;
 }
 
 /* =========================================
@@ -713,21 +715,24 @@
    14. TASK CARD STYLING
    ========================================= */
 .task-card {
-  background: #eff6ff;
-  border-left: 5px solid #3b82f6;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #1e40af;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .task-card h3 {
-  color: #1e3a8a;
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
+   margin: 0 0 0.5rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e40af;
 }
 
 .task-card p {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: #334155;
   margin: 0;
 }
@@ -853,12 +858,20 @@
   
   /* Attendance title */
   .attendance-title-card {
-    padding: 0.75rem 1rem;
-    margin: 1.5rem 0 1rem 0;
+   background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #1e40af;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin: 0 0 1.5rem 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
   }
   
   .attendance-title-card h3 {
-    font-size: 1.1rem;
+    margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e40af;
   }
   
   /* Materials grid */
