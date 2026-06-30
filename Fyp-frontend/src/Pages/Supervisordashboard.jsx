@@ -885,9 +885,16 @@ const handleReportReviewSubmit = async () => {
                     className={`meeting-card ${isConducted ? 'meeting-done' : 'meeting-pending'} ${isActive ? 'meeting-active' : ''}`}
                     onClick={() => !isActive && handleMeetingCardClick(meetingNum)}
                   >
-                    <div className="meeting-card-header">
-                      <span className="meeting-num">Meeting #{meetingNum}</span>
-                      <span className={`badge ${isConducted ? 'badge-green' : 'badge-blue'}`}>
+                  <div className="meeting-card-header">
+                    <span className="meeting-num">Meeting #{meetingNum}</span>
+                      <span
+                        className="badge"
+                        style={{
+                          background: isConducted ? '#dcfce7' : '#1e3a8a',
+                          color: isConducted ? '#166534' : '#ffffff',
+                          border: isConducted ? '1px solid #86efac' : '1px solid #1e3a8a'
+                        }}
+                      >
                         {isConducted ? ' Done' : ' Pending'}
                       </span>
                     </div>

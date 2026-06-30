@@ -9,7 +9,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  background: #1e3a8a;
   color: white;
   padding: 20px 24px;
   border-radius: 10px;
@@ -382,7 +382,7 @@
 }
 
 .ssm-submit-btn {
-  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  background: #1e3a8a;
   color: white;
   border: none;
   padding: 12px 32px;
