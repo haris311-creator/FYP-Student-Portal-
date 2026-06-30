@@ -50,7 +50,7 @@ function Login() {
 
           <div className="login-logo">
             <h2>IQRA UNIVERSITY</h2>
-            <p>FYP Management Portal</p>
+            <p>FYDP Management Portal</p>
           </div>
 
           <div className="login-divider" />
@@ -83,7 +83,7 @@ function Login() {
             </div>
 
             <div style={{ textAlign: 'right', marginBottom: '0.1rem' }}>
-              <Link to="/forgot-password" style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '0.875rem' }}>
+              <Link to="/forgot-password" style={{ color: '#1e3a8a', textDecoration: 'none', fontSize: '0.875rem' }}>
                 Forgot Password?
               </Link>
             </div>
@@ -94,10 +94,8 @@ function Login() {
           </form>
 
           <p className="login-info">
-            student@iqra.edu.pk · supervisor@iqra.edu.pk · admin@iqra.edu.pk<br />
-            Password: 123456<br />
-            <span style={{ marginTop: '0.5rem', display: 'block' }}>
-              Don't have an account? <Link to="/register" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '600' }}>Register here</Link>
+            <span style={{  display: 'block' }}>
+              Don't have an account? <Link to="/register" style={{ color: '#1e3a8a', textDecoration: 'none', fontWeight: '600' }}>Register here</Link>
             </span>
           </p>
         </div>

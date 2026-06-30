@@ -207,7 +207,7 @@ const handleSubmit = async (e) => {
           </form>
 
           <p className="login-info">
-            Already have an account? <Link to="/login" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '600' }}>Login here</Link>
+            Already have an account? <Link to="/login" style={{ color: '#1e3a8a', textDecoration: 'none', fontWeight: '600' }}>Login here</Link>
           </p>
 
         </div>

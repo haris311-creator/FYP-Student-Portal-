@@ -41,13 +41,13 @@
 .login-divider {
   height: 1px;
   background: #e2e8f0;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.15rem;
 }
 
 .form-group {
@@ -131,7 +131,7 @@
 .login-button {
   margin-top: 1rem;
   padding: 1rem;
-  background: linear-gradient(135deg, #3657f0, #4f46e5);
+  background: #1e3a8a;
   color: white;
   border: none;
   border-radius: 10px;
@@ -144,7 +144,7 @@
 .login-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(54, 87, 240, 0.33);
-  background: linear-gradient(135deg, #243fbc, #4338ca);
+  background: linear-gradient(135deg, #1e3a8a, #4338ca);
 }
 
 .login-info {

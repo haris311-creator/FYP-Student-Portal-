@@ -108,7 +108,7 @@ function ForgotPassword() {
           </form>
 
           <p className="login-info">
-            Remember your password? <Link to="/login" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '600' }}>Login here</Link>
+            Remember your password? <Link to="/login" style={{ color: '#1e3a8a', textDecoration: 'none', fontWeight: '600' }}>Login here</Link>
           </p>
 
         </div>
