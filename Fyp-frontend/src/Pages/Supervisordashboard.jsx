@@ -462,7 +462,7 @@ const handleReportReviewSubmit = async () => {
                 <div className="group-info">
                   <div className="group-header">
                     <h3 className="group-name">{proposal.project_title}</h3>
-                    <span className="badge badge-blue" style={{ fontSize: '0.75rem' }}>
+                    <span className=" badge badge-blue" style={{ fontSize: '0.75rem' }}>
                       Attempt {proposal.submission_count}/3
                     </span>
                   </div>

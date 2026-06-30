@@ -1237,7 +1237,7 @@ const renderProjectProgress = () => {
 
     const statusColors = {
       'draft': '#64748b',
-      'submitted': '#3b82f6',
+      'submitted': '#1e3a8a',
       'approved_by_supervisor': '#8b5cf6',
       'revision_needed': '#f59e0b',
       'approved': '#15803d',

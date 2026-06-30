@@ -851,7 +851,7 @@ const handleAnnouncementSubmit = (e) => {
                 disabled={!turnitinScore}
                 style={{
                   padding: '0.5rem 1rem',
-                  background: '#3b82f6',
+                  background: '#1e3a8a',
                   color: 'white',
                   border: 'none',
                   borderRadius: '6px',
