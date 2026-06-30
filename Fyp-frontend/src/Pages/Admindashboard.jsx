@@ -1177,7 +1177,7 @@ const handleAnnouncementSubmit = (e) => {
         {/* User Profile Card */}
         <div style={{ 
           padding: '1rem',
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+          background: '#1e3a8a',
           borderRadius: '12px',
           margin: '0 0.75rem 1rem 0.75rem',
           display: 'flex',

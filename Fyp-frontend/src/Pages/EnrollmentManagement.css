@@ -132,14 +132,3 @@
 }
 
 /* Stat Card Colored Borders */
-.stat-card-approved {
-  border-left: 4px solid #10b981 !important;
-}
-
-.stat-card-pending {
-  border-left: 4px solid #f59e0b !important;
-}
-
-.stat-card-rejected {
-  border-left: 4px solid #dc2626 !important;
-}

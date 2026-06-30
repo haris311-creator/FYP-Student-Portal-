@@ -118,7 +118,7 @@ function EnrollmentManagement() {
         
         <div style={{ 
           padding: '1rem',
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+          background: '#1e3a8a',
           borderRadius: '12px',
           margin: '0 0.75rem 1rem 0.75rem',
           display: 'flex',
@@ -237,19 +237,19 @@ function EnrollmentManagement() {
               <p className="stat-label">Total Requests</p>
             </div>
           </div>
-          <div className="stat-card stat-card-approved">
+          <div className="stat-card ">
             <div>
               <p className="stat-number">{stats.registered_students}</p>
               <p className="stat-label">Approved</p>
             </div>
           </div>
-          <div className="stat-card stat-card-pending">
+          <div className="stat-card ">
             <div>
               <p className="stat-number">{stats.pending_registration}</p>
               <p className="stat-label">Pending</p>
             </div>
           </div>
-          <div className="stat-card stat-card-rejected">
+          <div className="stat-card ">
             <div>
               <p className="stat-number">{stats.rejected_students}</p>
               <p className="stat-label">Rejected</p>
