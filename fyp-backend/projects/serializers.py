@@ -92,13 +92,15 @@ class ProjectGroupSerializer(serializers.ModelSerializer):
     supervisor_name = serializers.CharField(source='supervisor.full_name', read_only=True)
     member_count = serializers.SerializerMethodField()
     domain_display = serializers.SerializerMethodField()
+    members_details = serializers.SerializerMethodField()  
+    supervisor_details = serializers.SerializerMethodField()  
     
     class Meta:
         model = ProjectGroup
         fields = [
             'id', 'group_id', 'group_number', 'project_title', 'domain', 'domain_display', 
-            'status', 'supervisor', 'supervisor_name', 'co_supervisor',
-            'semester', 'fydp_phase', 'members', 'member_count',
+            'status', 'supervisor', 'supervisor_name', 'supervisor_details', 'co_supervisor',
+            'semester', 'fydp_phase', 'members','members_details', 'member_count',
             'sdg_goals', 'acm_knowledge_areas', 'created_at', 'updated_at',
             'rejection_reason'
         ]
@@ -121,6 +123,38 @@ class ProjectGroupSerializer(serializers.ModelSerializer):
         }
         domain = obj.domain or ''
         return domain_map.get(domain, domain)  # Agar mapping nahi mili toh original return kare
+    
+        # ✅ ADD THIS METHOD
+    def get_members_details(self, obj):
+        """Get all members with their details for evaluation display"""
+        members = obj.members.select_related('student').all()
+        return [
+            {
+                'id': m.id,  # ✅ GroupMember ka ID (yehi sessional evaluation mein use hota hai)
+                'email': m.student.email,
+                'full_name': m.student.get_full_name() if hasattr(m.student, 'get_full_name') else m.student.email,
+                'student_id': m.student.student_id,
+                'role': m.role,
+                'cgpa': float(m.cgpa) if m.cgpa else None,
+                'credit_hours': m.earned_credit_hours,
+            } for m in members
+        ]
+    
+    # ✅ ADD THIS METHOD
+    def get_supervisor_details(self, obj):
+        """Get supervisor details"""
+        if obj.supervisor:
+            return {
+                'id': obj.supervisor.id,
+                'name': obj.supervisor.full_name,
+                'email': obj.supervisor.email,
+            }
+        return None
+    
+    def create(self, validated_data):
+        validated_data['status'] = 'pending_approval'
+        validated_data.pop('group_number', None)
+        return super().create(validated_data)
     
     def create(self, validated_data):
         validated_data['status'] = 'pending_approval'
@@ -362,7 +396,7 @@ class AdminProjectGroupSerializer(serializers.ModelSerializer):
         members = obj.members.select_related('student').all()
         return [
             {
-                'id': m.student.id, 'email': m.student.email,
+                'id': m.student.id, 'group_member_id': m.id, 'email': m.student.email,
                 'full_name': m.student.get_full_name() if hasattr(m.student, 'get_full_name') else m.student.email,
                 'student_id': m.student.student_id, 'role': m.role,
                 'cgpa': m.cgpa, 'credit_hours': m.earned_credit_hours,

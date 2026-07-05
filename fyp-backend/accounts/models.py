@@ -39,6 +39,7 @@ class CustomUser(AbstractUser):
         ('student', 'Student'),
         ('supervisor', 'Supervisor'),
         ('admin', 'Admin'),
+        ('committee', 'Committee Member')
     )
     
     email = models.EmailField(unique=True)

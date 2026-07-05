@@ -80,7 +80,7 @@ function App() {
         <Route
           path="/admin-dashboard"
           element={
-            <ProtectedRoute allowedTypes={['admin']}>
+            <ProtectedRoute allowedTypes={['admin','committee']}>
               <AdminDashboard />
             </ProtectedRoute>
           }

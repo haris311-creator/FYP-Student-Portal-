@@ -13,6 +13,7 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedGroupForMarks, setSelectedGroupForMarks] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isCommittee, setIsCommittee] = useState(false);
   
   // Backend data states
   const [pendingProposals, setPendingProposals] = useState([]);
@@ -50,7 +51,40 @@ function AdminDashboard() {
   const [evalLinks, setEvalLinks] = useState({});
   const [generatingLink, setGeneratingLink] = useState(false);
 
-useEffect(() => {
+
+
+
+  
+  useEffect(() => {
+  // ✅ Pehle sync check karo localStorage se
+  const userStr = localStorage.getItem('user');
+  let isCommitteeMember = false;
+  
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      isCommitteeMember = user.user_type === 'committee';
+    } catch (e) {
+      console.log('Error parsing user:', e);
+    }
+  }
+  
+  // Sab ke liye common fetches
+  fetchAllGroups();
+  fetchActiveSupervisors();
+  
+  // Sirf admin ke liye fetches
+  if (!isCommitteeMember) {
+    fetchPendingProposals();
+    fetchFinalProposals();
+    fetchFinalReports();
+    fetchAnnouncements();
+  }
+}, []);  
+
+
+
+  useEffect(() => {
   const loadUser = () => {
     try {
       const userStr = localStorage.getItem('user');
@@ -62,6 +96,7 @@ useEffect(() => {
           role: user.user_type || 'admin',
           email: user.email || ''
         });
+        setIsCommittee(user.user_type === 'committee');
       }
     } catch (e) {
       console.log('User info not found');
@@ -69,7 +104,7 @@ useEffect(() => {
   };
   loadUser();
   
-  // ✅ URL se tab read karein (jab Enrollment page se aayein)
+  //  URL se tab read karein (jab Enrollment page se aayein)
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
   if (tabParam) {
@@ -77,7 +112,7 @@ useEffect(() => {
   }
 }, []);
 
-// ✅ Jab URL change ho, tab bhi update karein
+//  Jab URL change ho, tab bhi update karein
 useEffect(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
@@ -86,14 +121,6 @@ useEffect(() => {
   }
 }, [window.location.search]);
 
-  useEffect(() => {
-    fetchPendingProposals();
-    fetchAllGroups();
-    fetchFinalProposals();
-    fetchFinalReports();
-    fetchActiveSupervisors(); 
-    fetchAnnouncements();   
-  }, []);
 
   const fetchPendingProposals = async () => {
     try {
@@ -442,12 +469,14 @@ const handleAnnouncementSubmit = (e) => {
             <p className="stat-label">Total FYP Groups</p>
           </div>
         </div>
-        <div className="stat-card">
+        {!isCommittee && (  // ✅ Committee ko yeh nahi dikhana
+          <div className="stat-card">
           <div>
             <p className="stat-number">{pendingProposals.length}</p>
             <p className="stat-label">Pending Groups & Ideas Approvals</p>
           </div>
         </div>
+        )}
         <div className="stat-card">
           <div>
             <p className="stat-number">{inProgressProjects}</p>
@@ -470,18 +499,24 @@ const handleAnnouncementSubmit = (e) => {
 
       <h3 className="sub-title">Quick Actions</h3>
       <div className="actions-grid">
+        {!isCommittee && (  // ✅ Committee ke liye hide
+          <>
         <button className="action-btn" onClick={() => setActiveTab('proposals')}>
           <span>Approve Groups & Ideas</span>
         </button>
         <button className="action-btn" onClick={() => setActiveTab('finalProposals')}>
           <span>Proposal Approval</span>
         </button>
+        </>
+        )}
         <button className="action-btn" onClick={() => setActiveTab('groups')}>
           <span>View All Groups</span>
         </button>
+        {!isCommittee && (  // ✅ Committee ke liye hide
         <button className="action-btn" onClick={() => setActiveTab('announcements')}>
           <span>Announcements</span>
-        </button>        
+        </button>
+        )}
        <button className="action-btn" onClick={() => setActiveTab('marks')}>
     <span>Marks & Evaluation</span>
   </button>
@@ -1007,15 +1042,20 @@ const handleAnnouncementSubmit = (e) => {
                     <td>
                       <button
                         className="approve-btn"
-                        onClick={() => setSelectedGroupForMarks({
-                          ...g,
-                          project: g.title,
-                          members: g._fullData?.members_details?.map(m => ({
-                            name: m.full_name || m.email || 'Unknown',
-                            odoo_id: m.student_id || m.odoo_id || '',
-                            student_db_id: m.id
-                          })) || []
-                        })}
+                        onClick={() => {
+                          console.log('📦 Full Group Data:', g._fullData); // ✅ Add this
+                          console.log('👥 Members Details:', g._fullData?.members_details); // ✅ Add this
+                          
+                          setSelectedGroupForMarks({
+                            ...g,
+                            project: g.title,
+                            members: g._fullData?.members_details?.map(m => ({
+                              name: m.full_name || m.email || 'Unknown',
+                              odoo_id: m.student_id || m.odoo_id || '',
+                              student_db_id: m.id || m.group_member_id || m.student
+                            })) || []
+                          })
+                        }}
                       >
                         Open
                       </button>
@@ -1170,7 +1210,7 @@ const handleAnnouncementSubmit = (e) => {
     <div className="dashboard-page">
       <div className={`dashboard-sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h2 className="sidebar-title">Admin Panel</h2>
+          <h2 className="sidebar-title">{isCommittee ? 'Committee Panel' : 'Admin Panel'}</h2>
           <button className="sidebar-close" onClick={() => setMenuOpen(false)}>✕</button>
         </div>
         
@@ -1205,17 +1245,23 @@ const handleAnnouncementSubmit = (e) => {
             </p>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', textTransform: 'capitalize' }}>
               {userInfo.role === 'admin' ? 'Administrator' : 
-               userInfo.role === 'supervisor' ? 'Supervisor' : 'User'}
+              userInfo.role === 'committee' ? 'Committee Member' :
+              userInfo.role === 'supervisor' ? 'Supervisor' : 'User'}
             </p>
           </div>
         </div>
-        
+
+
         <button
           className={`sidebar-btn ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => { setActiveTab('overview'); setMenuOpen(false); }}
         >
           Overview
         </button>
+
+    {/* ✅ Committee ke liye admin-only tabs hide karo */}
+    {!isCommittee && (
+      <>
         <button
           className={`sidebar-btn ${activeTab === 'proposals' ? 'active' : ''}`}
           onClick={() => { setActiveTab('proposals'); setMenuOpen(false); }}
@@ -1234,18 +1280,23 @@ const handleAnnouncementSubmit = (e) => {
         >
           Report Approval
         </button>
+      </>
+    )}
         <button
           className={`sidebar-btn ${activeTab === 'groups' ? 'active' : ''}`}
           onClick={() => { setActiveTab('groups'); setMenuOpen(false); }}
         >
           View All Groups
         </button>
+
+      {!isCommittee && (  // ✅ Committee ke liye hide
         <button
           className={`sidebar-btn ${activeTab === 'announcements' ? 'active' : ''}`}
           onClick={() => { setActiveTab('announcements'); setMenuOpen(false); }}
         >
           Announcements
         </button>
+      )}
         <button
     className={`sidebar-btn ${activeTab === 'marks' ? 'active' : ''}`}
     onClick={() => { setActiveTab('marks'); setSelectedGroupForMarks(null); setMenuOpen(false); }}
@@ -1253,14 +1304,16 @@ const handleAnnouncementSubmit = (e) => {
     Marks & Evaluation
   </button>
 
-  <Link 
-    to="/admin/enrollment" 
-    className="sidebar-btn"
-    style={{ textDecoration: 'none', color: 'inherit' }}
-    onClick={() => setMenuOpen(false)}
-  >
-     Enrollment Management
-  </Link>
+        {!isCommittee && (  // ✅ Committee ke liye hide
+          <Link 
+            to="/admin/enrollment" 
+            className="sidebar-btn"
+            style={{ textDecoration: 'none', color: 'inherit' }}
+            onClick={() => setMenuOpen(false)}
+          >
+             Enrollment Management
+          </Link>
+        )}
       </div>
 
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
@@ -1269,12 +1322,12 @@ const handleAnnouncementSubmit = (e) => {
 
       <div className="dashboard-content">
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'proposals' && renderProposals()}
-        {activeTab === 'finalProposals' && renderFinalProposals()}
-        {activeTab === 'finalReports' && renderFinalReports()}
+        {activeTab === 'proposals' && !isCommittee && renderProposals()}
+        {activeTab === 'finalProposals' && !isCommittee && renderFinalProposals()}
+        {activeTab === 'finalReports' && !isCommittee && renderFinalReports()}
         {selectedFinalReport && renderFinalReportModal()}
         {activeTab === 'groups' && renderGroups()}
-        {activeTab === 'announcements' && renderAnnouncements()}
+        {activeTab === 'announcements' && !isCommittee && renderAnnouncements()}
         {activeTab === 'marks' && renderMarksEvaluation()}
         {selectedFinalProposal && renderFinalProposalModal()}
       </div>

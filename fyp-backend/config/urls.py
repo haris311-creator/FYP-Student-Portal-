@@ -38,6 +38,7 @@ urlpatterns = [
     path('', home_view, name='home'),
     path('api/auth/', include('accounts.urls')),
     path('api/projects/', include('projects.urls')),
+    path('api/evaluations/', include('evaluations.urls')),
 ]
 
 # Serve media files during development (for uploaded proposals and templates)

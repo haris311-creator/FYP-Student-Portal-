@@ -9,6 +9,7 @@ function EnrollmentManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   
+  const [userInfo, setUserInfo] = useState({ name: '', role: '', email: '' });
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +31,27 @@ function EnrollmentManagement() {
     return location.pathname === path;
   };
 
+
   useEffect(() => {
+    //  User info load karo localStorage se
+    const loadUser = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+          setUserInfo({
+            name: fullName || user.email || 'User',
+            role: user.user_type || 'admin',
+            email: user.email || ''
+          });
+        }
+      } catch (e) {
+        console.log('User info not found');
+      }
+    };
+    
+    loadUser();
     fetchStudents();
     fetchStats();
   }, []);
@@ -134,7 +155,7 @@ function EnrollmentManagement() {
             fontWeight: '700', fontSize: '1.1rem', flexShrink: 0,
             backdropFilter: 'blur(10px)'
           }}>
-            A
+            {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
           </div>
           
           <div style={{ overflow: 'visible', flex: 1, minWidth: 0 }}>
@@ -142,10 +163,12 @@ function EnrollmentManagement() {
               margin: 0, fontSize: '0.9rem', fontWeight: '600', color: 'white',
               whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2', overflowWrap: 'break-word'
             }}>
-              Admin User
+              {userInfo.name}
             </p>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', textTransform: 'capitalize' }}>
-              Administrator
+            {userInfo.role === 'admin' ? 'Administrator' : 
+            userInfo.role === 'committee' ? 'Committee Member' :
+            userInfo.role === 'supervisor' ? 'Supervisor' : 'User'}
             </p>
           </div>
         </div>

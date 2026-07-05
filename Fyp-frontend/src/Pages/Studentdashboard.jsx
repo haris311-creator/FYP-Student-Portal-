@@ -61,13 +61,13 @@ function StudentDashboard() {
           });
         }
       } catch (e) {
-        console.log('User info not found');
       }
     };
     loadUser();
   }, []);
 
-  // Fetch group data
+
+  // Fetch group data - Clean version
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
@@ -76,42 +76,32 @@ function StudentDashboard() {
         if (activeResponse.data) {
           setExistingGroup(activeResponse.data);
           setHasSubmittedIdea(true);
-        } else {
-          try {
-            const historyResponse = await api.get('/projects/groups/my-group-with-history/');
-            
-            if (historyResponse.data && historyResponse.data.status === 'rejected') {
-              setExistingGroup(historyResponse.data);
-              setHasSubmittedIdea(true);
-            } else {
-              setExistingGroup(null);
-              setHasSubmittedIdea(false);
-            }
-          } catch (historyErr) {
-            setExistingGroup(null);
-            setHasSubmittedIdea(false);
-          }
+          return;
         }
       } catch (err) {
-        try {
-          const historyResponse = await api.get('/projects/groups/my-group-with-history/');
-          
-          if (historyResponse.data && historyResponse.data.status === 'rejected') {
-            setExistingGroup(historyResponse.data);
-            setHasSubmittedIdea(true);
-          } else {
-            setExistingGroup(null);
-            setHasSubmittedIdea(false);
-          }
-        } catch (historyErr) {
-          setExistingGroup(null);
-          setHasSubmittedIdea(false);
-        }
+        // Ignore errors, try history endpoint
       }
+      
+      // Check history for rejected groups
+      try {
+        const historyResponse = await api.get('/projects/groups/my-group-with-history/');
+        
+        if (historyResponse.data && historyResponse.data.status === 'rejected') {
+          setExistingGroup(historyResponse.data);
+          setHasSubmittedIdea(true);
+          return;
+        }
+      } catch (historyErr) {
+        // Ignore errors
+      }
+      
+      // No group found - new student
+      setExistingGroup(null);
+      setHasSubmittedIdea(false);
     };
+    
     fetchGroupData();
   }, []);
-
 
   
 
@@ -520,7 +510,7 @@ function StudentDashboard() {
         );
       }
       
-      // ✅ UPDATED: Approved/Active Status - All valid statuses included
+      // Approved/Active Status - All valid statuses included
       if (['idea_pitch', 'approved', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(status)) {
         return (
           <div className="content-area">
@@ -1066,7 +1056,7 @@ const renderProjectProgress = () => {
     );
   };
 
-  // ✅ UPDATED: Render Proposal Upload & Status
+  // Render Proposal Upload & Status
   const renderProposal = () => {
       // 1. Check if group is approved first
       if (!existingGroup || !['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
@@ -1357,7 +1347,7 @@ const renderProjectProgress = () => {
   // Main Render
   return (
     <div className="dashboard-container">
-      {/* ✅ Sidebar Pehle */}
+      {/*  Sidebar Pehle */}
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h3>Student Portal</h3>
@@ -1390,7 +1380,7 @@ const renderProjectProgress = () => {
         </nav>
       </aside>
 
-      {/* ✅ Overlay Baad mein */}
+      {/*  Overlay Baad mein */}
       <div className={`sidebar-overlay ${menuOpen ? 'active' : ''}`} onClick={() => setMenuOpen(false)} />
 
       {/* Main Content */}

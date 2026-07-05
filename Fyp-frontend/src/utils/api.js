@@ -58,7 +58,7 @@ api.interceptors.response.use(
   }
 );
 
-// ✅ DEFAULT EXPORT (Isi ki wajah se import api from './api' kaam karega)
+// DEFAULT EXPORT (Isi ki wajah se import api from './api' kaam karega)
 export default api;
 
 
@@ -220,6 +220,9 @@ export const reportAPI = {
   // Student: Get their report
   getMyReport: () => api.get('/projects/reports/'),
   
+  // Admin/Committee: Get specific group's report
+  getGroupReport: (groupId) => api.get(`/projects/reports/group-report/?group_id=${groupId}`),
+
   // Student: Upload report file
   uploadReport: (reportId, formData) => {
     return api.post(`/projects/reports/${reportId}/upload/`, formData, {
@@ -254,4 +257,56 @@ export const reportAPI = {
 export const deadlineAPI = {
   getCurrent: (semester, phase) => 
     api.get(`/projects/deadlines/current/?semester=${semester}&fydp_phase=${phase}`),
+};
+
+
+
+// =============================================================================
+// EVALUATION ENDPOINTS
+// =============================================================================
+export const evaluationAPI = {
+  // Criteria
+  getCriteria: (type) => api.get(`/evaluations/criteria/?type=${type}`),
+  createCriteria: (data) => api.post('/evaluations/criteria/', data),
+  updateCriteria: (id, data) => api.put(`/evaluations/criteria/${id}/`, data),
+  deleteCriteria: (id) => api.delete(`/evaluations/criteria/${id}/`),
+  
+  // Sessional
+  getSessionalByGroup: (groupId) => api.get(`/evaluations/sessional/by_group/?group_id=${groupId}`),
+  submitSessional: (data) => api.post('/evaluations/sessional/', data),
+  updateSessional: (id, data) => api.put(`/evaluations/sessional/${id}/`, data),
+  
+  // Meeting Logs
+  getMeetingLogByGroup: (groupId) => api.get(`/evaluations/meeting-logs/by_group/?group_id=${groupId}`),
+  submitMeetingLog: (data) => api.post('/evaluations/meeting-logs/', data),
+  updateMeetingLog: (id, data) => api.put(`/evaluations/meeting-logs/${id}/`, data),
+  
+  // Report
+  getReportByGroup: (groupId) => api.get(`/evaluations/reports/by_group/?group_id=${groupId}`),
+  submitReport: (data) => api.post('/evaluations/reports/', data),
+  
+  // Presentation
+  getPresentationByGroup: (groupId) => api.get(`/evaluations/presentations/by_group/?group_id=${groupId}`),
+  getPresentationAverage: (groupId) => api.get(`/evaluations/presentations/average_marks/?group_id=${groupId}`),
+  submitPresentation: (data) => api.post('/evaluations/presentations/', data),
+  
+  // Public Evaluation (no auth)
+  getPublicEvaluation: (token) => {
+    return fetch(`http://localhost:8000/api/evaluations/public/presentation/${token}/`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    }).then(res => res.json());
+  },
+  submitPublicEvaluation: (token, data) => {
+    return fetch(`http://localhost:8000/api/evaluations/public/presentation/${token}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(res => res.json());
+  },
+  
+  // Final Results
+  calculateFinalMarks: (groupId) => api.post('/evaluations/final-results/calculate/', { group_id: groupId }),
+  getFinalResults: () => api.get('/evaluations/final-results/'),
+  getAwardList: (semester, phase) => api.get(`/evaluations/final-results/award_list/?semester=${semester}&fydp_phase=${phase}`),
 };

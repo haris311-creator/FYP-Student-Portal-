@@ -21,7 +21,14 @@ function Login() {
   
   try {
     const data = await loginAPI(email, password);
+
+    // Pehle purana data clear karo
+    localStorage.removeItem('user');
+    localStorage.removeItem('user_type');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     
+    // Phir naya data save karo
     localStorage.setItem('access_token', data.tokens.access);
     localStorage.setItem('refresh_token', data.tokens.refresh);
     localStorage.setItem('user', JSON.stringify(data.user));
@@ -36,6 +43,8 @@ function Login() {
     } else if (userType === 'supervisor') {
       navigate('/supervisor-dashboard');
     } else if (userType === 'admin') {
+      navigate('/admin-dashboard');
+    } else if (userType === 'committee') {
       navigate('/admin-dashboard');
     }
   } catch (error) {

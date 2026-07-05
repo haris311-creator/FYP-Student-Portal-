@@ -57,10 +57,12 @@ api.interceptors.response.use(
 export const adminAPI = {
   // Get pending groups
   getPendingGroups: () => api.get('/projects/admin/approval/pending/'),
-  
-  // Get all groups with filters
+
+    //  Get all groups - Committee + Admin
   getAllGroups: (params = {}) => 
-    api.get('/projects/admin/approval/all/', { params }),
+    api.get('/projects/groups/', { params }),  //  Normal groups endpoint
+  
+
   
   // Get group details
   getGroupDetails: (groupId) => 

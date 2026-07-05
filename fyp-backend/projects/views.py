@@ -107,10 +107,53 @@ class EligibilityCheckView(viewsets.ViewSet):
 # =============================================================================
 # 3. PROJECT GROUPS - Creation & Management
 # =============================================================================
+class IsAdminOrCommittee(permissions.BasePermission):
+    """
+    Custom permission to allow admin and committee members to view groups
+    Only admin can modify groups
+    """
+    def has_permission(self, request, view):
+        # Safe methods (GET, HEAD, OPTIONS) - allow admin and committee
+        if request.method in permissions.SAFE_METHODS:
+            return request.user.is_authenticated and (
+                request.user.user_type in ['admin', 'committee'] or
+                request.user.is_superuser
+            )
+        # Write methods (POST, PUT, DELETE) - only admin
+        return request.user.is_authenticated and (
+            request.user.user_type == 'admin' or
+            request.user.is_superuser
+        )
+
+
 class ProjectGroupViewSet(viewsets.ModelViewSet):
     queryset = ProjectGroup.objects.all()
     serializer_class = ProjectGroupSerializer
     parser_classes = [JSONParser, MultiPartParser, FormParser]
+    
+    def get_permissions(self):
+        """
+        Custom permissions:
+        - Students can create their own groups
+        - Admin/Committee can view all groups
+        - Only Admin can modify/delete groups
+        """
+
+        # Student actions - allow authenticated students
+        if self.action in ['create']:
+            return [permissions.IsAuthenticated()]
+        
+        # Student-specific read actions
+        elif self.action in ['my_group', 'pending_approval', 'my_group_with_history']:
+            return [permissions.IsAuthenticated()]
+        
+        # List/Retrieve - admin and committee
+        elif self.action in ['list', 'retrieve']:
+            return [IsAdminOrCommittee()]
+        
+        # Update/Delete - only admin
+        else:
+            return [permissions.IsAdminUser()]
 
     def create(self, request, *args, **kwargs):
         # ✅ Save members data first
@@ -169,7 +212,12 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
         """Get current user's group (EXCLUDE rejected groups)"""
         user = request.user
         
-        # ✅ Only return non-rejected groups
+        if user.user_type != 'student':
+            return Response(
+                {'error': 'Only students can access this endpoint'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         member = GroupMember.objects.filter(
             student=user,
             group__status__in=[
@@ -187,8 +235,8 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(member.group)
             return Response(serializer.data)
         
-        # No active group found - student can create new one
-        return Response(None, status=status.HTTP_404_NOT_FOUND)
+        # 404 ki jagah 200 with null return karo
+        return Response(None, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['get'])
     def pending_approval(self, request):
@@ -207,13 +255,15 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], url_path='my-group-with-history')
     def my_group_with_history(self, request):
-        """
-        Get user's latest group (including rejected ones for display)
-        This helps show rejection status to students
-        """
+        """Get user's latest group (including rejected ones for display)"""
         user = request.user
         
-        # Get ALL groups for this user, ordered by creation date
+        if user.user_type != 'student':
+            return Response(
+                {'error': 'Only students can access this endpoint'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         member = GroupMember.objects.filter(
             student=user
         ).select_related('group').order_by('-group__created_at').first()
@@ -222,7 +272,8 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(member.group)
             return Response(serializer.data)
         
-        return Response(None, status=status.HTTP_404_NOT_FOUND)
+        # 404 ki jagah 200 with null return karo
+        return Response(None, status=status.HTTP_200_OK)
 
 
 # =============================================================================
@@ -1391,6 +1442,42 @@ class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
             'data': ProjectReportSubmissionSerializer(report).data
         }, status=status.HTTP_200_OK)
 
+
+
+    @action(detail=False, methods=['get'], url_path='group-report')
+    def group_report(self, request):
+        """
+        Get report for a specific group (for admin/committee evaluation)
+        GET /api/projects/reports/group-report/?group_id=X
+        """
+        group_id = request.query_params.get('group_id')
+        
+        if not group_id:
+            return Response(
+                {'error': 'group_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            report = ProjectReportSubmission.objects.select_related('group').get(
+                group_id=group_id
+            )
+            
+            # Check permissions
+            if request.user.user_type not in ['admin', 'committee', 'supervisor']:
+                return Response(
+                    {'detail': 'You do not have permission to view this report'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            serializer = self.get_serializer(report)
+            return Response(serializer.data)
+            
+        except ProjectReportSubmission.DoesNotExist:
+            return Response(
+                {'detail': 'Report not uploaded yet'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 # =============================================================================
 # REPORT DEADLINE VIEWSET (Admin Only)

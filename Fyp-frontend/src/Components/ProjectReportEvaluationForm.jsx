@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { reportAPI, evaluationAPI } from '../utils/api';
 import './ProjectReportEvaluationForm.css';
 
 const reportCriteria = [
@@ -115,6 +116,9 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [comments, setComments] = useState('');
+  const [reportData, setReportData] = useState(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [existingEvaluation, setExistingEvaluation] = useState(null);
 
   const [selections, setSelections] = useState(
     Object.fromEntries(reportCriteria.map((_, i) => [i, null]))
@@ -122,6 +126,75 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
   const [marks, setMarks] = useState(
     Object.fromEntries(reportCriteria.map((_, i) => [i, '']))
   );
+
+
+  // Report fetch karo
+  useEffect(() => {
+    const fetchReport = async () => {
+      if (!group?.id) return;
+      
+      setLoadingReport(true);
+      try {
+        // Admin/Committee ke liye group report endpoint
+        const response = await reportAPI.getGroupReport(group.id);
+        setReportData(response.data);
+      } catch (err) {
+        console.error('Error fetching report:', err);
+        setReportData(null);
+      } finally {
+        setLoadingReport(false);
+      }
+    };
+    
+    fetchReport();
+  }, [group?.id]);
+
+  // Existing evaluation fetch karo (agar hai toh)
+  useEffect(() => {
+    const fetchExistingEvaluation = async () => {
+      if (!group?.id) return;
+      
+      try {
+        const response = await evaluationAPI.getReportByGroup(group.id);
+        const evaluations = response.data;
+        
+        if (evaluations && evaluations.length > 0) {
+          const latestEval = evaluations[0];
+          setExistingEvaluation(latestEval);
+          
+          // Form pre-fill karo
+          setEvaluatorName(latestEval.evaluator_name || '');
+          setComments(latestEval.comments || '');
+          
+          // Criteria marks set karo
+          if (latestEval.criteria_marks) {
+            const newMarks = {};
+            const newSelections = {};
+            
+            Object.entries(latestEval.criteria_marks).forEach(([key, value]) => {
+              newMarks[key] = value;
+              // Radio button ke liye calculate karo
+              const criteriaIndex = parseInt(key);
+              if (!isNaN(criteriaIndex)) {
+                const maxMarks = reportCriteria[criteriaIndex]?.maxMarks || 5;
+                newSelections[criteriaIndex] = Math.round((value / maxMarks) * 5);
+              }
+            });
+            
+            setMarks(newMarks);
+            setSelections(newSelections);
+          }
+          
+          setSubmitted(true);
+        }
+      } catch (err) {
+        console.error('Error fetching existing evaluation:', err);
+      }
+    };
+    
+    fetchExistingEvaluation();
+  }, [group?.id]);
+
 
   const handleRadio = (cIdx, value) => {
     setSelections(prev => ({ ...prev, [cIdx]: value }));
@@ -147,7 +220,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
   const getFinalMarks = () => {
     // Raw total out of 35 (7 criteria x 5) -> Final out of 30
     const raw = getRawTotal();
-    return ((raw / 35) * 30).toFixed(1);
+    return ((raw / 35) * 30).toFixed(2);
   };
 
   const handleSubmit = async () => {
@@ -158,34 +231,121 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
     setSubmitting(true);
     try {
       const payload = {
-        group_id: group?.id,
+        group: group?.id,
         evaluator_name: evaluatorName,
         criteria_marks: marks,
         raw_total: getRawTotal(),
-        final_marks: getFinalMarks(),
-        comments
+        final_marks: parseFloat(getFinalMarks()),
+        comments: comments
       };
-      console.log('Submitting report evaluation:', payload);
+
+
+      if (existingEvaluation) {
+        // Update existing
+        await evaluationAPI.updateReport(existingEvaluation.id, payload);
+      } else {
+        // Create new
+        await evaluationAPI.submitReport(payload);
+      }
+      
       setSubmitted(true);
+
+      // Parent component ko refresh karne ka signal
+      if (onClose) {
+        setTimeout(() => onClose(), 1500);
+      }
+
     } catch (err) {
-      alert('Failed to submit. Please try again.');
+      console.error('Error submitting report evaluation:', err);
+      alert(err.response?.data?.detail || 'Failed to submit. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (submitted) {
-    return (
-      <div className="pref-container">
-        <div className="pref-success">
-          <div className="pref-success-icon">&#10003;</div>
-          <h2>Submitted Successfully</h2>
-          <p>Project report marks have been recorded.</p>
-          <button className="pref-cancel-btn" onClick={onClose}>Back to Group</button>
-        </div>
-      </div>
-    );
+
+  const handleViewReport = () => {
+  // Report view/download ka logic yahan
+  if (reportData?.report_file) {
+    window.open(reportData.report_file, '_blank');
+  } else {
+    alert('Report not uploaded yet.');
   }
+};
+
+  const handleDownloadReport = async () => {
+    if (reportData?.report_file) {
+      const link = document.createElement('a');
+      link.href = reportData.report_file;
+      link.download = `Report_${group.project_title}.pdf`;
+      link.click();
+    } else {
+      alert('Report not uploaded yet.');
+    }
+  };
+
+
+
+if (submitted) {
+  return (
+    <div className="mlm-container">
+      <div className="mlm-success">
+        <div className="mlm-success-icon">&#10003;</div>
+        <h2>Already Submitted</h2>
+        <p style={{ marginBottom: '20px' }}>Project report marks have been recorded for this group.</p>
+        
+        <div style={{ 
+          background: '#f8fafc', 
+          border: '1px solid #e2e8f0', 
+          borderRadius: '8px', 
+          padding: '20px',
+          marginBottom: '20px',
+          maxWidth: '500px',
+          margin: '0 auto 20px auto'
+        }}>
+          <div style={{ marginBottom: '12px' }}>
+            <strong style={{ color: '#64748b', fontSize: '13px' }}>Evaluator:</strong>
+            <p style={{ margin: '5px 0', fontSize: '15px', color: '#1e293b' }}>
+              {evaluatorName}
+            </p>
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <strong style={{ color: '#64748b', fontSize: '13px' }}>Marks Awarded:</strong>
+            <p style={{ margin: '5px 0', fontSize: '20px', fontWeight: 600, color: '#16a34a' }}>
+              {getFinalMarks()}/30
+            </p>
+          </div>
+          {comments && (
+            <div>
+              <strong style={{ color: '#64748b', fontSize: '13px' }}>Comments:</strong>
+              <p style={{ margin: '5px 0', fontSize: '14px', color: '#475569', fontStyle: 'italic' }}>
+                {comments}
+              </p>
+            </div>
+          )}
+          {existingEvaluation && (
+            <div style={{ marginTop: '15px', fontSize: '12px', color: '#94a3b8' }}>
+              Submitted: {new Date(existingEvaluation.evaluated_at).toLocaleString()}
+            </div>
+          )}
+        </div>
+        
+        <button 
+          className="mlm-submit-btn" 
+          onClick={() => {
+            setSubmitted(false);
+            setExistingEvaluation(null);
+          }}
+        >
+          Re-evaluate
+        </button>
+        <button className="mlm-cancel-btn" onClick={onClose} style={{ marginLeft: '10px' }}>
+          Back to Group
+        </button>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="pref-container">
@@ -218,6 +378,53 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/*  Report View/Download Section */}
+      <div className="pref-section" style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+        <h3 className="pref-section-title" style={{ margin: '0 0 10px 0', fontSize: '14px' }}>
+           Submitted Report
+        </h3>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={handleViewReport}
+            disabled={loadingReport}
+            style={{
+              padding: '8px 16px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '13px'
+            }}
+          >
+            {loadingReport ? 'Loading...' : ' View Report'}
+          </button>
+          <button 
+            onClick={handleDownloadReport}
+            disabled={loadingReport}
+            style={{
+              padding: '8px 16px',
+              background: '#10b981',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '500',
+              fontSize: '13px'
+            }}
+          >
+             Download Report
+          </button>
+        </div>
+        {reportData && (
+          <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+            Submitted: {new Date(reportData.submitted_at).toLocaleString()}
+            {reportData.is_late && <span style={{ color: '#f59e0b', marginLeft: '10px' }}> Late Submission</span>}
+          </p>
+        )}
       </div>
 
       {/* Rubric Reference */}
@@ -370,7 +577,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
 
       <div className="pref-actions">
         <button className="pref-submit-btn" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? 'Submitting...' : 'Submit Evaluation'}
+          {submitting ? 'Submitting...' : existingEvaluation ? 'Update Evaluation' : 'Submit Evaluation'}
         </button>
         <button className="pref-cancel-btn" onClick={onClose}>Cancel</button>
       </div>

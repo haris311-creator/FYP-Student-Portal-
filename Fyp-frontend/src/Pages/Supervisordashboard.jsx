@@ -88,7 +88,7 @@ function SupervisorDashboard() {
                   ? `${m.student_first_name} ${m.student_last_name}`.trim()
                   : m.student_name || m.full_name || m.student?.full_name || 'Unknown',
                 odoo_id: m.student_id || m.odoo_id || m.student?.student_id || 'N/A',
-                student_db_id: m.student || m.id || null,
+                student_db_id: m.id || null,
                 email: m.student_email || m.student?.email || ''
               };
             }) || [],
@@ -518,7 +518,7 @@ const handleReportReviewSubmit = async () => {
                     </p>
                     {report.is_late && (
                       <p style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: '600', margin: '0.25rem 0 0 0' }}>
-                        ⚠️ Late Submission
+                         Late Submission
                       </p>
                     )}
                   </div>

@@ -64,6 +64,7 @@ function Navbar() {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     localStorage.removeItem('user_type');
+    localStorage.clear();  // Sab clear karo
     
     window.dispatchEvent(new Event('authChanged'));
     setIsLoggedIn(false);

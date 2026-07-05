@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
 import ProjectReportEvaluationForm from '../Components/ProjectReportEvaluationForm';
 import MeetingLogMarksForm from '../Components/MeetingLogMarksForm';
 import AwardListTemplate from '../Components/AwardListTemplate';
+import { evaluationAPI } from '../utils/api';
 import './GroupMarksPage.css';
 
 // view: 'main' | 'report' | 'presentation' | 'meetingLog'
@@ -10,8 +11,80 @@ const GroupMarksPage = ({ group, onBack }) => {
   const [view, setView] = useState('main');
   const [evalLinks, setEvalLinks] = useState([]);
   const [generatingLink, setGeneratingLink] = useState(false);
+  // Sessional marks database se store karne ke liye
+  const [sessionalMarks, setSessionalMarks] = useState({});
+  const [loadingSessional, setLoadingSessional] = useState(true);
+  // Meeting log marks database se store karne ke liye
+  const [meetingLogMarks, setMeetingLogMarks] = useState(null);
+  const [loadingMeetingLog, setLoadingMeetingLog] = useState(true);
 
   if (!group) return null;
+
+  // Group khulte hi real sessional marks fetch karein
+  useEffect(() => {
+    const fetchSessionalMarks = async () => {
+      if (!group?.id) {
+        setLoadingSessional(false);
+        return;
+      }
+      try {
+        const response = await evaluationAPI.getSessionalByGroup(group.id);
+        const evaluations = response.data;
+
+
+        // Student ID (GroupMember.id) ke against marks ka map banayein
+        const marksMap = {};
+        
+        if (evaluations && evaluations.length > 0) {
+          evaluations.forEach((evalRecord, index) => {
+            
+            if (evalRecord.student && evalRecord.final_marks !== undefined) {
+              marksMap[evalRecord.student] = evalRecord.final_marks;
+            }
+          });
+        }
+
+        setSessionalMarks(marksMap);
+      } catch (err) {
+        console.error(' Error fetching sessional marks:', err);
+      } finally {
+        setLoadingSessional(false);
+      }
+    };
+
+    fetchSessionalMarks();
+  }, [group?.id]);
+
+
+   // Meeting log marks fetch karein
+  useEffect(() => {
+    const fetchMeetingLogMarks = async () => {
+      if (!group?.id) {
+        setLoadingMeetingLog(false);
+        return;
+      }
+      try {
+        const response = await evaluationAPI.getMeetingLogByGroup(group.id);
+        const evaluations = response.data;
+        
+
+        // Latest evaluation lein (agar multiple hain)
+        if (evaluations && evaluations.length > 0) {
+          setMeetingLogMarks(evaluations[0]); // First/latest evaluation
+        } else {
+          setMeetingLogMarks(null);
+        }
+      } catch (err) {
+        console.error('Error fetching meeting log marks:', err);
+        setMeetingLogMarks(null);
+      } finally {
+        setLoadingMeetingLog(false);
+      }
+    };
+
+    fetchMeetingLogMarks();
+  }, [group?.id]);
+
 
   const generateEvalLink = async () => {
     setGeneratingLink(true);
@@ -156,19 +229,29 @@ const GroupMarksPage = ({ group, onBack }) => {
               <h3>Progress Report (Sessional)</h3>
               <p className="gmp-card-sub">Weightage: 20 marks &middot; Submitted by Supervisor</p>
             </div>
-            <span className="gmp-status-badge gmp-status-done">Submitted</span>
+            <span className={`gmp-status-badge ${Object.keys(sessionalMarks).length > 0 ? 'gmp-status-done' : ''}`}>
+              {loadingSessional ? 'Loading...' : Object.keys(sessionalMarks).length > 0 ? 'Submitted' : 'Pending'}
+            </span>
           </div>
           <div className="gmp-card-body">
             <table className="gmp-readonly-table">
               <tbody>
-                {(group.members || []).map((m, idx) => (
-                  <tr key={idx}>
-                    <td>{m.name}</td>
-                    <td className="gmp-right">
-                      {m.sessional_marks !== undefined ? `${m.sessional_marks}/20` : '— pending —'}
-                    </td>
-                  </tr>
-                ))}
+                {(group.members || []).map((m, idx) => {
+
+                  const marks = sessionalMarks[m.student_db_id];
+                  return (
+                    <tr key={idx}>
+                      <td>{m.name}</td>
+                      <td className="gmp-right">
+                        {loadingSessional
+                          ? '...'
+                          : marks !== undefined
+                            ? `${marks}/20`
+                            : '— pending —'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
