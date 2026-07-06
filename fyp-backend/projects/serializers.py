@@ -34,9 +34,9 @@ class FacultyDetailSerializer(serializers.ModelSerializer):
 class GroupMemberSerializer(serializers.ModelSerializer):
     student_email = serializers.EmailField(source='student.email', read_only=True)
     student_name = serializers.CharField(source='student.full_name', read_only=True)
-    student_id = serializers.CharField(source='student.student_id', read_only=True)  # ✅ ADDED
-    student_first_name = serializers.CharField(source='student.first_name', read_only=True)  # ✅ ADD
-    student_last_name = serializers.CharField(source='student.last_name', read_only=True)    # ✅ ADD
+    student_id = serializers.CharField(source='student.student_id', read_only=True)  
+    student_first_name = serializers.CharField(source='student.first_name', read_only=True)  
+    student_last_name = serializers.CharField(source='student.last_name', read_only=True)    
     eligibility_warnings = serializers.SerializerMethodField()
     registration_status = serializers.SerializerMethodField()
     
@@ -124,13 +124,14 @@ class ProjectGroupSerializer(serializers.ModelSerializer):
         domain = obj.domain or ''
         return domain_map.get(domain, domain)  # Agar mapping nahi mili toh original return kare
     
-        # ✅ ADD THIS METHOD
+        #  ADD THIS METHOD
     def get_members_details(self, obj):
         """Get all members with their details for evaluation display"""
         members = obj.members.select_related('student').all()
         return [
             {
-                'id': m.id,  # ✅ GroupMember ka ID (yehi sessional evaluation mein use hota hai)
+                'id': m.id,  
+                'student_user_id': m.student.id,
                 'email': m.student.email,
                 'full_name': m.student.get_full_name() if hasattr(m.student, 'get_full_name') else m.student.email,
                 'student_id': m.student.student_id,
@@ -140,7 +141,7 @@ class ProjectGroupSerializer(serializers.ModelSerializer):
             } for m in members
         ]
     
-    # ✅ ADD THIS METHOD
+    #  ADD THIS METHOD
     def get_supervisor_details(self, obj):
         """Get supervisor details"""
         if obj.supervisor:
@@ -214,6 +215,7 @@ class GroupCreateSerializer(serializers.Serializer):
 # =============================================================================
 class FYDPProposalSerializer(serializers.ModelSerializer):
     group_id = serializers.UUIDField(source='group.group_id', read_only=True)
+    group_number = serializers.CharField(source='group.group_number', read_only=True)
     project_title = serializers.CharField(source='group.project_title', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     
@@ -231,7 +233,7 @@ class FYDPProposalSerializer(serializers.ModelSerializer):
     class Meta:
         model = FYDPProposal
         fields = [
-            'id', 'group', 'group_id', 'project_title', 'title', 'domain', 
+            'id', 'group', 'group_id', 'group_number', 'project_title', 'title', 'domain', 
             'nature_of_project', 'problem_statement', 'proposed_solution',
             'scope_included', 'scope_excluded', 'methodology', 'resources_involved',
             'final_deliverables', 'learning_outcomes', 'industrial_support', 
@@ -393,13 +395,18 @@ class AdminProjectGroupSerializer(serializers.ModelSerializer):
         read_only_fields = ['group_id', 'group_number', 'approved_at', 'approved_by']
     
     def get_members_details(self, obj):
+        """Get all members with their details for evaluation display"""
         members = obj.members.select_related('student').all()
         return [
             {
-                'id': m.student.id, 'group_member_id': m.id, 'email': m.student.email,
+                'id': m.id,                      
+                'student_user_id': m.student.id,  
+                'email': m.student.email,
                 'full_name': m.student.get_full_name() if hasattr(m.student, 'get_full_name') else m.student.email,
-                'student_id': m.student.student_id, 'role': m.role,
-                'cgpa': m.cgpa, 'credit_hours': m.earned_credit_hours,
+                'student_id': m.student.student_id, 
+                'role': m.role,
+                'cgpa': float(m.cgpa) if m.cgpa else None,
+                'credit_hours': m.earned_credit_hours,
             } for m in members
         ]
     
@@ -503,7 +510,7 @@ class MeetingMinuteCreateUpdateSerializer(serializers.ModelSerializer):
         
         group = meeting.group
         
-        # ✅ UPDATED: Handle BOTH Database ID (int) and Odoo ID (string)
+        #  Handle BOTH Database ID (int) and Odoo ID (string)
         for student_key, status in attendance_data.items():
             try:
                 student = None
@@ -534,7 +541,7 @@ class MeetingMinuteCreateUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         
-        # ✅ UPDATED: Update/Delete and Re-create Attendance
+        #   Update/Delete and Re-create Attendance
         if attendance_data is not None:
             # Delete old records for this meeting to avoid duplicates/conflicts
             instance.attendance_records.all().delete()

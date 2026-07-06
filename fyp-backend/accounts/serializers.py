@@ -87,11 +87,11 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         if not student_id:
             raise serializers.ValidationError("Odoo ID is required")
         
-        # ✅ Check if student_id already exists in CustomUser
+        #  Check if student_id already exists in CustomUser
         if CustomUser.objects.filter(student_id=student_id).exists():
             raise serializers.ValidationError("This Student ID is already registered")
         
-        # ✅ Check if student_id already exists in EnrolledStudent
+        #  Check if student_id already exists in EnrolledStudent
         if EnrolledStudent.objects.filter(roll_number=student_id).exists():
             raise serializers.ValidationError("This Student ID is already registered")
         
@@ -109,13 +109,13 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"email": "This email is already pending approval"})
         
         return data
-    
-    @transaction.atomic  # ✅ Transaction use karein - sab success ho toh hi save ho
+
+    @transaction.atomic  #  Transaction use karein - sab success ho toh hi save ho
     def create(self, validated_data):
         validated_data.pop('confirm_password')
         student_id = validated_data.pop('student_id').strip().upper()
         
-        # ✅ Double check - transaction ke andar bhi
+        #  Double check - transaction ke andar bhi
         if CustomUser.objects.filter(student_id=student_id).exists():
             raise serializers.ValidationError({"student_id": "This Student ID is already registered"})
         

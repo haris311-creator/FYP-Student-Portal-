@@ -16,6 +16,9 @@ function SupervisorDashboard() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportReviewForm, setReportReviewForm] = useState({ action: 'approve', remarks: '' });
   const [submittingReportReview, setSubmittingReportReview] = useState(false);
+  const [pendingMeetingLogs, setPendingMeetingLogs] = useState(0);
+const [pendingSessionalMarks, setPendingSessionalMarks] = useState(0);
+const [loadingStats, setLoadingStats] = useState(false);
 
   // New states for Meetings & Attendance
   const [detailSubTab, setDetailSubTab] = useState('info');
@@ -42,6 +45,51 @@ function SupervisorDashboard() {
   const [reviewForm, setReviewForm] = useState({ action: 'approve', remarks: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
 
+  // calculateProgress function ke upar yeh add karo
+  const fetchDashboardStats = async () => {
+    try {
+      setLoadingStats(true);
+      
+      // 1. Pending Meeting Logs count
+      const meetingsRes = await meetingAPI.getByGroup(null); // Sab groups ke meetings
+      const allMeetings = meetingsRes.data.results || meetingsRes.data || [];
+      
+      // Jin groups mein meetings conducted hain lekin evaluation nahi hui
+      const pendingLogs = allMeetings.filter(m => !m.is_evaluated).length;
+      setPendingMeetingLogs(pendingLogs);
+      
+      // 2. Pending Sessional Marks count
+      let pendingMarks = 0;
+      for (const group of assignedGroups) {
+        try {
+          const res = await evaluationAPI.getSessionalByGroup(group.id);
+          const evaluations = res.data;
+          
+          // Agar group ke sab students ki evaluation nahi hui
+          if (evaluations.length < group.members.length) {
+            pendingMarks++;
+          }
+        } catch (err) {
+          // Agar koi evaluation nahi hai toh pending count karo
+          pendingMarks++;
+        }
+      }
+      setPendingSessionalMarks(pendingMarks);
+      
+    } catch (err) {
+      console.error("Error fetching dashboard stats:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Fetch assigned groups useEffect ke baad yeh add karo
+  useEffect(() => {
+    if (assignedGroups.length > 0) {
+      fetchDashboardStats();
+    }
+  }, [assignedGroups]);
+
   // Load user info
   useEffect(() => {
     const loadUser = () => {
@@ -57,7 +105,6 @@ function SupervisorDashboard() {
           });
         }
       } catch (e) {
-        console.log('User info not found');
       }
     };
     loadUser();
@@ -70,11 +117,8 @@ function SupervisorDashboard() {
         setLoading(true);
         const response = await supervisorAPI.getAssignedGroups();
 
-        console.log("Raw API Response:", response.data);
-        console.log("Results:", response.data.results);
 
         const transformedGroups = response.data.results.map(group => {
-          console.log(`Processing Group ${group.group_number}:`, group);
 
           return {
             id: group.id,
@@ -82,13 +126,13 @@ function SupervisorDashboard() {
             name: `Group ${group.group_number}`,
             project: group.project_title || 'Untitled Project',
             members: group.members?.map(m => {
-              console.log(`  Member:`, m);
               return {
+                id: m.id,                              
+                student_user_id: m.student,             
                 name: m.student_first_name && m.student_last_name
                   ? `${m.student_first_name} ${m.student_last_name}`.trim()
                   : m.student_name || m.full_name || m.student?.full_name || 'Unknown',
                 odoo_id: m.student_id || m.odoo_id || m.student?.student_id || 'N/A',
-                student_db_id: m.id || null,
                 email: m.student_email || m.student?.email || ''
               };
             }) || [],
@@ -99,7 +143,6 @@ function SupervisorDashboard() {
           };
         });
 
-        console.log("Transformed Groups:", transformedGroups);
         setAssignedGroups(transformedGroups);
         setError(null);
       } catch (err) {
@@ -148,13 +191,11 @@ function SupervisorDashboard() {
   // Fetch meetings & attendance data when group is selected
   useEffect(() => {
     if (!selectedGroup) {
-      console.log("No group selected, skipping meetings fetch");
       return;
     }
 
     const fetchMeetingsData = async () => {
       try {
-        console.log(`Fetching meetings for group ${selectedGroup.id}...`);
         setLoadingMeetings(true);
 
         const [meetingsRes, sheetRes] = await Promise.all([
@@ -162,9 +203,6 @@ function SupervisorDashboard() {
           attendanceSheetAPI.getSheet(selectedGroup.id)
         ]);
 
-        console.log("Meetings API Response:", meetingsRes.data);
-        console.log("Meetings Results:", meetingsRes.data.results || meetingsRes.data);
-        console.log("Attendance Sheet:", sheetRes.data);
 
         const meetingsData = meetingsRes.data.results || meetingsRes.data || [];
         setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
@@ -191,29 +229,23 @@ function SupervisorDashboard() {
   const handleMeetingCardClick = (meetingNum) => {
     const existingMeeting = meetingsList.find(m => m.meeting_number === meetingNum);
 
-    console.log("Meeting Clicked:", meetingNum);
-    console.log("Existing Meeting:", existingMeeting);
 
     let attendanceMap = {};
-    selectedGroup.members.forEach((member, idx) => {
-      const key = member.student_db_id;
-      if (key) {
-        attendanceMap[key] = 'present';
+    selectedGroup.members.forEach((member) => {
+      if (member.id) {
+        attendanceMap[member.id] = 'present'; 
       }
     });
 
     if (existingMeeting) {
-      console.log("Editing existing meeting");
-      console.log("Attendance Records:", existingMeeting.attendance_records);
-
+      // Backend se aaye hue attendance records ko map karo
       (existingMeeting.attendance_records || []).forEach(rec => {
-        const studentKey = rec.student;
-        console.log(`Mapping: Student ${studentKey} -> ${rec.status}`);
 
-        if (studentKey) {
-          attendanceMap[studentKey] = rec.status;
-        }
-      });
+      const member = selectedGroup.members.find(m => m.student_user_id === rec.student);
+      if (member && member.id) {
+        attendanceMap[member.id] = rec.status;  //  GroupMember ID se map karo
+      }
+    });
 
       setFormData({
         date: existingMeeting.date,
@@ -224,9 +256,7 @@ function SupervisorDashboard() {
         attendance: attendanceMap
       });
 
-      console.log("Form populated with attendance:", attendanceMap);
     } else {
-      console.log("Creating new meeting");
       setFormData({
         date: new Date().toISOString().split('T')[0],
         agenda: '',
@@ -243,12 +273,20 @@ function SupervisorDashboard() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAttendanceChange = (studentId, status) => {
-    console.log(`Attendance: Student ${studentId} -> ${status}`);
-    setFormData(prev => ({
-      ...prev,
-      attendance: { ...prev.attendance, [studentId]: status }
-    }));
+  const handleAttendanceChange = (memberId, status) => {
+    console.log(`Attendance change: Member ${memberId} -> ${status}`);
+    
+    setFormData(prev => {
+      const newAttendance = { ...prev.attendance };
+      newAttendance[memberId] = status;
+      
+      console.log('Updated attendance:', newAttendance);
+      
+      return {
+        ...prev,
+        attendance: newAttendance
+      };
+    });
   };
 
   const handleSubmitMeeting = async () => {
@@ -259,13 +297,12 @@ function SupervisorDashboard() {
 
     try {
       setFormLoading(true);
-      console.log("Starting save process...");
 
       const formattedAttendance = {};
       selectedGroup.members.forEach(member => {
-        if (member.student_db_id) {
-          const status = formData.attendance[member.student_db_id] || 'present';
-          formattedAttendance[member.student_db_id] = status;
+        if (member.id && member.student_user_id) {
+          const status = formData.attendance[member.id] || 'present';
+          formattedAttendance[member.student_user_id] = status;
         }
       });
 
@@ -280,51 +317,36 @@ function SupervisorDashboard() {
         attendance: formattedAttendance
       };
 
-      console.log("Sending payload:", payload);
 
       const existingMeeting = meetingsList.find(m => m.meeting_number === activeMeetingForm);
 
       if (existingMeeting) {
-        console.log("Updating meeting", existingMeeting.id);
         await meetingAPI.update(existingMeeting.id, payload);
         alert('Meeting updated successfully!');
       } else {
-        console.log("Creating new meeting");
         await meetingAPI.create(selectedGroup, payload);
         alert('Meeting saved successfully!');
       }
 
-      console.log("Refreshing data from server...");
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const meetingsResponse = await meetingAPI.getByGroup(selectedGroup.id);
+    const sheetResponse = await attendanceSheetAPI.getSheet(selectedGroup.id);
 
-      const meetingsResponse = await meetingAPI.getByGroup(selectedGroup.id);
-      const sheetResponse = await attendanceSheetAPI.getSheet(selectedGroup.id);
+    const meetingsData = meetingsResponse.data.results || meetingsResponse.data || [];
+    setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
+    setAttendanceData(sheetResponse.data);
 
-      console.log("Meetings Response:", meetingsResponse.data);
-      console.log("Sheet Response:", sheetResponse.data);
+    setActiveMeetingForm(null);
+    setFormData({
+      date: '',
+      agenda: '',
+      previous_task_status: '',
+      previous_task_comment: '',
+      new_task: '',
+      attendance: {}
+    });
 
-      const meetingsData = meetingsResponse.data.results || meetingsResponse.data || [];
-      const attendanceData = sheetResponse.data;
-
-      console.log("Processed Meetings:", meetingsData);
-      console.log("Processed Attendance:", attendanceData);
-
-      setMeetingsList(Array.isArray(meetingsData) ? meetingsData : []);
-      setAttendanceData(attendanceData);
-
-      setActiveMeetingForm(null);
-
-      setFormData({
-        date: '',
-        agenda: '',
-        previous_task_status: '',
-        previous_task_comment: '',
-        new_task: '',
-        attendance: {}
-      });
-
-      console.log("Save complete, UI updated");
 
     } catch (err) {
       console.error("Error saving meeting:", err);
@@ -466,7 +488,7 @@ const handleReportReviewSubmit = async () => {
                       Attempt {proposal.submission_count}/3
                     </span>
                   </div>
-                  <p className="group-project" style={{ color: '#64748b', fontSize: '0.875rem' }}>Group ID: {proposal.group_id}</p>
+                  <p className="group-project" style={{ color: '#64748b', fontSize: '0.875rem' }}>Group: {proposal.group_number || 'N/A'}</p>
                   <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#eff6ff', borderRadius: '6px' }}>
                     <p style={{ fontSize: '0.75rem', color: '#1e3a8a', fontWeight: '600', margin: 0 }}>
                       Status: {proposal.status_display}
@@ -557,7 +579,7 @@ const handleReportReviewSubmit = async () => {
 
               {selectedReport.is_late && (
                 <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '1rem', color: '#92400e' }}>
-                  ⚠️ Warning: This is a late submission.
+                   Warning: This is a late submission.
                 </div>
               )}
 
@@ -742,22 +764,34 @@ const handleReportReviewSubmit = async () => {
       <h1 className="page-title">Overview</h1>
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-value">{assignedGroups.length}</div>
+          <div className="stat-value">
+            {loadingStats ? '...' : assignedGroups.length}
+          </div>
           <div className="stat-label">Assigned Groups</div>
         </div>
+        
         <div className="stat-card">
-          <div className="stat-value">9</div>
+          <div className="stat-value">
+            {loadingStats ? '...' : pendingMeetingLogs}
+          </div>
           <div className="stat-label">Pending Log Reviews</div>
         </div>
+        
         <div className="stat-card">
-          <div className="stat-value">2</div>
+          <div className="stat-value">
+            {loadingProposals ? '...' : pendingProposals.length}
+          </div>
           <div className="stat-label">Reports to Review</div>
         </div>
+        
         <div className="stat-card">
-          <div className="stat-value">1</div>
+          <div className="stat-value">
+            {loadingStats ? '...' : pendingSessionalMarks}
+          </div>
           <div className="stat-label">Marks Pending</div>
         </div>
       </div>
+      
       <div className="groups-section">
         <h2 className="section-title">My Groups</h2>
         {assignedGroups.length === 0 ? (
@@ -833,7 +867,7 @@ const handleReportReviewSubmit = async () => {
                 }
               }}
             >
-              ⬇️ Export Excel
+               Export Excel
             </button>
           </div>
           {attendanceData ? (
@@ -1007,44 +1041,10 @@ const handleReportReviewSubmit = async () => {
                           {selectedGroup.members && selectedGroup.members.length > 0 ? (
                             <div className="attendance-check-grid">
                               {selectedGroup.members.map((member, idx) => {
-                                const studentKey = member.student_db_id;
+                                const studentKey = member.id;
                                 const currentStatus = studentKey ? (formData.attendance[studentKey] || 'present') : 'present';
 
-                                console.log(`Rendering ${member.name}: Key=${studentKey}, Status=${currentStatus}`);
 
-                                if (!studentKey) {
-                                  return (
-                                    <div key={idx} className="attendance-check-row" style={{ opacity: 0.6 }}>
-                                      <div className="att-member-info">
-                                        <span className="att-member-name">{member.name}</span>
-                                        <span className="att-member-id">{member.odoo_id}</span>
-                                        <span style={{ color: '#f59e0b', fontSize: '0.75rem' }}> No DB ID</span>
-                                      </div>
-                                      <div className="att-toggle">
-                                        <button
-                                          type="button"
-                                          className="att-btn att-btn-present"
-                                          onClick={() => {
-                                            const tempKey = `temp_${idx}`;
-                                            handleAttendanceChange(tempKey, 'present');
-                                          }}
-                                        >
-                                          Present
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="att-btn"
-                                          onClick={() => {
-                                            const tempKey = `temp_${idx}`;
-                                            handleAttendanceChange(tempKey, 'absent');
-                                          }}
-                                        >
-                                          Absent
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                }
 
                                 return (
                                   <div key={studentKey} className="attendance-check-row">
@@ -1057,7 +1057,6 @@ const handleReportReviewSubmit = async () => {
                                         type="button"
                                         className={`att-btn ${currentStatus === 'present' ? 'att-btn-present' : ''}`}
                                         onClick={() => {
-                                          console.log(`${member.name} -> Present`);
                                           handleAttendanceChange(studentKey, 'present');
                                         }}
                                       >
@@ -1067,7 +1066,6 @@ const handleReportReviewSubmit = async () => {
                                         type="button"
                                         className={`att-btn ${currentStatus === 'absent' ? 'att-btn-absent' : ''}`}
                                         onClick={() => {
-                                          console.log(`${member.name} -> Absent`);
                                           handleAttendanceChange(studentKey, 'absent');
                                         }}
                                       >

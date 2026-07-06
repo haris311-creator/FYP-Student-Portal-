@@ -237,8 +237,7 @@ const GroupMarksPage = ({ group, onBack }) => {
             <table className="gmp-readonly-table">
               <tbody>
                 {(group.members || []).map((m, idx) => {
-
-                  const marks = sessionalMarks[m.student_db_id];
+                  const marks = sessionalMarks[m.id];
                   return (
                     <tr key={idx}>
                       <td>{m.name}</td>

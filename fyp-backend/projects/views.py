@@ -156,13 +156,13 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
             return [permissions.IsAdminUser()]
 
     def create(self, request, *args, **kwargs):
-        # ✅ Save members data first
+        #  Save members data first
         members_data = request.data.pop('members', [])
         
-        # ✅ NO AUTO-DELETE: Rejected groups will stay in database for audit trail
+        #  NO AUTO-DELETE: Rejected groups will stay in database for audit trail
         # Admin can see all rejected groups in history
         
-        # 2️⃣ Continue with normal group creation
+        # Continue with normal group creation
         request.data['status'] = 'pending_approval'
         request.data.pop('group_number', None)
         
@@ -171,9 +171,9 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         group = serializer.instance
         
-        print(f"✅ New group created: {group.id}, Status: {group.status}")
+        print(f" New group created: {group.id}, Status: {group.status}")
         
-        # 3️⃣ Create members
+        #  Create members
         member_errors = []
         for idx, member_data in enumerate(members_data):
             user_input_id = member_data.get('odoo_id')
@@ -198,7 +198,7 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
                 has_special_permission=member_data.get('has_special_permission', False)
             )
             
-            print(f"✅ Member {idx+1} added: {user.email}")
+            print(f" Member {idx+1} added: {user.email}")
         
         if member_errors:
             group.delete()
@@ -386,7 +386,7 @@ class FYDPProposalViewSet(viewsets.ModelViewSet):
         if not success:
             return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
         
-        # ✅ NEW: Group ka status update karein
+        #  NEW: Group ka status update karein
         group = proposal.group
         if group.status in ['idea_pitch', 'pending_approval']:
             group.status = 'proposal_pending'
@@ -456,7 +456,7 @@ class FYDPProposalViewSet(viewsets.ModelViewSet):
         if not success:
             return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
         
-        # ✅ NEW: Group ka status update karein + Report submission auto-create karein
+        #  NEW: Group ka status update karein + Report submission auto-create karein
         group = proposal.group
         
         if action == 'approve' and proposal.status == 'approved':
@@ -464,7 +464,7 @@ class FYDPProposalViewSet(viewsets.ModelViewSet):
             group.status = 'proposal_approved'
             group.save()
             
-            # ✅ Report submission auto-create karein
+            #  Report submission auto-create karein
             from .models import ProjectReportSubmission
             ProjectReportSubmission.objects.get_or_create(
                 group=group,
@@ -501,7 +501,7 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
 
 
 # =============================================================================
-# ✅ ADMIN APPROVAL VIEWSET - FIXED & COMPLETE
+#  ADMIN APPROVAL VIEWSET - FIXED & COMPLETE
 # =============================================================================
 
 class AdminGroupApprovalViewSet(viewsets.ViewSet):
@@ -598,7 +598,7 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
                 )
             group.group_number = override_number
         
-        # ✅ Approve logic inline (no need for model method)
+        #  Approve logic inline (no need for model method)
         group.status = 'idea_pitch'  # Next status after approval
         group.approved_by = request.user
         group.approved_at = timezone.now()
@@ -657,7 +657,7 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # ✅ Reject logic inline
+        #  Reject logic inline
         group.status = 'rejected'
         group.rejection_reason = reason
         group.approved_by = request.user
@@ -692,7 +692,7 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
 # fyp-backend/projects/views.py - Replace the entire SupervisorGroupViewSet with this:
 
 # =============================================================================
-# ✅ SUPERVISOR DASHBOARD VIEWSET - FIXED (Using GenericViewSet)
+#  SUPERVISOR DASHBOARD VIEWSET - FIXED (Using GenericViewSet)
 # =============================================================================
 class SupervisorGroupViewSet(viewsets.GenericViewSet):
     """
@@ -725,21 +725,21 @@ class SupervisorGroupViewSet(viewsets.GenericViewSet):
             status__in=['idea_pitch', 'proposal_pending', 'proposal_approved', 
                     'in_progress', 'completed']
         ).prefetch_related(
-            'members__student',  # ✅ Yeh important hai
+            'members__student',  
             'supervisor',
             'co_supervisor'
         ).order_by('-created_at')
         
         serializer = self.get_serializer(groups, many=True, context={'request': request})
         
-        # ✅ Debug print
-        print(f"✅ Serialized groups: {len(serializer.data)} groups")
+        #  Debug print
+        print(f" Serialized groups: {len(serializer.data)} groups")
         for group_data in serializer.data:
             print(f"  Group {group_data.get('group_number')}: {len(group_data.get('members', []))} members")
         
         return Response({
             'count': groups.count(),
-            'results': serializer.data  # ✅ Yeh sahi hai
+            'results': serializer.data  
         }, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['get'])
@@ -917,7 +917,7 @@ class AttendanceSheetViewSet(viewsets.ViewSet):
         # Build member-wise attendance
         members_data = []
         for member in members:
-            # ✅ Safely get full name
+            #  Safely get full name
             student = member.student
             full_name = f"{student.first_name or ''} {student.last_name or ''}".strip() or student.email
             
@@ -1060,7 +1060,7 @@ class AttendanceSheetViewSet(viewsets.ViewSet):
 
 
 # =============================================================================
-# ✅ STUDENT MEETING DATA VIEWSET
+#  STUDENT MEETING DATA VIEWSET
 # =============================================================================
 
 class StudentMeetingDataView(viewsets.ViewSet):
@@ -1073,7 +1073,7 @@ class StudentMeetingDataView(viewsets.ViewSet):
         user = request.user
         
         try:
-            # ✅ FIX: .get() ki jagah .filter() use karein aur pehla active group lein
+            #  FIX: .get() ki jagah .filter() use karein aur pehla active group lein
             member = GroupMember.objects.filter(
                 student=user,
                 group__status__in=['idea_pitch', 'approved', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed']
@@ -1109,7 +1109,7 @@ class StudentMeetingDataView(viewsets.ViewSet):
                 attendance_data.append({
                     'meeting_number': log.meeting.meeting_number,
                     'date': log.meeting.date,
-                    'status': log.status.capitalize(),  # ✅ Capitalize: 'present' -> 'Present'
+                    'status': log.status.capitalize(),  #  Capitalize: 'present' -> 'Present'
                     'agenda': log.meeting.agenda,
                     'task_assigned': log.meeting.new_task 
                 })
@@ -1311,7 +1311,7 @@ class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
         if not success:
             return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
         
-        # ✅ NEW: Group ka status 'in_progress' mein update karein
+        #  NEW: Group ka status 'in_progress' mein update karein
         group = report.group
         if group.status in ['proposal_approved', 'in_progress']:
             group.status = 'in_progress'
@@ -1393,7 +1393,7 @@ class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
         if not success:
             return Response({'error': msg}, status=status.HTTP_400_BAD_REQUEST)
         
-        # ✅ NEW: Group ka status update karein
+        #  NEW: Group ka status update karein
         group = report.group
         
         if action == 'approve' and report.status == 'approved':

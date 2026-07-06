@@ -21,7 +21,7 @@ router.register(r'final-results', FinalEvaluationResultViewSet, basename='final-
 urlpatterns = [
     path('', include(router.urls)),
     
-    # ✅ FIXED: APIView ke saath simple path
+    #  APIView ke saath simple path
     path('public/presentation/<uuid:token>/', 
          PublicPresentationEvaluationView.as_view(), 
          name='public-presentation-evaluation'),

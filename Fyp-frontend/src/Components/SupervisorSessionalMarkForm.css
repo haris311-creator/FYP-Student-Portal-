@@ -449,3 +449,38 @@
     width: 100%;
   }
 }
+
+/* SupervisorSessionalMarkForm.css */
+.ssm-success {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.ssm-success-icon {
+  width: 64px;
+  height: 64px;
+  background: #dcfce7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px auto;
+  font-size: 32px;
+  color: #16a34a;
+}
+
+.ssm-success h2 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.ssm-success > p {
+  text-align: center;
+  color: #64748b;
+  margin-bottom: 30px;
+}
+
+.ssm-success .ssm-submit-btn,
+.ssm-success .ssm-cancel-btn {
+  margin: 10px 5px;
+}

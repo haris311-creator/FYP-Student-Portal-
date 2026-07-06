@@ -56,7 +56,7 @@ function AdminDashboard() {
 
   
   useEffect(() => {
-  // ✅ Pehle sync check karo localStorage se
+  //  Pehle sync check karo localStorage se
   const userStr = localStorage.getItem('user');
   let isCommitteeMember = false;
   
@@ -65,7 +65,6 @@ function AdminDashboard() {
       const user = JSON.parse(userStr);
       isCommitteeMember = user.user_type === 'committee';
     } catch (e) {
-      console.log('Error parsing user:', e);
     }
   }
   
@@ -99,7 +98,6 @@ function AdminDashboard() {
         setIsCommittee(user.user_type === 'committee');
       }
     } catch (e) {
-      console.log('User info not found');
     }
   };
   loadUser();
@@ -212,7 +210,6 @@ useEffect(() => {
 const fetchAnnouncements = async () => {
   try {
     const response = await api.get('/projects/announcements/');
-    console.log('📢 Announcements API Response:', response.data);
     
     // Handle both paginated and non-paginated responses
     let announcements = [];
@@ -222,16 +219,14 @@ const fetchAnnouncements = async () => {
       announcements = response.data.results;
     }
     
-    console.log('📋 Processed Announcements:', announcements);
     setAnnouncementList(announcements);
     
     // Force re-render
     setTimeout(() => {
-      console.log('🔄 Force re-render, current list:', announcementList);
     }, 100);
     
   } catch (error) {
-    console.error('❌ Error fetching announcements:', error);
+    console.error(' Error fetching announcements:', error);
     console.error('Response:', error.response?.data);
     toast.error('Failed to load announcements');
   }
@@ -469,7 +464,7 @@ const handleAnnouncementSubmit = (e) => {
             <p className="stat-label">Total FYP Groups</p>
           </div>
         </div>
-        {!isCommittee && (  // ✅ Committee ko yeh nahi dikhana
+        {!isCommittee && (  //  Committee ko yeh nahi dikhana
           <div className="stat-card">
           <div>
             <p className="stat-number">{pendingProposals.length}</p>
@@ -499,7 +494,7 @@ const handleAnnouncementSubmit = (e) => {
 
       <h3 className="sub-title">Quick Actions</h3>
       <div className="actions-grid">
-        {!isCommittee && (  // ✅ Committee ke liye hide
+        {!isCommittee && (  //  Committee ke liye hide
           <>
         <button className="action-btn" onClick={() => setActiveTab('proposals')}>
           <span>Approve Groups & Ideas</span>
@@ -512,7 +507,7 @@ const handleAnnouncementSubmit = (e) => {
         <button className="action-btn" onClick={() => setActiveTab('groups')}>
           <span>View All Groups</span>
         </button>
-        {!isCommittee && (  // ✅ Committee ke liye hide
+        {!isCommittee && (  // Committee ke liye hide
         <button className="action-btn" onClick={() => setActiveTab('announcements')}>
           <span>Announcements</span>
         </button>
@@ -534,7 +529,6 @@ const handleAnnouncementSubmit = (e) => {
         </div>
       ) : pendingProposals.length === 0 ? (
         <div className="empty-state">
-          <p className="empty-icon">✅</p>
           <p className="empty-text">All groups have been reviewed!</p>
           <button className="refresh-btn" onClick={fetchPendingProposals}>Refresh</button>
         </div>
@@ -1043,16 +1037,16 @@ const handleAnnouncementSubmit = (e) => {
                       <button
                         className="approve-btn"
                         onClick={() => {
-                          console.log('📦 Full Group Data:', g._fullData); // ✅ Add this
-                          console.log('👥 Members Details:', g._fullData?.members_details); // ✅ Add this
                           
                           setSelectedGroupForMarks({
                             ...g,
                             project: g.title,
                             members: g._fullData?.members_details?.map(m => ({
+                              id: m.id,                          
+                              student_user_id: m.student_user_id, 
                               name: m.full_name || m.email || 'Unknown',
-                              odoo_id: m.student_id || m.odoo_id || '',
-                              student_db_id: m.id || m.group_member_id || m.student
+                              odoo_id: m.student_id || '',        
+                              email: m.email || ''
                             })) || []
                           })
                         }}
@@ -1159,7 +1153,7 @@ const handleAnnouncementSubmit = (e) => {
           <button type="submit" className="submit-btn">Post Announcement</button>
         </form>
         <p className="announce-note">
-          📢 This will appear in the ticker on the homepage automatically.
+           This will appear in the ticker on the homepage automatically.
         </p>
       </div>
 
@@ -1289,7 +1283,7 @@ const handleAnnouncementSubmit = (e) => {
           View All Groups
         </button>
 
-      {!isCommittee && (  // ✅ Committee ke liye hide
+      {!isCommittee && (  // Committee ke liye hide
         <button
           className={`sidebar-btn ${activeTab === 'announcements' ? 'active' : ''}`}
           onClick={() => { setActiveTab('announcements'); setMenuOpen(false); }}
@@ -1304,7 +1298,7 @@ const handleAnnouncementSubmit = (e) => {
     Marks & Evaluation
   </button>
 
-        {!isCommittee && (  // ✅ Committee ke liye hide
+        {!isCommittee && (  // Committee ke liye hide
           <Link 
             to="/admin/enrollment" 
             className="sidebar-btn"

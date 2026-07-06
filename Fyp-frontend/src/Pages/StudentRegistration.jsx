@@ -8,7 +8,7 @@ function StudentRegistration() {
     first_name: '',
     last_name: '',
     email: '',
-    student_id: '',  // ✅ Odoo ID field added
+    student_id: '',  
     password: '',
     confirm_password: ''
   });
@@ -56,7 +56,7 @@ const handleSubmit = async (e) => {
       student_id: formData.student_id.trim()
     });
 
-    // ✅ Check for success
+    //  Check for success
     if (response.data && response.data.success) {
       setSuccessMessage(response.data.message || 'Registration successful! Your account is pending admin approval.');
       
@@ -73,7 +73,7 @@ const handleSubmit = async (e) => {
     if (error.response && error.response.data) {
       const backendData = error.response.data;
       
-      // ✅ Handle different error formats
+      //  Handle different error formats
       if (backendData.errors) {
         const firstError = Object.values(backendData.errors)[0];
         setError(Array.isArray(firstError) ? firstError[0] : firstError);
@@ -160,7 +160,7 @@ const handleSubmit = async (e) => {
               />
             </div>
 
-            {/* ✅ Odoo ID Field */}
+            {/*  Odoo ID Field */}
             <div className="form-group">
               <label className="form-label">Odoo ID </label>
               <input

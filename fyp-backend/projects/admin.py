@@ -44,7 +44,7 @@ from django.contrib import admin
 from .models import (
     Faculty, ProjectGroup, GroupMember, FYDPProposal, 
     ChangeRequest, MeetingMinute, AttendanceLog, Announcement,
-    ProjectReportSubmission, ReportDeadline  # ✅ NEW
+    ProjectReportSubmission, ReportDeadline  
 )
 
 

@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import CustomUser, EnrolledStudent
 
 
-# ✅ Bulk Actions
+#  Bulk Actions
 @admin.action(description='Approve selected users (Activate accounts)')
 def approve_users(modeladmin, request, queryset):
     """
@@ -31,7 +31,7 @@ def reject_users(modeladmin, request, queryset):
     modeladmin.message_user(request, f'{updated_count} user(s) rejected.')
 
 
-# ✅ Custom User Admin
+#  Custom User Admin
 class CustomUserAdmin(BaseUserAdmin):
     # Admin panel mein dikhane wale fields (list view)
     list_display = ['email', 'user_type', 'student_id', 'first_name', 'last_name', 'is_active', 'is_staff', 'date_joined']
@@ -48,7 +48,7 @@ class CustomUserAdmin(BaseUserAdmin):
     # Actions (bulk operations)
     actions = [approve_users, disable_users, reject_users]
     
-    # ✅ FIX: Fieldsets - username ko hata diya, email ko primary banaya
+    #  FIX: Fieldsets - username ko hata diya, email ko primary banaya
     fieldsets = (
         ('Login Credentials', {
             'fields': ('email', 'password', 'user_type')
@@ -73,7 +73,7 @@ class CustomUserAdmin(BaseUserAdmin):
         }),
     )
     
-    # ✅ FIX: Add user form - email se start, username nahi
+    #  FIX: Add user form - email se start, username nahi
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
@@ -83,7 +83,7 @@ class CustomUserAdmin(BaseUserAdmin):
     
     readonly_fields = ['date_joined', 'last_login']
     
-    # ✅ FIX: save_model - username set karne ki zaroorat nahi
+    #  FIX: save_model - username set karne ki zaroorat nahi
     def save_model(self, request, obj, form, change):
         # Email ko lowercase karein (consistency ke liye)
         if obj.email:
@@ -96,7 +96,7 @@ class CustomUserAdmin(BaseUserAdmin):
         super().save_model(request, obj, form, change)
 
 
-# ✅ Enrolled Student Admin (Bonus - Admin panel se bhi manage kar sakte hain)
+#  Enrolled Student Admin (Bonus - Admin panel se bhi manage kar sakte hain)
 class EnrolledStudentAdmin(admin.ModelAdmin):
     list_display = ['roll_number', 'email', 'full_name', 'approval_status', 'is_registered', 'created_at']
     list_filter = ['approval_status', 'is_registered']
@@ -151,11 +151,11 @@ class EnrolledStudentAdmin(admin.ModelAdmin):
         self.message_user(request, f'{count} student(s) rejected.')
 
 
-# ✅ Register Models
+#  Register Models
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(EnrolledStudent, EnrolledStudentAdmin)
 
-# ✅ Admin Panel Branding
+#  Admin Panel Branding
 admin.site.site_header = "FYP Portal Administration"
 admin.site.site_title = "FYP Admin"
 admin.site.index_title = "Welcome to FYP Portal Admin Panel"

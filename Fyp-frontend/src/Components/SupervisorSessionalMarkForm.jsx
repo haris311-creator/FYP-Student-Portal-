@@ -88,6 +88,9 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
   // State for storing error messages
   const [error, setError] = useState('');
 
+  const [submitted, setSubmitted] = useState(false);
+  const [existingEvaluations, setExistingEvaluations] = useState([]);
+
   // Track kya har student ki marking pehle se ho chuki hai
   const [submittedStatus, setSubmittedStatus] = useState({});
   const [loadingExisting, setLoadingExisting] = useState(true);
@@ -125,10 +128,10 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
       const newStudentMarks = [...studentMarks];
       const newSubmittedStatus = {};
 
-      existingEvaluations.forEach(evalRecord => {
+      existingEvaluations.forEach(evaluation => {
         // Match karein evaluation ka student ID group.members ke student_db_id se
         const studentIdx = group.members.findIndex(
-          m => m.student_db_id === evalRecord.student
+          m => m.id === evaluation.student
         );
 
         if (studentIdx !== -1) {
@@ -136,7 +139,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
           const selections = {};
           const manualMarks = {};
 
-          Object.entries(evalRecord.criteria_marks || {}).forEach(([key, value]) => {
+          Object.entries(evaluation.criteria_marks || {}).forEach(([key, value]) => {
             const cIdx = parseInt(key);
             const maxMarks = rubricData[cIdx]?.maxMarks || 10;
             manualMarks[cIdx] = value.toString();
@@ -146,16 +149,22 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
           newStudentMarks[studentIdx] = {
             selections,
             manualMarks,
-            comments: evalRecord.comments || ''
+            comments: evaluation.comments || ''
           };
 
           // Is student ki submission ID save karein (update ke liye chahiye hogi)
-          newSubmittedStatus[studentIdx] = evalRecord.id;
+          newSubmittedStatus[studentIdx] = evaluation.id;
         }
       });
 
       setStudentMarks(newStudentMarks);
       setSubmittedStatus(newSubmittedStatus);
+
+
+     if (existingEvaluations.length > 0 && existingEvaluations.length === group.members.length) {
+        setSubmitted(true);
+        setExistingEvaluations(existingEvaluations);
+      }
     } catch (err) {
       console.error('Error fetching existing marks:', err);
     } finally {
@@ -165,6 +174,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
 
   fetchExistingMarks();
 }, [group?.id]);
+
 
   /**
    * Handle radio button selection for performance level (1-5)
@@ -335,7 +345,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
         
         return {
           group: group.id,
-          student: member.student_db_id,
+          student: member.id,
           criteria_marks: criteriaMarksObj,  
           raw_total: getRawTotal(idx),
           final_marks: parseFloat(getFinalMarks(idx)),
@@ -369,12 +379,17 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
 
       setSubmittedStatus(newSubmittedStatus);
 
-      
+      // Set submitted state and evaluations for success page
+      setSubmitted(true);
+      setExistingEvaluations(results);
+
       // Show success message
       alert('Sessional marks submitted successfully!');
-      
-      // Close the form modal
-      onClose && onClose();
+
+      // Close the form modal after 2 seconds
+      if (onClose) {
+        setTimeout(() => onClose(), 2000);
+}
       
     } catch (err) {
       // Log error details for debugging
@@ -414,6 +429,58 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
 
   // Get group members array, default to empty array if not available
   const members = group?.members || [];
+
+
+  if (submitted && existingEvaluations.length > 0) {
+    const totalFinal = existingEvaluations.reduce((sum, evaluation) => sum + (parseFloat(evaluation.final_marks) || 0), 0);
+    const avgFinal = existingEvaluations.length > 0 ? (totalFinal / existingEvaluations.length).toFixed(2) : '0.00';
+
+    return (
+      <div className="ssm-container">
+        <div className="ssm-success">
+          <div className="ssm-success-icon">&#10003;</div>
+          <h2>Already Submitted</h2>
+          <p style={{ marginBottom: '20px' }}>Sessional marks have been recorded for all students in this group.</p>
+          
+          <div style={{ 
+            background: '#f8fafc', 
+            border: '1px solid #e2e8f0', 
+            borderRadius: '8px', 
+            padding: '20px',
+            marginBottom: '20px',
+            maxWidth: '400px',
+            margin: '0 auto 20px auto'
+          }}>
+            <div style={{ marginBottom: '12px' }}>
+              <strong style={{ color: '#64748b', fontSize: '13px' }}>Average Marks:</strong>
+              <p style={{ margin: '5px 0', fontSize: '20px', fontWeight: 600, color: '#16a34a' }}>
+                {avgFinal}/20
+              </p>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                Total: {totalFinal.toFixed(2)}/20
+              </p>
+            </div>
+            <div style={{ marginTop: '15px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+              Submitted: {new Date(existingEvaluations[0].evaluated_at).toLocaleString()}
+            </div>
+          </div>
+          
+          <button 
+            className="ssm-submit-btn" 
+            onClick={() => {
+              setSubmitted(false);
+              setExistingEvaluations([]);
+            }}
+          >
+            Re-evaluate
+          </button>
+          <button className="ssm-cancel-btn" onClick={onClose} style={{ marginLeft: '10px' }}>
+            Back to Group
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="ssm-container">
@@ -599,7 +666,6 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
         </button>
         <button className="ssm-cancel-btn" onClick={onClose}>Cancel</button>
       </div>
-
     </div>
   );
 };

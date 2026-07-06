@@ -33,9 +33,9 @@ function Login() {
     localStorage.setItem('refresh_token', data.tokens.refresh);
     localStorage.setItem('user', JSON.stringify(data.user));
     
-    // ✅ ADD THESE 2 LINES:
-    localStorage.setItem('user_type', data.user.user_type);  // Ensure user_type is saved
-    window.dispatchEvent(new Event('authChanged'));           // Notify Navbar
+    
+    localStorage.setItem('user_type', data.user.user_type);  
+    window.dispatchEvent(new Event('authChanged'));           
     const userType = data.user.user_type;
     
     if (userType === 'student') {
@@ -48,7 +48,7 @@ function Login() {
       navigate('/admin-dashboard');
     }
   } catch (error) {
-    setError(error.message || 'Login failed. Please check your credentials.');  // ✅ Inline error
+    setError(error.message || 'Login failed. Please check your credentials.');  
   }
 };
 

@@ -91,7 +91,7 @@ class SessionalEvaluationViewSet(viewsets.ModelViewSet):
                 group__co_supervisor__user=user
             )
         elif user.user_type == 'committee':
-            # ✅ Committee ko sab groups ke sessional marks dikhao
+            #  Committee ko sab groups ke sessional marks dikhao
             return SessionalEvaluation.objects.all()
         return SessionalEvaluation.objects.none()
     
@@ -127,7 +127,7 @@ class MeetingLogEvaluationViewSet(viewsets.ModelViewSet):
         if user.user_type == 'admin':
             return MeetingLogEvaluation.objects.all()
         elif user.user_type == 'committee':
-            # ✅ Committee ko sab groups ke meeting logs dikhao
+            #  Committee ko sab groups ke meeting logs dikhao
             return MeetingLogEvaluation.objects.all()
         return MeetingLogEvaluation.objects.filter(evaluator=user)
     

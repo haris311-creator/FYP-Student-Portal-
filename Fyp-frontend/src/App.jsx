@@ -42,13 +42,13 @@ function App() {
         {/* Registration Route */}
         <Route path="/register" element={<StudentRegistration />} />
 
-        {/* ✅ Admin Enrollment Route */}
+        {/*  Admin Enrollment Route */}
         <Route path="/admin/enrollment" element={<EnrollmentManagement />} />        
 
         {/* Public Evaluation Route */}
         <Route path="/evaluate/:token" element={<PublicEvaluationPage />} />
 
-        {/* ✅ Admin Group Approvals Route - FIXED */}
+        {/*  Admin Group Approvals Route - FIXED */}
         <Route
           path="/admin/approvals"
           element={

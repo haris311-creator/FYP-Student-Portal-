@@ -252,7 +252,7 @@
   display: inline-block;
 }
 
-/* ✅ REVERTED: Original Status Colors */
+/*  Original Status Colors */
 .status-active {
   background: #eff6ff; /* Blue */
   color: #1e40af;
@@ -330,7 +330,7 @@
   background: #fef2f2;
 }
 
-/* ✅ NEW: Loading State & Refresh Button */
+/*  Loading State & Refresh Button */
 .loading-state {
   text-align: center;
   padding: 3rem;

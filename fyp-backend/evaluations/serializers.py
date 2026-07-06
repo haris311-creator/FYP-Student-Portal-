@@ -8,6 +8,7 @@ from .models import (
     FinalEvaluationResult,
 )
 from projects.models import ProjectGroup, GroupMember
+from accounts.models import CustomUser
 
 
 class EvaluationCriteriaSerializer(serializers.ModelSerializer):
@@ -19,22 +20,25 @@ class EvaluationCriteriaSerializer(serializers.ModelSerializer):
 
 
 class SessionalEvaluationSerializer(serializers.ModelSerializer):
-    student_name = serializers.CharField(source='student.full_name', read_only=True)
-    student_id = serializers.CharField(source='student.student_id', read_only=True)
+    student_name = serializers.CharField(source='student.student.full_name', read_only=True)
+    student_odoo_id = serializers.CharField(source='student.student_id', read_only=True)
+    group_member_id = serializers.CharField(source='student.id', read_only=True)
     group_number = serializers.CharField(source='group.group_number', read_only=True)
     evaluator_name = serializers.CharField(source='evaluator.full_name', read_only=True)
 
-    # ✅ Custom field jo student_id string accept kare
-    student = serializers.PrimaryKeyRelatedField(queryset=GroupMember.objects.all())
+    #  Custom field jo student_id string accept kare
+    student = serializers.PrimaryKeyRelatedField(
+        queryset=GroupMember.objects.all()
+    )
     
     class Meta:
         model = SessionalEvaluation
         fields = [
-            'id', 'group', 'group_number', 'student', 'student_name', 'student_id',
+            'id', 'group', 'group_number', 'student', 'group_member_id', 'student_name', 'student_odoo_id',
             'evaluator', 'evaluator_name', 'criteria_marks', 'raw_total',
             'final_marks', 'comments', 'evaluated_at', 'updated_at'
         ]
-        read_only_fields = ['final_marks', 'evaluated_at', 'updated_at']
+        read_only_fields = ['final_marks', 'evaluated_at', 'updated_at', 'group_member_id']
     
     def validate(self, data):
         """Validate raw_total and auto-calculate final_marks"""

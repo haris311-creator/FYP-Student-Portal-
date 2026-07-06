@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api'; 
 
-// ✅ Ensure you have this API base URL configured
+// Ensure you have this API base URL configured
 const API_BASE = 'http://localhost:8000/api/projects/';
 
 const GroupFormation = () => {
@@ -34,7 +34,7 @@ const GroupFormation = () => {
     ]
   });
 
-  // 1️ Load Faculty List on Mount
+  //  Load Faculty List on Mount
  useEffect(() => {
     const fetchFaculty = async () => {
       try {
@@ -58,7 +58,7 @@ const GroupFormation = () => {
     fetchFaculty();
   }, []);
 
-  // 2️⃣ Handle Input Changes
+  //  Handle Input Changes
   const handleMemberChange = (index, field, value) => {
     const newMembers = [...formData.members];
     newMembers[index] = { ...newMembers[index], [field]: value };
@@ -93,7 +93,7 @@ const GroupFormation = () => {
     }
   };
 
-  // 3️⃣ Submit Group
+  //  Submit Group
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);

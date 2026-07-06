@@ -26,7 +26,7 @@ function Navbar() {
         return;
       }
 
-      // ✅ Token ko backend se validate karein (optional but recommended)
+      // Token ko backend se validate karein (optional but recommended)
       // Ya phir sirf check karein ke user data valid hai
       try {
         const user = JSON.parse(userStr);
@@ -93,7 +93,7 @@ function Navbar() {
           </li>
 
           <li>
-            {/* ✅ Show Login while checking, then show actual state */}
+            {/*  Show Login while checking, then show actual state */}
             {isChecking ? (
               <Link to="/login" className="nav-link login-btn" onClick={() => setMenuOpen(false)}> 
                 Login               

@@ -303,7 +303,7 @@ class EnrolledStudentViewSet(viewsets.ModelViewSet):
         if user:
             user.delete()
         
-        # ✅ Delete enrolled student record bhi
+        #  Delete enrolled student record bhi
         student.delete()
         
         if email_sent:
@@ -392,10 +392,10 @@ class PasswordResetRequestView(generics.GenericAPIView):
                     fail_silently=False,
                 )
                 
-                print(f"✅ Password reset email sent to {user.email}")
+                print(f" Password reset email sent to {user.email}")
                 
             except Exception as e:
-                print(f"❌ Failed to send reset email: {str(e)}")
+                print(f" Failed to send reset email: {str(e)}")
         
         # Hamesha success message denge (security ke liye)
         return Response({
@@ -422,7 +422,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         user.set_password(new_password)
         user.save()
         
-        print(f"✅ Password reset successful for {user.email}")
+        print(f" Password reset successful for {user.email}")
         
         return Response({
             "success": True,

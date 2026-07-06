@@ -167,7 +167,7 @@ class GroupMember(models.Model):
     )
     role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='member')
     
-    # ✅ Nullable fields for backward compatibility
+    #  Nullable fields for backward compatibility
     full_name = models.CharField(max_length=255, blank=True, null=True, help_text="Student's full name as per records")
     odoo_id = models.CharField(max_length=50, blank=True, null=True, help_text="University/Odoo ID (e.g., IU02-0322-0288)")
     
@@ -260,8 +260,8 @@ class FYDPProposal(models.Model):
         ('draft', 'Draft'),
         ('submitted', 'Submitted'),
         ('under_review', 'Under Review'),
-        ('approved_by_supervisor', 'Approved by Supervisor'),  # ✅ NEW
-        ('revision_needed', 'Revision Needed'),  # ✅ NEW
+        ('approved_by_supervisor', 'Approved by Supervisor'), 
+        ('revision_needed', 'Revision Needed'),  
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     ]
@@ -289,7 +289,7 @@ class FYDPProposal(models.Model):
     acm_mapping = models.JSONField(default=list, blank=True)
     project_schedule = models.FileField(upload_to='proposals/schedules/', blank=True)
     
-    # ✅ NEW: Proposal file upload field
+    #  Proposal file upload field
     proposal_file = models.FileField(
         upload_to='proposals/documents/',
         blank=True,
@@ -297,13 +297,13 @@ class FYDPProposal(models.Model):
         help_text="Upload filled proposal form (PDF/DOCX only, Max 10MB)"
     )
     
-    # ✅ NEW: Track submission attempts (Max 3)
+    #  Track submission attempts (Max 3)
     submission_count = models.PositiveIntegerField(default=0)
     
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
     submitted_at = models.DateTimeField(null=True, blank=True)
     
-    # ✅ NEW: Supervisor review fields
+    #  Supervisor review fields
     supervisor_remarks = models.TextField(blank=True, help_text="Supervisor's feedback")
     approved_by_supervisor = models.ForeignKey(
         Faculty,
@@ -315,7 +315,7 @@ class FYDPProposal(models.Model):
     )
     supervisor_reviewed_at = models.DateTimeField(null=True, blank=True)
     
-    # ✅ NEW: Admin final review fields
+    #  Admin final review fields
     admin_remarks = models.TextField(blank=True, help_text="Admin's final decision remarks")
     finally_approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -493,7 +493,7 @@ class ChangeRequest(models.Model):
         return penalties.get(self.change_type, 0.00)
 
 
-    # =============================================================================
+# =============================================================================
 # MEETING MINUTES & ATTENDANCE MODELS
 # =============================================================================
 
@@ -508,9 +508,9 @@ class MeetingMinute(models.Model):
     ]
     
     PREVIOUS_TASK_STATUS_CHOICES = [
-        ('complete', '✅ Completed'),
-        ('incomplete', '❌ Incomplete'),
-        ('partial', '⚠️ Partial'),
+        ('complete', ' Completed'),
+        ('incomplete', ' Incomplete'),
+        ('partial', ' Partial'),
     ]
     
     group = models.ForeignKey(
