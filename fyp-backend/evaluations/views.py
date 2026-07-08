@@ -311,9 +311,10 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(evaluator_type='external')
     
+
     @action(detail=False, methods=['get'])
     def by_group(self, request):
-        """Get all presentation evaluations for a group"""
+        """Get all presentation evaluations for a group with per-student details"""
         group_id = request.query_params.get('group_id')
         if not group_id:
             return Response(
@@ -324,57 +325,61 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
         evaluations = self.get_queryset().filter(
             group_id=group_id,
             is_submitted=True
-        )
+        ).select_related('group')
+        
         serializer = self.get_serializer(evaluations, many=True)
         
-        # Calculate scaled marks
+        # Get group members
+        members = GroupMember.objects.filter(group_id=group_id)
+        members_dict = {
+            member.id: {
+                'name': f"{member.student.first_name} {member.student.last_name}".strip() or member.student.email,
+                'student_id': member.student.student_id if hasattr(member.student, 'student_id') else member.student.username
+            }
+            for member in members
+        }
+        
         total_evaluators = evaluations.count()
         
         if total_evaluators > 0:
-            # Sum all presentation marks
-            total_presentation = sum(
-                float(e.presentation_raw_total) for e in evaluations
-            )
+            # Per-student calculation
+            per_student_marks = {}
             
-            # Sum all viva marks per student
-            all_viva_marks = {}
-            for evaluation in evaluations:
-                for student_id, marks in evaluation.viva_marks.items():
-                    if student_id not in all_viva_marks:
-                        all_viva_marks[student_id] = []
-                    all_viva_marks[student_id].append(marks)
-            
-            # Calculate averages
-            avg_presentation = total_presentation / total_evaluators
-            avg_viva = {
-                student_id: sum(marks_list) / len(marks_list)
-                for student_id, marks_list in all_viva_marks.items()
-            }
-            
-            # Calculate scaled marks
-            # If 1 evaluator: max 55, if 2 evaluators: max 110
-            max_possible = 55 * total_evaluators
-            total_obtained = total_presentation + sum(sum(marks) for marks in all_viva_marks.values())
-            
-            scaled_marks = (total_obtained / max_possible) * 40
+            for member_id, member_info in members_dict.items():
+                student_total = 0
+                max_possible = 55 * total_evaluators
+                
+                for evaluation in evaluations:
+                    # Presentation marks (same for all students in this evaluation)
+                    presentation_marks = float(evaluation.presentation_raw_total)
+                    
+                    # Viva marks (specific to this student)
+                    viva_marks = float(evaluation.viva_marks.get(str(member_id), 0))
+                    
+                    # Add to student's total
+                    student_total += (presentation_marks + viva_marks)
+                
+                # Calculate scaled marks for this student
+                scaled_marks = (student_total / max_possible) * 40 if max_possible > 0 else 0
+                
+                per_student_marks[str(member_id)] = {
+                    'name': member_info['name'],
+                    'student_id': member_info['student_id'],
+                    'raw_total': round(student_total, 2),
+                    'max_possible': max_possible,
+                    'scaled_marks': round(scaled_marks, 2)
+                }
             
             return Response({
                 'count': total_evaluators,
                 'results': serializer.data,
-                'summary': {
-                    'total_evaluators': total_evaluators,
-                    'average_presentation': round(avg_presentation, 2),
-                    'average_viva': {k: round(v, 2) for k, v in avg_viva.items()},
-                    'total_obtained': round(total_obtained, 2),
-                    'max_possible': max_possible,
-                    'scaled_marks': round(scaled_marks, 2)
-                }
+                'per_student_marks': per_student_marks
             })
         
         return Response({
             'count': 0,
             'results': [],
-            'summary': None
+            'per_student_marks': {}
         })
     
     @action(detail=False, methods=['post'])

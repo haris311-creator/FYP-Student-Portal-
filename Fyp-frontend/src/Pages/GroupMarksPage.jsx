@@ -6,25 +6,20 @@ import AwardListTemplate from '../Components/AwardListTemplate';
 import { evaluationAPI } from '../utils/api';
 import './GroupMarksPage.css';
 
-// view: 'main' | 'report' | 'presentation' | 'meetingLog'
 const GroupMarksPage = ({ group, onBack }) => {
   const [view, setView] = useState('main');
   const [evalLinks, setEvalLinks] = useState([]);
   const [generatingLink, setGeneratingLink] = useState(false);
-  // Sessional marks database se store karne ke liye
   const [sessionalMarks, setSessionalMarks] = useState({});
   const [loadingSessional, setLoadingSessional] = useState(true);
-  // Meeting log marks database se store karne ke liye
   const [meetingLogMarks, setMeetingLogMarks] = useState(null);
   const [loadingMeetingLog, setLoadingMeetingLog] = useState(true);
-  // Presentation marks database se store karne ke liye
-  const [presentationMarks, setPresentationMarks] = useState(null);
+  const [presentationData, setPresentationData] = useState(null);
   const [loadingPresentation, setLoadingPresentation] = useState(true);
-
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   if (!group) return null;
 
-  // Group khulte hi real sessional marks fetch karein
   useEffect(() => {
     const fetchSessionalMarks = async () => {
       if (!group?.id) {
@@ -34,20 +29,15 @@ const GroupMarksPage = ({ group, onBack }) => {
       try {
         const response = await evaluationAPI.getSessionalByGroup(group.id);
         const evaluations = response.data;
-
-
-        // Student ID (GroupMember.id) ke against marks ka map banayein
         const marksMap = {};
         
         if (evaluations && evaluations.length > 0) {
-          evaluations.forEach((evalRecord, index) => {
-            
+          evaluations.forEach((evalRecord) => {
             if (evalRecord.student && evalRecord.final_marks !== undefined) {
               marksMap[evalRecord.student] = evalRecord.final_marks;
             }
           });
         }
-
         setSessionalMarks(marksMap);
       } catch (err) {
         console.error(' Error fetching sessional marks:', err);
@@ -59,30 +49,26 @@ const GroupMarksPage = ({ group, onBack }) => {
     fetchSessionalMarks();
   }, [group?.id]);
 
-
-  // Presentation marks fetch karein
   useEffect(() => {
-  const fetchPresentationMarks = async () => {
-    if (!group?.id) {
-      setLoadingPresentation(false);
-      return;
-    }
-    try {
-      const response = await evaluationAPI.getPresentationByGroup(group.id);
-      setPresentationMarks(response.data.summary);
-    } catch (err) {
-      console.error('Error fetching presentation marks:', err);
-      setPresentationMarks(null);
-    } finally {
-      setLoadingPresentation(false);
-    }
-  };
+    const fetchPresentationMarks = async () => {
+      if (!group?.id) {
+        setLoadingPresentation(false);
+        return;
+      }
+      try {
+        const response = await evaluationAPI.getPresentationByGroup(group.id);
+        setPresentationData(response.data);
+      } catch (err) {
+        console.error('Error fetching presentation marks:', err);
+        setPresentationData(null);
+      } finally {
+        setLoadingPresentation(false);
+      }
+    };
 
-  fetchPresentationMarks();
-}, [group?.id]);
+    fetchPresentationMarks();
+  }, [group?.id]);
 
-
-   // Meeting log marks fetch karein
   useEffect(() => {
     const fetchMeetingLogMarks = async () => {
       if (!group?.id) {
@@ -92,11 +78,8 @@ const GroupMarksPage = ({ group, onBack }) => {
       try {
         const response = await evaluationAPI.getMeetingLogByGroup(group.id);
         const evaluations = response.data;
-        
-
-        // Latest evaluation lein (agar multiple hain)
         if (evaluations && evaluations.length > 0) {
-          setMeetingLogMarks(evaluations[0]); // First/latest evaluation
+          setMeetingLogMarks(evaluations[0]);
         } else {
           setMeetingLogMarks(null);
         }
@@ -111,33 +94,31 @@ const GroupMarksPage = ({ group, onBack }) => {
     fetchMeetingLogMarks();
   }, [group?.id]);
 
-
   const generateEvalLink = async () => {
-  setGeneratingLink(true);
-  try {
-    const response = await evaluationAPI.generatePresentationToken(group.id);
-    const { token, link } = response.data;
-    
-    setEvalLinks(prev => [
-      ...prev,
-      { token, link, generated_at: new Date().toLocaleString(), status: 'active' }
-    ]);
-    
-    alert(`Evaluation link generated!\n\n${link}\n\nShare via WhatsApp or Email`);
-  } catch (err) {
-    console.error('Error generating link:', err);
-    alert('Failed to generate link');
-  } finally {
-    setGeneratingLink(false);
-  }
-};
+    setGeneratingLink(true);
+    try {
+      const response = await evaluationAPI.generatePresentationToken(group.id);
+      const { token, link } = response.data;
+      
+      setEvalLinks(prev => [
+        ...prev,
+        { token, link, generated_at: new Date().toLocaleString(), status: 'active' }
+      ]);
+      
+      alert(`Evaluation link generated!\n\n${link}\n\nShare via WhatsApp or Email`);
+    } catch (err) {
+      console.error('Error generating link:', err);
+      alert('Failed to generate link');
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
 
   const copyLink = (link) => {
     navigator.clipboard.writeText(link);
     alert('Link copied!');
   };
 
-  // ---- Sub-pages (navigate, not overlay) ----
   if (view === 'report') {
     return (
       <div className="gmp-container">
@@ -161,7 +142,6 @@ const GroupMarksPage = ({ group, onBack }) => {
           &larr; Back to Group
         </button>
 
-        {/* Committee Links Section - same as before */}
         <div className="gmp-card" style={{ marginBottom: '20px' }}>
           <div className="gmp-card-body" style={{ padding: '20px' }}>
             <h3 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 600, color: '#1e3a8a' }}>
@@ -207,7 +187,6 @@ const GroupMarksPage = ({ group, onBack }) => {
           </div>
         </div>
 
-        {/* Admin's own evaluation form - same component as before, untouched */}
         <PresentationEvaluationForm
           group={group}
           onClose={() => setView('main')}
@@ -233,10 +212,8 @@ const GroupMarksPage = ({ group, onBack }) => {
     );
   }
 
-  // ---- Main consolidated page ----
   return (
     <div className="gmp-container">
-
       <div className="gmp-header">
         <button className="gmp-back-btn" onClick={onBack}>
           &larr; Back to Groups
@@ -246,8 +223,7 @@ const GroupMarksPage = ({ group, onBack }) => {
       </div>
 
       <div className="gmp-sections">
-
-        {/* Sessional / Progress Report — read-only from supervisor */}
+        {/* Sessional */}
         <div className="gmp-card">
           <div className="gmp-card-header">
             <div>
@@ -267,11 +243,7 @@ const GroupMarksPage = ({ group, onBack }) => {
                     <tr key={idx}>
                       <td>{m.name}</td>
                       <td className="gmp-right">
-                        {loadingSessional
-                          ? '...'
-                          : marks !== undefined
-                            ? `${marks}/20`
-                            : '— pending —'}
+                        {loadingSessional ? '...' : marks !== undefined ? `${marks}/20` : '— pending —'}
                       </td>
                     </tr>
                   );
@@ -294,35 +266,29 @@ const GroupMarksPage = ({ group, onBack }) => {
           </div>
         </div>
 
+        {/* Presentation - UPDATED */}
         <div className="gmp-card">
           <div className="gmp-card-header">
             <div>
               <h3>Presentation</h3>
               <p className="gmp-card-sub">Weightage: 40 marks &middot; Committee Evaluation</p>
             </div>
-            <button className="gmp-evaluate-btn" onClick={() => setView('presentation')}>
-              Evaluate
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {presentationData && presentationData.count > 0 && (
+                <button 
+                  className="gmp-evaluate-btn" 
+                  onClick={() => setShowDetailsModal(true)}
+                  style={{ background: '#059669' }}
+                >
+                  View Details
+                </button>
+              )}
+              <button className="gmp-evaluate-btn" onClick={() => setView('presentation')}>
+                Evaluate
+              </button>
+            </div>
           </div>
           
-          {/* Scaled marks dikhao */}
-          {loadingPresentation ? (
-            <p>Loading...</p>
-          ) : presentationMarks ? (
-            <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '6px', marginTop: '12px' }}>
-              <p style={{ margin: '4px 0', fontSize: '13px', color: '#065f46' }}>
-                <strong>Evaluators:</strong> {presentationMarks.total_evaluators}
-              </p>
-              <p style={{ margin: '4px 0', fontSize: '13px', color: '#065f46' }}>
-                <strong>Scaled Marks:</strong> {presentationMarks.scaled_marks}/40
-              </p>
-              <p style={{ margin: '4px 0', fontSize: '12px', color: '#047857' }}>
-                Total: {presentationMarks.total_obtained}/{presentationMarks.max_possible}
-              </p>
-            </div>
-          ) : (
-            <p style={{ padding: '12px', color: '#64748b' }}>Not evaluated yet</p>
-          )}
         </div>
 
         {/* Meeting Log */}
@@ -337,14 +303,123 @@ const GroupMarksPage = ({ group, onBack }) => {
             </button>
           </div>
         </div>
-
       </div>
 
-      {/* Award List — directly below, not a separate click */}
+      {/* Award List */}
       <div className="gmp-award-section">
         <AwardListTemplate group={group} />
       </div>
 
+      {/* Presentation Details Modal */}
+      {showDetailsModal && presentationData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '900px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, color: '#1e3a8a' }}>Presentation Evaluation Details</h2>
+              <button 
+                onClick={() => setShowDetailsModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Evaluator-wise Details */}
+            <h3 style={{ color: '#1e3a8a', marginBottom: '16px' }}>Evaluator-wise Breakdown</h3>
+            {presentationData.results.map((evaluation, idx) => (
+              <div key={evaluation.id} style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '16px',
+                marginBottom: '16px'
+              }}>
+                <h4 style={{ margin: '0 0 12px 0', color: '#1e3a8a' }}>
+                  Evaluator {idx + 1}: {evaluation.evaluator_name || 'Unknown'}
+                </h4>
+                <div style={{ marginBottom: '12px' }}>
+                  <strong style={{ color: '#64748b' }}>Presentation (Group):</strong> 
+                  <span style={{ marginLeft: '8px', color: '#1e293b' }}>
+                    {evaluation.presentation_raw_total}/50
+                  </span>
+                </div>
+                <div>
+                  <strong style={{ color: '#64748b' }}>Viva (Student-wise):</strong>
+                  <div style={{ marginTop: '8px', paddingLeft: '16px' }}>
+                    {Object.entries(evaluation.viva_marks).map(([studentId, marks]) => {
+                      const student = group.members.find(m => m.id === parseInt(studentId));
+                      return (
+                        <div key={studentId} style={{ marginBottom: '4px' }}>
+                          {student?.name || `Student ${studentId}`}: {marks}/5
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Per-Student Scaled Marks */}
+            <h3 style={{ color: '#1e3a8a', marginBottom: '16px', marginTop: '24px' }}>Final Scaled Marks (Per Student)</h3>
+            <table style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              background: 'white',
+              borderRadius: '8px',
+              overflow: 'hidden'
+            }}>
+              <thead>
+                <tr style={{ background: '#1e3a8a', color: 'white' }}>
+                  <th style={{ padding: '12px', textAlign: 'left' }}>Student Name</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Raw Total</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Max Possible</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Scaled Marks (/40)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(presentationData.per_student_marks).map(([studentId, data]) => (
+                  <tr key={studentId} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '12px' }}>
+                      <strong>{data.name}</strong>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>{data.student_id}</div>
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>{data.raw_total}/{data.max_possible}</td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>{data.max_possible}</td>
+                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: '#059669' }}>
+                      {data.scaled_marks}/40
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

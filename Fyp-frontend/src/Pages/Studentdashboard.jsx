@@ -31,8 +31,6 @@ function StudentDashboard() {
         role: 'lead',
         cgpa: '',
         earned_credit_hours: '',
-        prerequisites_completed: true,
-        has_special_permission: false
       }
     ]
   });
@@ -198,7 +196,7 @@ function StudentDashboard() {
         ...formData,
         members: [
           ...formData.members,
-          { full_name: '', odoo_id: '', role: 'member', cgpa: '', earned_credit_hours: '', prerequisites_completed: true, has_special_permission: false }
+          { full_name: '', odoo_id: '', role: 'member', cgpa: '', earned_credit_hours: '' }
         ]
       });
     }
@@ -688,19 +686,9 @@ function StudentDashboard() {
                     <label>Earned Credit Hours *</label>
                     <input type="number" min="0" max="200" className="form-input" value={member.earned_credit_hours} onChange={e => handleMemberChange(index, 'earned_credit_hours', e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 100" required />
                     <p className="form-note">
-                      {!member.earned_credit_hours ? 'Enter credits' : member.earned_credit_hours < 100 ? '⚠️ HOD approval needed' : '✓ Eligible'}
+                      {!member.earned_credit_hours ? 'Enter credits' : member.earned_credit_hours < 100 ? ' HOD approval needed' : '✓ Eligible'}
                     </p>
                   </div>
-                </div>
-                <div className="checkbox-group">
-                  <label>
-                    <input type="checkbox" checked={member.prerequisites_completed} onChange={e => handleMemberChange(index, 'prerequisites_completed', e.target.checked)} />
-                    Prerequisites Completed
-                  </label>
-                  <label>
-                    <input type="checkbox" checked={member.has_special_permission} onChange={e => handleMemberChange(index, 'has_special_permission', e.target.checked)} />
-                    I have HOD/Dean approval for deficiency
-                  </label>
                 </div>
               </div>
             ))}
@@ -1277,6 +1265,12 @@ const renderProjectProgress = () => {
               <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Plagiarism Score</p>
               <p style={{ fontWeight: '700', color: reportData.internal_similarity_score > 30 ? '#ef4444' : '#10b981', margin: 0, fontSize: '1.25rem' }}>
                 {reportData.internal_similarity_score}%
+              </p>
+            </div>
+            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
+              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Turnitin Score</p>
+              <p style={{ fontWeight: '700', color: reportData.turnitin_similarity_score > 30 ? '#ef4444' : '#10b981', margin: 0, fontSize: '1.25rem' }}>
+                {reportData.turnitin_similarity_score || 0}%
               </p>
             </div>
           </div>

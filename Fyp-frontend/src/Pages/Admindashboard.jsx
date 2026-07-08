@@ -178,7 +178,7 @@ useEffect(() => {
           id: group.id,
           group: group.members_details?.map(m => m.full_name || m.email).join(', ') || 'Unknown',
           title: group.project_title || group.name || 'Untitled Project',
-          phase: group.semester || 'FYP-1',
+          phase: group.fydp_phase === 'fydp2' ? 'FYP-2' : 'FYP-1',
           supervisor: group.supervisor_details?.name || group.supervisor_details?.email || 'Not Assigned',
           status: displayStatus,
           groupNumber: group.group_number || '-',
@@ -504,17 +504,28 @@ const handleAnnouncementSubmit = (e) => {
         </button>
         </>
         )}
-        <button className="action-btn" onClick={() => setActiveTab('groups')}>
-          <span>View All Groups</span>
-        </button>
+        {!isCommittee && (
+          <button className="action-btn" onClick={() => setActiveTab('finalReports')}>
+            <span>Report Approval</span>
+          </button>
+        )}
         {!isCommittee && (  // Committee ke liye hide
         <button className="action-btn" onClick={() => setActiveTab('announcements')}>
           <span>Announcements</span>
         </button>
         )}
-       <button className="action-btn" onClick={() => setActiveTab('marks')}>
-    <span>Marks & Evaluation</span>
-  </button>
+        <button className="action-btn" onClick={() => setActiveTab('marks')}>
+          <span>Marks & Evaluation</span>
+        </button>
+        {!isCommittee && (  
+          <Link 
+            to="/admin/enrollment" 
+            className="action-btn"
+            style={{ textDecoration: 'none' }}
+          >
+            <span>Enrollment Management</span>
+          </Link>
+        )}       
       </div>
     </div>
   );
@@ -607,7 +618,7 @@ const handleAnnouncementSubmit = (e) => {
                 {pendingFinalProposals.map(p => (
                   <tr key={p.id}>
                     <td>{p.project_title}</td>
-                    <td>{p.group_id}</td>
+                    <td>{p.group_number}</td>
                     <td>{p.approved_by_supervisor_name || 'N/A'}</td>
                     <td>{p.submission_count}/3</td>
                     <td>
@@ -1276,12 +1287,14 @@ const handleAnnouncementSubmit = (e) => {
         </button>
       </>
     )}
-        <button
-          className={`sidebar-btn ${activeTab === 'groups' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('groups'); setMenuOpen(false); }}
-        >
-          View All Groups
-        </button>
+        {!isCommittee && (
+          <button
+            className={`sidebar-btn ${activeTab === 'groups' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('groups'); setMenuOpen(false); }}
+          >
+            View All Groups
+          </button>
+        )}
 
       {!isCommittee && (  // Committee ke liye hide
         <button
@@ -1320,7 +1333,7 @@ const handleAnnouncementSubmit = (e) => {
         {activeTab === 'finalProposals' && !isCommittee && renderFinalProposals()}
         {activeTab === 'finalReports' && !isCommittee && renderFinalReports()}
         {selectedFinalReport && renderFinalReportModal()}
-        {activeTab === 'groups' && renderGroups()}
+        {activeTab === 'groups' && !isCommittee && renderGroups()}
         {activeTab === 'announcements' && !isCommittee && renderAnnouncements()}
         {activeTab === 'marks' && renderMarksEvaluation()}
         {selectedFinalProposal && renderFinalProposalModal()}

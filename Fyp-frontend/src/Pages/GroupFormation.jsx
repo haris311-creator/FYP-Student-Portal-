@@ -27,9 +27,7 @@ const GroupFormation = () => {
         student: currentUser.id, // Auto-fill current user
         role: 'lead',
         cgpa: '',
-        earned_credit_hours: '',
-        prerequisites_completed: true,
-        has_special_permission: false
+        earned_credit_hours: ''
       }
     ]
   });
@@ -75,9 +73,7 @@ const GroupFormation = () => {
             student: '',
             role: 'member',
             cgpa: '',
-            earned_credit_hours: '',
-            prerequisites_completed: true,
-            has_special_permission: false
+            earned_credit_hours: ''
           }
         ]
       });
@@ -244,28 +240,6 @@ const GroupFormation = () => {
                     />
                     <p className="form-note">Policy: ≥100 (≥94 with permission)</p>
                   </div>
-                  <div className="form-group checkbox-group">
-                    <label>
-                      <input 
-                        type="checkbox" 
-                        checked={member.prerequisites_completed}
-                        onChange={e => handleMemberChange(index, 'prerequisites_completed', e.target.checked)}
-                      />
-                      Prerequisites Completed
-                    </label>
-                  </div>
-                </div>
-
-                {/* Special Permission Toggle */}
-                <div className="form-group">
-                  <label className="warning-label">
-                    <input 
-                      type="checkbox" 
-                      checked={member.has_special_permission}
-                      onChange={e => handleMemberChange(index, 'has_special_permission', e.target.checked)}
-                    />
-                    I have HOD/Dean approval for deficiency (Upload letter later)
-                  </label>
                 </div>
               </div>
             ))}

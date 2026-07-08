@@ -50,12 +50,18 @@ const [loadingStats, setLoadingStats] = useState(false);
     try {
       setLoadingStats(true);
       
-      // 1. Pending Meeting Logs count
-      const meetingsRes = await meetingAPI.getByGroup(null); // Sab groups ke meetings
-      const allMeetings = meetingsRes.data.results || meetingsRes.data || [];
-      
-      // Jin groups mein meetings conducted hain lekin evaluation nahi hui
-      const pendingLogs = allMeetings.filter(m => !m.is_evaluated).length;
+      // 1. Pending Meeting Logs count 
+      let pendingLogs = 0;
+      for (const group of assignedGroups) {
+        try {
+          const meetingsRes = await meetingAPI.getByGroup(group.id);
+          const meetings = meetingsRes.data.results || meetingsRes.data || [];
+          // Count meetings without evaluation
+          pendingLogs += meetings.filter(m => !m.is_evaluated).length;
+        } catch (err) {
+          // Ignore individual group errors
+        }
+      }
       setPendingMeetingLogs(pendingLogs);
       
       // 2. Pending Sessional Marks count
@@ -772,23 +778,16 @@ const handleReportReviewSubmit = async () => {
         
         <div className="stat-card">
           <div className="stat-value">
-            {loadingStats ? '...' : pendingMeetingLogs}
-          </div>
-          <div className="stat-label">Pending Log Reviews</div>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-value">
             {loadingProposals ? '...' : pendingProposals.length}
           </div>
-          <div className="stat-label">Reports to Review</div>
+          <div className="stat-label">Proposals to Review</div>
         </div>
         
         <div className="stat-card">
           <div className="stat-value">
-            {loadingStats ? '...' : pendingSessionalMarks}
+            {loadingReports ? '...' : pendingReports.length}
           </div>
-          <div className="stat-label">Marks Pending</div>
+          <div className="stat-label">Reports to Review</div>
         </div>
       </div>
       
@@ -1139,7 +1138,7 @@ const handleReportReviewSubmit = async () => {
               className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
               onClick={() => { setActiveTab('reviews'); setMenuOpen(false); }}
             >
-              <span className="nav-text">Pending Reviews</span>
+              <span className="nav-text">Proposal Reviews</span>
             </button>
             <button
               className={`nav-item ${activeTab === 'reportReviews' ? 'active' : ''}`}
