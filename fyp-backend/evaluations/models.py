@@ -210,17 +210,22 @@ class PresentationEvaluation(models.Model):
     # Presentation marks (group-wise)
     presentation_criteria_marks = models.JSONField(
         default=dict,
+        blank=True,
         help_text="Criteria marks for presentation (out of 50)"
     )
     presentation_raw_total = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        validators=[MinValueValidator(0), MaxValueValidator(50)]
+        validators=[MinValueValidator(0), MaxValueValidator(50)],
+        null=True,
+        blank=True,
+        default=0
     )
     
     # Viva marks (individual per student)
     viva_marks = models.JSONField(
         default=dict,
+        blank=True,
         help_text="e.g., {'student_id': marks, ...} (out of 5 each)"
     )
     
@@ -228,6 +233,9 @@ class PresentationEvaluation(models.Model):
     total_raw = models.DecimalField(
         max_digits=5,
         decimal_places=2,
+        null=True, 
+        blank=True, 
+        default=0, 
         help_text="Presentation + Viva total (out of 55)"
     )
     

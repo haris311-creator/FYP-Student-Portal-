@@ -17,6 +17,10 @@ const GroupMarksPage = ({ group, onBack }) => {
   // Meeting log marks database se store karne ke liye
   const [meetingLogMarks, setMeetingLogMarks] = useState(null);
   const [loadingMeetingLog, setLoadingMeetingLog] = useState(true);
+  // Presentation marks database se store karne ke liye
+  const [presentationMarks, setPresentationMarks] = useState(null);
+  const [loadingPresentation, setLoadingPresentation] = useState(true);
+
 
   if (!group) return null;
 
@@ -56,6 +60,28 @@ const GroupMarksPage = ({ group, onBack }) => {
   }, [group?.id]);
 
 
+  // Presentation marks fetch karein
+  useEffect(() => {
+  const fetchPresentationMarks = async () => {
+    if (!group?.id) {
+      setLoadingPresentation(false);
+      return;
+    }
+    try {
+      const response = await evaluationAPI.getPresentationByGroup(group.id);
+      setPresentationMarks(response.data.summary);
+    } catch (err) {
+      console.error('Error fetching presentation marks:', err);
+      setPresentationMarks(null);
+    } finally {
+      setLoadingPresentation(false);
+    }
+  };
+
+  fetchPresentationMarks();
+}, [group?.id]);
+
+
    // Meeting log marks fetch karein
   useEffect(() => {
     const fetchMeetingLogMarks = async () => {
@@ -87,25 +113,24 @@ const GroupMarksPage = ({ group, onBack }) => {
 
 
   const generateEvalLink = async () => {
-    setGeneratingLink(true);
-    try {
-      // Backend API call hogi baad mein:
-      // const res = await adminAPI.generateEvalLink(group.id);
-      // const token = res.data.token;
-
-      const token = `eval_${group.id}_${Date.now()}`;
-      const link = `${window.location.origin}/evaluate/${token}`;
-
-      setEvalLinks(prev => [
-        ...prev,
-        { token, link, generated_at: new Date().toLocaleString(), status: 'pending' }
-      ]);
-    } catch (err) {
-      alert('Failed to generate link');
-    } finally {
-      setGeneratingLink(false);
-    }
-  };
+  setGeneratingLink(true);
+  try {
+    const response = await evaluationAPI.generatePresentationToken(group.id);
+    const { token, link } = response.data;
+    
+    setEvalLinks(prev => [
+      ...prev,
+      { token, link, generated_at: new Date().toLocaleString(), status: 'active' }
+    ]);
+    
+    alert(`Evaluation link generated!\n\n${link}\n\nShare via WhatsApp or Email`);
+  } catch (err) {
+    console.error('Error generating link:', err);
+    alert('Failed to generate link');
+  } finally {
+    setGeneratingLink(false);
+  }
+};
 
   const copyLink = (link) => {
     navigator.clipboard.writeText(link);
@@ -269,7 +294,6 @@ const GroupMarksPage = ({ group, onBack }) => {
           </div>
         </div>
 
-        {/* Presentation */}
         <div className="gmp-card">
           <div className="gmp-card-header">
             <div>
@@ -280,6 +304,25 @@ const GroupMarksPage = ({ group, onBack }) => {
               Evaluate
             </button>
           </div>
+          
+          {/* Scaled marks dikhao */}
+          {loadingPresentation ? (
+            <p>Loading...</p>
+          ) : presentationMarks ? (
+            <div style={{ padding: '12px', background: '#f0fdf4', borderRadius: '6px', marginTop: '12px' }}>
+              <p style={{ margin: '4px 0', fontSize: '13px', color: '#065f46' }}>
+                <strong>Evaluators:</strong> {presentationMarks.total_evaluators}
+              </p>
+              <p style={{ margin: '4px 0', fontSize: '13px', color: '#065f46' }}>
+                <strong>Scaled Marks:</strong> {presentationMarks.scaled_marks}/40
+              </p>
+              <p style={{ margin: '4px 0', fontSize: '12px', color: '#047857' }}>
+                Total: {presentationMarks.total_obtained}/{presentationMarks.max_possible}
+              </p>
+            </div>
+          ) : (
+            <p style={{ padding: '12px', color: '#64748b' }}>Not evaluated yet</p>
+          )}
         </div>
 
         {/* Meeting Log */}

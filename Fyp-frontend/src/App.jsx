@@ -32,7 +32,6 @@ function App() {
       <Routes>
         {/* Home Route */}
         <Route path="/" element={<HomePage />} />
-
         {/* Login Route */}
         <Route path="/login" element={<Login />} />
 

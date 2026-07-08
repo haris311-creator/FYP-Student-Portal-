@@ -287,23 +287,16 @@ export const evaluationAPI = {
   
   // Presentation
   getPresentationByGroup: (groupId) => api.get(`/evaluations/presentations/by_group/?group_id=${groupId}`),
-  getPresentationAverage: (groupId) => api.get(`/evaluations/presentations/average_marks/?group_id=${groupId}`),
+  generatePresentationToken: (groupId) => api.post('/evaluations/presentations/generate_token/', { group_id: groupId }),
   submitPresentation: (data) => api.post('/evaluations/presentations/', data),
   
   // Public Evaluation (no auth)
-  getPublicEvaluation: (token) => {
-    return fetch(`http://localhost:8000/api/evaluations/public/presentation/${token}/`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    }).then(res => res.json());
-  },
-  submitPublicEvaluation: (token, data) => {
-    return fetch(`http://localhost:8000/api/evaluations/public/presentation/${token}/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(res => res.json());
-  },
+  getPublicEvaluation: (token) => 
+    axios.get(`http://localhost:8000/api/evaluations/public/presentation/${token}/`),
+  
+  submitPublicEvaluation: (token, data) => 
+    axios.post(`http://localhost:8000/api/evaluations/public/presentation/${token}/`, data),
+
   
   // Final Results
   calculateFinalMarks: (groupId) => api.post('/evaluations/final-results/calculate/', { group_id: groupId }),

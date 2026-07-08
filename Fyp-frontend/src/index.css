@@ -121,3 +121,7 @@ body {
   background: var(--primary-color, #0d6efd);
   color: white;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

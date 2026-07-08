@@ -106,12 +106,15 @@ class PresentationEvaluationSerializer(serializers.ModelSerializer):
         ]
     
     def validate(self, data):
-        """Validate presentation and viva marks"""
-        presentation_raw = data.get('presentation_raw_total', 0)
-        if presentation_raw < 0 or presentation_raw > 50:
-            raise serializers.ValidationError({
-                'presentation_raw_total': "Must be between 0 and 50"
-            })
+        """Validate presentation and viva marks ONLY if submitting"""
+        is_submitted = data.get('is_submitted', False)
+        
+        if is_submitted:
+            presentation_raw = data.get('presentation_raw_total', 0)
+            if presentation_raw < 0 or presentation_raw > 50:
+                raise serializers.ValidationError({
+                    'presentation_raw_total': "Must be between 0 and 50"
+                })
         
         viva_marks = data.get('viva_marks', {})
         for student_id, marks in viva_marks.items():

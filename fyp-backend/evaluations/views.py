@@ -285,6 +285,8 @@ class ReportEvaluationViewSet(viewsets.ModelViewSet):
 class PresentationEvaluationViewSet(viewsets.ModelViewSet):
     """
     Multiple evaluators evaluate presentations.
+    - Admin/Committee can evaluate from portal
+    - External evaluators use public token-based links
     """
     serializer_class = PresentationEvaluationSerializer
     permission_classes = [IsAuthenticated, IsAdminOrCommittee]
@@ -292,11 +294,22 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'admin':
-            return PresentationEvaluation.objects.all()
+            return PresentationEvaluation.objects.all().select_related('group')
+        elif user.user_type == 'committee':
+            return PresentationEvaluation.objects.filter(
+                models.Q(evaluator=user) | models.Q(evaluator_type='external')
+            ).select_related('group')
         return PresentationEvaluation.objects.filter(evaluator=user)
     
     def perform_create(self, serializer):
-        serializer.save(evaluator=self.request.user)
+        # Auto-set evaluator if logged in user
+        if self.request.user.is_authenticated:
+            serializer.save(
+                evaluator=self.request.user,
+                evaluator_type='committee'
+            )
+        else:
+            serializer.save(evaluator_type='external')
     
     @action(detail=False, methods=['get'])
     def by_group(self, request):
@@ -308,64 +321,110 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        evaluations = self.get_queryset().filter(group_id=group_id)
+        evaluations = self.get_queryset().filter(
+            group_id=group_id,
+            is_submitted=True
+        )
         serializer = self.get_serializer(evaluations, many=True)
+        
+        # Calculate scaled marks
+        total_evaluators = evaluations.count()
+        
+        if total_evaluators > 0:
+            # Sum all presentation marks
+            total_presentation = sum(
+                float(e.presentation_raw_total) for e in evaluations
+            )
+            
+            # Sum all viva marks per student
+            all_viva_marks = {}
+            for evaluation in evaluations:
+                for student_id, marks in evaluation.viva_marks.items():
+                    if student_id not in all_viva_marks:
+                        all_viva_marks[student_id] = []
+                    all_viva_marks[student_id].append(marks)
+            
+            # Calculate averages
+            avg_presentation = total_presentation / total_evaluators
+            avg_viva = {
+                student_id: sum(marks_list) / len(marks_list)
+                for student_id, marks_list in all_viva_marks.items()
+            }
+            
+            # Calculate scaled marks
+            # If 1 evaluator: max 55, if 2 evaluators: max 110
+            max_possible = 55 * total_evaluators
+            total_obtained = total_presentation + sum(sum(marks) for marks in all_viva_marks.values())
+            
+            scaled_marks = (total_obtained / max_possible) * 40
+            
+            return Response({
+                'count': total_evaluators,
+                'results': serializer.data,
+                'summary': {
+                    'total_evaluators': total_evaluators,
+                    'average_presentation': round(avg_presentation, 2),
+                    'average_viva': {k: round(v, 2) for k, v in avg_viva.items()},
+                    'total_obtained': round(total_obtained, 2),
+                    'max_possible': max_possible,
+                    'scaled_marks': round(scaled_marks, 2)
+                }
+            })
+        
         return Response({
-            'count': evaluations.count(),
-            'results': serializer.data
+            'count': 0,
+            'results': [],
+            'summary': None
         })
     
-    @action(detail=False, methods=['get'])
-    def average_marks(self, request):
-        """Calculate average presentation marks for a group"""
-        group_id = request.query_params.get('group_id')
+    @action(detail=False, methods=['post'])
+    def generate_token(self, request):
+        """
+        Generate unique evaluation token for external evaluator
+        """
+        from django.shortcuts import get_object_or_404
+        from projects.models import ProjectGroup
+        
+        group_id = request.data.get('group_id')
         if not group_id:
             return Response(
                 {'error': 'group_id is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        evaluations = PresentationEvaluation.objects.filter(
-            group_id=group_id,
-            is_submitted=True
+        try:
+            group = ProjectGroup.objects.get(id=group_id)
+        except ProjectGroup.DoesNotExist:
+            return Response(
+                {'error': 'Group not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+       
+        evaluation = PresentationEvaluation.objects.create(
+            group=group,
+            evaluator=None,
+            evaluator_type='external',
+            evaluator_name='External Evaluator',
+            presentation_raw_total=0,           
+            viva_marks={},                       
+            presentation_criteria_marks={},      
+            total_raw=0,                         
+            is_submitted=False
         )
         
-        if not evaluations.exists():
-            return Response({
-                'message': 'No evaluations found',
-                'average_presentation': 0,
-                'average_viva': {},
-                'average_total': 0,
-                'scaled_marks': 0
-            })
         
-        # Calculate averages
-        avg_presentation = evaluations.aggregate(
-            Avg('presentation_raw_total')
-        )['presentation_raw_total__avg'] or 0
+        token = str(evaluation.evaluation_token)
         
-        # Average viva marks per student
-        all_viva_marks = {}
-        for evaluation in evaluations:
-            for student_id, marks in evaluation.viva_marks.items():
-                if student_id not in all_viva_marks:
-                    all_viva_marks[student_id] = []
-                all_viva_marks[student_id].append(marks)
         
-        avg_viva = {
-            student_id: sum(marks_list) / len(marks_list)
-            for student_id, marks_list in all_viva_marks.items()
-        }
-        
-        avg_total = avg_presentation + sum(avg_viva.values())
-        scaled_marks = (avg_total / 55) * 40
+        frontend_url = "http://localhost:5173"
+        evaluation_link = f"{frontend_url}/evaluate/{token}"
         
         return Response({
-            'evaluator_count': evaluations.count(),
-            'average_presentation': round(avg_presentation, 2),
-            'average_viva': {k: round(v, 2) for k, v in avg_viva.items()},
-            'average_total': round(avg_total, 2),
-            'scaled_marks': round(scaled_marks, 2)
+            'token': token,
+            'link': evaluation_link,
+            'evaluation_id': evaluation.id,
+            'message': 'Evaluation link generated successfully'
         })
 
 
@@ -399,20 +458,26 @@ class PublicPresentationEvaluationView(APIView):
         members_data = [
             {
                 'id': member.id,
-                'name': member.full_name,
-                'student_id': member.student.student_id
+                'name': f"{member.student.first_name} {member.student.last_name}".strip() or member.student.email or 'Unknown',
+                'student_id': member.student.student_id if member.student else member.odoo_id or 'N/A',
+                'student_db_id': member.id
             }
             for member in members
         ]
         
         return Response({
             'group': {
-                'id': evaluation.group.id,
-                'group_number': evaluation.group.group_number,
-                'project_title': evaluation.group.project_title,
-            },
-            'members': members_data,
-            'evaluation_token': str(evaluation.evaluation_token)
+            'id': evaluation.group.id,
+            'group_number': evaluation.group.group_number or 'N/A',
+            'project': evaluation.group.project_title or 'Untitled Project', 
+            'project_title': evaluation.group.project_title or 'Untitled Project',
+            'name': f"Group {evaluation.group.group_number}" if evaluation.group.group_number else 'Unknown Group',
+            'supervisor': evaluation.group.supervisor.full_name if evaluation.group.supervisor else 'Not Assigned',
+            'phase': evaluation.group.get_fydp_phase_display() if hasattr(evaluation.group, 'get_fydp_phase_display') else evaluation.group.fydp_phase or 'FYP-1',
+            'semester': evaluation.group.semester or 'Fall 2024',
+            'members': members_data  
+        },
+        'evaluation_token': str(evaluation.evaluation_token)
         })
     
     def post(self, request, token):

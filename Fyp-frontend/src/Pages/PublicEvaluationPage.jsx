@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { evaluationAPI } from '../utils/api';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
 
 const PublicEvaluationPage = () => {
@@ -9,39 +10,43 @@ const PublicEvaluationPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchGroupByToken = async () => {
-      try {
-        setLoading(true);
-        // Backend API call hogi baad mein:
-        // const res = await api.get(`/evaluations/token/${token}/`);
-        // setGroup(res.data.group);
-
-        // Dummy data abhi ke liye:
-        setGroup({
-          id: 1,
-          name: 'Group GRP-001',
-          project: 'FYDP Automation System',
-          supervisor: 'Dr. Ahmed',
-          phase: 'FYP-1',
-          members: [
-            { name: 'Ahmed Khan', odoo_id: 'IU-001', student_db_id: 1 },
-            { name: 'Ali Hassan', odoo_id: 'IU-002', student_db_id: 2 },
-            { name: 'Sara Malik', odoo_id: 'IU-003', student_db_id: 3 },
-          ]
-        });
-      } catch (err) {
-        if (err.response?.status === 404) {
-          setError('This evaluation link is invalid or has already been used.');
-        } else {
-          setError('Failed to load evaluation form. Please try again.');
-        }
-      } finally {
-        setLoading(false);
+  const fetchGroupByToken = async () => {
+    try {
+      setLoading(true);
+      
+      // Backend API call
+      const res = await evaluationAPI.getPublicEvaluation(token);
+      
+      console.log('API Response:', res.data); 
+      
+      const groupData = res.data.group;
+      
+      setGroup({
+        id: groupData.id,
+        name: groupData.name || groupData.group_number || 'Unknown Group',
+        project: groupData.project || groupData.project_title || 'Untitled Project',
+        supervisor: groupData.supervisor || 'Not Assigned',
+        phase: groupData.phase || groupData.semester || 'FYP-1',
+        members: groupData.members || []
+      });
+      
+    } catch (err) {
+      console.error('Error fetching evaluation data:', err);
+      
+      if (err.response?.status === 404) {
+        setError('This evaluation link is invalid or has already been used.');
+      } else if (err.response?.status === 400) {
+        setError(err.response.data.error || 'Invalid evaluation link');
+      } else {
+        setError('Failed to load evaluation form. Please try again.');
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchGroupByToken();
-  }, [token]);
+  fetchGroupByToken();
+}, [token]);
 
   if (loading) {
     return (
@@ -53,7 +58,17 @@ const PublicEvaluationPage = () => {
         background: '#f0f4f8',
         fontFamily: 'Inter, sans-serif'
       }}>
-        <p style={{ color: '#64748b' }}>Loading evaluation form...</p>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px', height: '48px',
+            border: '4px solid #3b82f6',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            margin: '0 auto 1rem',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <p style={{ color: '#64748b' }}>Loading evaluation form...</p>
+        </div>
       </div>
     );
   }

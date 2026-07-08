@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { evaluationAPI } from '../utils/api'; 
 import './PresentationEvaluationForm.css';
 
 const presentationCriteria = [
@@ -237,35 +238,54 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
   };
 
   const handleSubmit = async () => {
-    if (!evaluatorName.trim()) {
-      alert('Please enter your name.');
-      return;
-    }
+  if (!evaluatorName.trim()) {
+    alert('Please enter your name.');
+    return;
+  }
 
-    setSubmitting(true);
-    try {
-      const payload = {
-        token,
-        evaluator_name: evaluatorName,
-        group_id: group?.id,
-        presentation_marks: presentationMarks,
-        viva_marks: vivaMarks,
-        comments,
-        per_student: (group?.members || []).map((m, i) => ({
-          student_id: m.student_db_id,
-          student_name: m.name,
-          raw_total: getStudentTotal(i),
-          final_marks: getStudentFinal(i)
-        }))
-      };
-      console.log('Submitting presentation evaluation:', payload);
-      setSubmitted(true);
-    } catch (err) {
-      alert('Failed to submit. Please try again.');
-    } finally {
-      setSubmitting(false);
+  setSubmitting(true);
+  try {
+    // Calculate totals
+    const presentationTotal = getPresentationTotal();
+    const vivaTotals = {};
+    group.members.forEach((member, idx) => {
+      vivaTotals[member.id] = parseFloat(vivaMarks[idx]) || 0;
+    });
+    
+    const totalRaw = presentationTotal + Object.values(vivaTotals).reduce((a, b) => a + b, 0);
+    
+    const payload = {
+      group: group.id,
+      evaluator_name: evaluatorName,
+      presentation_criteria_marks: presentationMarks,
+      presentation_raw_total: presentationTotal,
+      viva_marks: vivaTotals,
+      total_raw: totalRaw,
+      comments: comments,
+      is_submitted: true
+    };
+
+    if (isPublicLink && token) {
+      // Public evaluation via link
+      await evaluationAPI.submitPublicEvaluation(token, payload);
+    } else {
+      // Portal evaluation (admin/committee)
+      await evaluationAPI.submitPresentation(payload);
     }
-  };
+    
+    setSubmitted(true);
+    
+    if (onClose && !isPublicLink) {
+      setTimeout(() => onClose(), 1500);
+    }
+    
+  } catch (err) {
+    console.error('Error submitting evaluation:', err);
+    alert(err.response?.data?.error || 'Failed to submit evaluation.');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   if (submitted) {
     return (
