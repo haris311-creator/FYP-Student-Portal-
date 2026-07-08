@@ -104,13 +104,20 @@ const AwardListTemplate = ({ group }) => {
         <div className="alt-page" ref={printRef}>
 
           <div className="alt-doc-header">
+            <div className="alt-header-top">
+              <div className="alt-header-spacer" />
+              <div className="gc-logo">
+                <img src="/images/Gulshan-logo.jpg.png" alt="Iqra University Logo" className="alt-logo" />
+              </div>
+              <div className="alt-award-tag">Award List-2</div>
+            </div>
             <p className="alt-uni-name">Iqra University</p>
             <p className="alt-faculty">Faculty of Engineering Sciences and Technology</p>
             <p className="alt-dept-line">
               Department of <span className="alt-fixed-fill">Computer Science</span>
             </p>
             <p className="alt-batch-line">
-              Batch <input type="text" className="alt-header-input alt-header-input-short" onChange={(e) => e.target.setAttribute('value', e.target.value)} />
+              Batch: <input type="text" className="alt-header-input alt-header-input-short" onChange={(e) => e.target.setAttribute('value', e.target.value)} />
               &nbsp;&nbsp;&nbsp;Date of Conduct: <input type="date" className="alt-header-input" onChange={(e) => e.target.setAttribute('value', e.target.value)} />
             </p>
             <h2 className="alt-doc-title">Award List of FYDP-1</h2>

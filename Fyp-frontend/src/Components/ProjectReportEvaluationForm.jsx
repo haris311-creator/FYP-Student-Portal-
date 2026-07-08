@@ -381,7 +381,7 @@ if (submitted) {
       </div>
 
       {/*  Report View/Download Section */}
-      <div className="pref-section" style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+      <div className="pref-section" style={{ background: '#eff6ff', padding: '15px', borderRadius: '8px', borderLeft: '4px solid #1e3a8a' }}>
         <h3 className="pref-section-title" style={{ margin: '0 0 10px 0', fontSize: '14px' }}>
            Submitted Report
         </h3>
@@ -391,7 +391,7 @@ if (submitted) {
             disabled={loadingReport}
             style={{
               padding: '8px 16px',
-              background: '#3b82f6',
+              background: '#1e3a8a',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -407,7 +407,7 @@ if (submitted) {
             disabled={loadingReport}
             style={{
               padding: '8px 16px',
-              background: '#10b981',
+              background: '#1e3a8a',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
