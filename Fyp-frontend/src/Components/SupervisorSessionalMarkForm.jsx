@@ -287,7 +287,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
     const raw = getRawTotal(studentIdx);
     
     // Scale from 50 to 20: (raw / 50) * 20
-    return ((raw / 50) * 20).toFixed(2);
+    return ((raw / 50) * 20).toFixed(1);
   };
 
   /**
@@ -433,7 +433,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
 
   if (submitted && existingEvaluations.length > 0) {
     const totalFinal = existingEvaluations.reduce((sum, evaluation) => sum + (parseFloat(evaluation.final_marks) || 0), 0);
-    const avgFinal = existingEvaluations.length > 0 ? (totalFinal / existingEvaluations.length).toFixed(2) : '0.00';
+    const avgFinal = existingEvaluations.length > 0 ? (totalFinal / existingEvaluations.length).toFixed(1) : '0.00';
 
     return (
       <div className="ssm-container">
@@ -442,28 +442,6 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
           <h2>Already Submitted</h2>
           <p style={{ marginBottom: '20px' }}>Sessional marks have been recorded for all students in this group.</p>
           
-          <div style={{ 
-            background: '#f8fafc', 
-            border: '1px solid #e2e8f0', 
-            borderRadius: '8px', 
-            padding: '20px',
-            marginBottom: '20px',
-            maxWidth: '400px',
-            margin: '0 auto 20px auto'
-          }}>
-            <div style={{ marginBottom: '12px' }}>
-              <strong style={{ color: '#64748b', fontSize: '13px' }}>Average Marks:</strong>
-              <p style={{ margin: '5px 0', fontSize: '20px', fontWeight: 600, color: '#16a34a' }}>
-                {avgFinal}/20
-              </p>
-              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
-                Total: {totalFinal.toFixed(2)}/20
-              </p>
-            </div>
-            <div style={{ marginTop: '15px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-              Submitted: {new Date(existingEvaluations[0].evaluated_at).toLocaleString()}
-            </div>
-          </div>
           
           <button 
             className="ssm-submit-btn" 

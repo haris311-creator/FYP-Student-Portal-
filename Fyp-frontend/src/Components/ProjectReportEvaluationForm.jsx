@@ -220,7 +220,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
   const getFinalMarks = () => {
     // Raw total out of 35 (7 criteria x 5) -> Final out of 30
     const raw = getRawTotal();
-    return ((raw / 35) * 30).toFixed(2);
+    return ((raw / 35) * 30).toFixed(1);
   };
 
   const handleSubmit = async () => {
