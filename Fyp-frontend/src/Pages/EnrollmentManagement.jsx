@@ -196,6 +196,14 @@ function EnrollmentManagement() {
         >
           Proposal Approval
         </Link>
+
+        <Link
+          to="/admin-dashboard?tab=finalReports"
+          className="sidebar-btn"
+          onClick={() => setMenuOpen(false)}
+        >
+          Report Approval
+        </Link>
         
         <Link 
           to="/admin-dashboard?tab=groups" 

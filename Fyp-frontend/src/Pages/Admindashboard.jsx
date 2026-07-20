@@ -1279,6 +1279,7 @@ const handleAnnouncementSubmit = (e) => {
         >
           Proposal Approval
         </button>
+
         <button
           className={`sidebar-btn ${activeTab === 'finalReports' ? 'active' : ''}`}
           onClick={() => { setActiveTab('finalReports'); setMenuOpen(false); }}
