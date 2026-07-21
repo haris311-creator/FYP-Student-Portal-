@@ -1,0 +1,221 @@
+.sp-header-top-attendance {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.sp-header-logo .sp-logo {
+  width: 200px;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
+  display: block;
+}
+.sp-header-top-attendance .sp-form-tag {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* ---------- University name block ---------- */
+.sp-att-univ-block {
+  text-align: center;
+  margin: 10px 0 14px;
+}
+
+.sp-att-univ-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sp-att-faculty {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ---------- Department / Batch lines ---------- */
+.sp-att-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 6px 0;
+}
+
+.sp-att-line-short {
+  margin-bottom: 14px;
+}
+
+.sp-att-line-full {
+  justify-content: flex-start;
+  margin: 4px 0;
+}
+
+.sp-att-fill {
+  display: inline-block;
+  border-bottom: 1px solid #000;
+  min-width: 340px;
+  min-height: 14px;
+}
+
+.sp-att-fill-short {
+  min-width: 160px;
+}
+
+.sp-att-fill-grow {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  padding-bottom: 1px;
+}
+
+/* ---------- Title ---------- */
+.sp-att-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 16px 0 18px;
+}
+
+/* ---------- Table ---------- */
+.sp-att-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+.sp-att-table th,
+.sp-att-table td {
+  border: 1px solid #000;
+  font-size: 10px;
+  padding: 4px 4px;
+  text-align: center;
+}
+
+.sp-att-table th {
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.sp-att-meeting-col {
+  width: 3.4%;
+}
+
+.sp-att-date-col,
+.sp-att-date-cell {
+  width: 4%;
+}
+
+.sp-left {
+  text-align: left !important;
+}
+
+.sp-bold {
+  font-weight: 700;
+}
+
+.sp-att-p {
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 700;
+}
+
+.sp-att-a {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.sp-att-none {
+  color: #94a3b8;
+}
+
+/* ---------- Signature row ---------- */
+.sp-att-sign-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #000;
+  border-top: none;
+  margin-top: -1px;
+}
+
+.sp-att-sign-block {
+  padding: 10px 12px;
+  border-left: 1px solid #000;
+}
+
+.sp-att-sign-block:first-child {
+  border-left: none;
+}
+
+.sp-att-sign-label {
+  margin: 0 0 26px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sp-att-sign-role {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------- Responsive (screen only, not print) ---------- */
+@media (max-width: 900px) {
+  .sp-att-table th,
+  .sp-att-table td {
+    font-size: 9px;
+    padding: 3px 2px;
+  }
+
+  .sp-att-fill {
+    min-width: 200px;
+  }
+
+  .sp-att-line-short .sp-att-fill-short {
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .sp-att-univ-name {
+    font-size: 15px;
+  }
+
+  .sp-att-title {
+    font-size: 13px;
+  }
+
+  .sp-att-table th,
+  .sp-att-table td {
+    font-size: 8px;
+    padding: 2px 1px;
+  }
+
+  .sp-att-sign-label {
+    margin-bottom: 18px;
+  }
+}
+
+/* ---------- Print: force fixed A4-equivalent layout ---------- */
+@media print {
+  .sp-att-page {
+    width: 210mm;
+  }
+
+  .sp-att-table th,
+  .sp-att-table td {
+    font-size: 10px;
+    padding: 4px 4px;
+  }
+
+  .sp-att-fill {
+    min-width: 340px;
+  }
+}

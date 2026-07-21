@@ -1,7 +1,9 @@
 // fyp-frontend/src/Pages/Supervisordashboard.jsx
 import SupervisorSessionalMarkForm from '../Components/SupervisorSessionalMarkForm';
+import SupervisorMeetingPrint from '../Components/SupervisorMeetingPrint';
+import SupervisorAttendancePrint from '../Components/SupervisorAttendancePrint';
 import React, { useState, useEffect } from 'react';
-import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI, reportAPI  } from '../utils/api';
+import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI, reportAPI, evaluationAPI } from '../utils/api';
 import './Supervisordashboard.css';
 
 function SupervisorDashboard() {
@@ -37,6 +39,8 @@ const [loadingStats, setLoadingStats] = useState(false);
   });
   const [formLoading, setFormLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [meetingPrintMode, setMeetingPrintMode] = useState(null);
+  const [attendancePrintOpen, setAttendancePrintOpen] = useState(false);
 
   // Proposal Review States
   const [pendingProposals, setPendingProposals] = useState([]);
@@ -850,24 +854,29 @@ const handleReportReviewSubmit = async () => {
         <div className="attendance-sheet-card">
           <div className="card-header">
             <h3> Attendance Sheet (FP-5)</h3>
-            <button
-              className="btn-outline"
-              onClick={async () => {
-                try {
-                  const res = await attendanceSheetAPI.exportExcel(selectedGroup.id);
-                  const url = window.URL.createObjectURL(new Blob([res.data]));
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.setAttribute('download', `Attendance_${selectedGroup.group_number}.xlsx`);
-                  document.body.appendChild(link);
-                  link.click();
-                } catch (err) {
-                  alert("Excel export failed. Make sure openpyxl is installed on backend.");
-                }
-              }}
-            >
-               Export Excel
-            </button>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button type="button" className="btn-outline" onClick={() => setAttendancePrintOpen(true)}>
+                Print PDF
+              </button>
+              <button
+                className="btn-outline"
+                onClick={async () => {
+                  try {
+                    const res = await attendanceSheetAPI.exportExcel(selectedGroup.id);
+                    const url = window.URL.createObjectURL(new Blob([res.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', `Attendance_${selectedGroup.group_number}.xlsx`);
+                    document.body.appendChild(link);
+                    link.click();
+                  } catch (err) {
+                    alert("Excel export failed. Make sure openpyxl is installed on backend.");
+                  }
+                }}
+              >
+                 Export Excel
+              </button>
+            </div>
           </div>
           {attendanceData ? (
             <div className="table-responsive">
@@ -904,7 +913,26 @@ const handleReportReviewSubmit = async () => {
         </div>
 
         <div className="meetings-grid-section">
-          <h3> Meeting Minutes</h3>
+          <div className="meetings-section-header">
+            <h3>Meeting Minutes</h3>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={() => setMeetingPrintMode('single')}
+                disabled={!activeMeetingForm}
+              >
+                Print Current
+              </button>
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={() => setMeetingPrintMode('all')}
+              >
+                Print All 16
+              </button>
+            </div>
+          </div>
           <div className="meetings-grid">
             {Array.from({ length: 16 }, (_, i) => {
               const meetingNum = i + 1;
@@ -1083,6 +1111,14 @@ const handleReportReviewSubmit = async () => {
                         </div>
 
                         <div className="mform-actions">
+                          <button
+                            type="button"
+                            className="btn-outline"
+                            onClick={() => setMeetingPrintMode('single')}
+                            disabled={!activeMeetingForm}
+                          >
+                            Print This
+                          </button>
                           <button
                             className="submit-btn"
                             onClick={handleSubmitMeeting}
@@ -1267,6 +1303,28 @@ const handleReportReviewSubmit = async () => {
           {selectedProposal && renderProposalReviewModal()}
           {activeTab === 'reportReviews' && renderReportReviews()}
           {selectedReport && renderReportReviewModal()}
+          {meetingPrintMode && selectedGroup && (
+            <SupervisorMeetingPrint
+              open={!!meetingPrintMode}
+              mode={meetingPrintMode}
+              onClose={() => setMeetingPrintMode(null)}
+              selectedGroup={selectedGroup}
+              supervisorName={userInfo.name}
+              meetingsList={meetingsList}
+              activeMeetingNumber={activeMeetingForm}
+              formData={formData}
+            />
+          )}
+
+          {attendancePrintOpen && selectedGroup && (
+            <SupervisorAttendancePrint
+              open={attendancePrintOpen}
+              onClose={() => setAttendancePrintOpen(false)}
+              selectedGroup={selectedGroup}
+              supervisorName={userInfo.name}
+              attendanceData={attendanceData}
+            />
+          )}
         </main>
       </div>
     </div>

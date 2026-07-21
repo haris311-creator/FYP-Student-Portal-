@@ -1,0 +1,129 @@
+.sp-meeting-page {
+  width: 794px;
+  min-height: 1123px;
+  box-sizing: border-box;
+  padding: 48px 48px 40px;
+  box-shadow: none;
+  font-family: "Times New Roman", Times, serif;
+  color: #000;
+}
+
+.sp-page-break-wrap {
+  page-break-after: always;
+  break-after: page;
+}
+
+.sp-form-topline {
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 700;
+  margin-top: 6px;
+  margin-bottom: 10px;
+}
+
+.sp-form-projectline {
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.1;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.sp-form-project-label {
+  margin-right: 6px;
+}
+
+.sp-form-project-value {
+  font-weight: 400;
+}
+
+.sp-meeting-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.sp-meeting-table td {
+  border: 1px solid #000;
+  padding: 7px 10px;
+  vertical-align: top;
+}
+
+.sp-meeting-heading {
+  text-align: center;
+  font-weight: 700;
+  background: #bfbfbf;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.sp-meeting-label {
+  width: 52%;
+  font-weight: 700;
+}
+
+.sp-meeting-value {
+  width: 48%;
+  min-height: 112px;
+}
+
+.sp-signature-block {
+  margin-top: 18px;
+}
+
+.sp-signature-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: center;
+  font-size: 15px;
+  line-height: 1.25;
+  margin-top: 10px;
+}
+
+.sp-signature-left,
+.sp-signature-right {
+  white-space: nowrap;
+}
+
+.sp-signature-right {
+  text-align: left;
+}
+
+.sp-signature-fill {
+  margin-left: 6px;
+}
+
+@media print {
+  .sp-meeting-page {
+    box-shadow: none;
+  }
+}
+
+.sp-meeting-heading-row td {
+  height: 24px;
+}
+
+.sp-meeting-agenda-row td {
+  height: 98px;
+}
+
+.sp-meeting-confirm-row td {
+  height: 64px;
+}
+
+.sp-meeting-tasks-row td {
+  height: 230px;
+}
+
+.sp-meeting-value {
+  width: 48%;
+}
+
+.sp-logo-meeting {
+  width: 220px;
+  max-height: 90px;
+}
