@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import './Admindashboard.css';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
 import GroupMarksPage from './GroupMarksPage';
+import AllGroupsPrint from '../Components/AllGroupsPrint';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -1084,40 +1085,7 @@ const handleAnnouncementSubmit = (e) => {
           <p className="mt-2 text-gray-600">Loading groups...</p>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Group</th>
-                <th>Project Title</th>
-                <th>Phase</th>
-                <th>Supervisor</th>
-                <th>Group #</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allGroups.map(g => (
-                <tr key={g.id}>
-                  <td><span className="group-name-cell">{g.group}</span></td>
-                  <td>{g.title}</td>
-                  <td>
-                    <span className={`phase-badge ${g.phase === 'FYP-2' ? 'phase-2' : 'phase-1'}`}>
-                      {g.phase}
-                    </span>
-                  </td>
-                  <td>{g.supervisor}</td>
-                  <td className="group-number-cell">{g.groupNumber}</td>
-                  <td>
-                    <span className={`status-pill ${getStatusClass(g.status)}`}>
-                      {g.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AllGroupsPrint groups={allGroups} />
       )}
     </div>
   );
