@@ -168,6 +168,10 @@
 
 /* ---------- Responsive (screen only, not print) ---------- */
 @media (max-width: 900px) {
+  .sp-att-page {
+    min-width: 700px;
+  }
+
   .sp-att-table th,
   .sp-att-table td {
     font-size: 9px;
@@ -181,15 +185,27 @@
   .sp-att-line-short .sp-att-fill-short {
     min-width: 100px;
   }
-}
 
-@media (max-width: 600px) {
   .sp-att-univ-name {
     font-size: 15px;
   }
 
   .sp-att-title {
     font-size: 13px;
+  }
+}
+
+@media (max-width: 600px) {
+  .sp-att-page {
+    min-width: 700px;
+  }
+
+  .sp-att-univ-name {
+    font-size: 14px;
+  }
+
+  .sp-att-title {
+    font-size: 12px;
   }
 
   .sp-att-table th,
@@ -207,6 +223,7 @@
 @media print {
   .sp-att-page {
     width: 210mm;
+    min-width: auto;
   }
 
   .sp-att-table th,

@@ -83,6 +83,7 @@
   border-radius: 12px;
   padding: 22px;
   overflow: auto;
+  overflow-x: auto;
 }
 
 .rpt-page {
@@ -266,15 +267,89 @@
 }
 
 @media (max-width: 900px) {
+  .rpt-toolbar {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .rpt-toolbar-actions {
+    justify-content: center;
+  }
+
+  .rpt-preview-wrap {
+    padding: 12px;
+  }
+
   .rpt-page {
-    padding: 20px 16px 24px;
+    width: 100%;
+    min-width: 700px;
+    padding: 16px 14px 20px;
+  }
+
+  .rpt-logo {
+    width: 140px;
+    max-height: 55px;
+  }
+
+  .rpt-form-tag {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  .rpt-title {
+    font-size: 14px;
+  }
+
+  .rpt-info-table td,
+  .rpt-rubric-table th,
+  .rpt-rubric-table td {
+    padding: 4px 3px;
+    font-size: 10px;
+  }
+
+  .rpt-choice {
+    margin-right: 12px;
+    font-size: 11px;
+  }
+
+  .rpt-box {
+    width: 9px;
+    height: 9px;
+    font-size: 8px;
   }
 
   .rpt-bottom-info {
     grid-template-columns: 1fr;
   }
+}
 
-  .rpt-choice {
-    margin-right: 8px;
+@media print {
+  .rpt-toolbar {
+    display: none !important;
+  }
+
+  .rpt-modal-backdrop {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .rpt-modal-shell {
+    width: 100%;
+    max-height: none;
+  }
+
+  .rpt-preview-wrap {
+    background: none;
+    padding: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .rpt-page {
+    box-shadow: none;
+    margin: 0;
+    min-width: auto;
   }
 }

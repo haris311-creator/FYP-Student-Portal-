@@ -1,5 +1,6 @@
 .sp-meeting-page {
   width: 794px;
+  min-width: 700px;
   min-height: 1123px;
   box-sizing: border-box;
   padding: 48px 48px 40px;
@@ -126,4 +127,44 @@
 .sp-logo-meeting {
   width: 220px;
   max-height: 90px;
+}
+
+@media (max-width: 900px) {
+  .sp-meeting-page {
+    min-width: 700px;
+    padding: 32px 24px 28px;
+  }
+
+  .sp-meeting-table {
+    font-size: 14px;
+  }
+
+  .sp-meeting-table td {
+    padding: 5px 6px;
+  }
+
+  .sp-meeting-value {
+    min-height: 80px;
+  }
+
+  .sp-logo-meeting {
+    width: 160px;
+    max-height: 65px;
+  }
+
+  .sp-form-topline,
+  .sp-form-projectline {
+    font-size: 14px;
+  }
+
+  .sp-signature-row {
+    font-size: 13px;
+  }
+}
+
+@media print {
+  .sp-meeting-page {
+    box-shadow: none;
+    min-width: auto;
+  }
 }

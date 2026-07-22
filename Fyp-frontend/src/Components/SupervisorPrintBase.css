@@ -83,6 +83,7 @@
   border-radius: 12px;
   padding: 22px;
   overflow: auto;
+  overflow-x: auto;
 }
 
 .sp-page {
@@ -243,12 +244,75 @@
 }
 
 @media (max-width: 900px) {
+  .sp-toolbar {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+
+  .sp-toolbar-actions {
+    justify-content: center;
+  }
+
   .sp-page {
+    width: 100%;
+    min-width: 700px;
     padding: 16px 14px 18px;
   }
 
   .sp-modal-backdrop {
     padding: 12px;
+  }
+
+  .sp-logo {
+    width: 140px;
+    max-height: 55px;
+  }
+
+  .sp-form-tag {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  .sp-title {
+    font-size: 14px;
+  }
+
+  .sp-info-table td,
+  .sp-data-table th,
+  .sp-data-table td {
+    padding: 4px 3px;
+    font-size: 10px;
+  }
+}
+
+@media print {
+  .sp-toolbar {
+    display: none !important;
+  }
+
+  .sp-modal-backdrop {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+
+  .sp-modal-shell {
+    width: 100%;
+    max-height: none;
+  }
+
+  .sp-preview-wrap {
+    background: none;
+    padding: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .sp-page {
+    box-shadow: none;
+    margin: 0;
+    min-width: auto;
   }
 }
 
