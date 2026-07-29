@@ -1,4 +1,4 @@
-// fyp-frontend/src/Pages/Supervisordashboard.jsx
+
 import SupervisorSessionalMarkForm from '../Components/SupervisorSessionalMarkForm';
 import SupervisorMeetingPrint from '../Components/SupervisorMeetingPrint';
 import SupervisorAttendancePrint from '../Components/SupervisorAttendancePrint';
@@ -22,7 +22,7 @@ function SupervisorDashboard() {
 const [pendingSessionalMarks, setPendingSessionalMarks] = useState(0);
 const [loadingStats, setLoadingStats] = useState(false);
 
-  // New states for Meetings & Attendance
+
   const [detailSubTab, setDetailSubTab] = useState('info');
   const [activeSessionalForm, setActiveSessionalForm] = useState(false);
   const [meetingsList, setMeetingsList] = useState([]);
@@ -42,28 +42,28 @@ const [loadingStats, setLoadingStats] = useState(false);
   const [meetingPrintMode, setMeetingPrintMode] = useState(null);
   const [attendancePrintOpen, setAttendancePrintOpen] = useState(false);
 
-  // Proposal Review States
+ 
   const [pendingProposals, setPendingProposals] = useState([]);
   const [loadingProposals, setLoadingProposals] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [reviewForm, setReviewForm] = useState({ action: 'approve', remarks: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  // calculateProgress function ke upar yeh add karo
+ 
   const fetchDashboardStats = async () => {
     try {
       setLoadingStats(true);
       
-      // 1. Pending Meeting Logs count 
+     
       let pendingLogs = 0;
       for (const group of assignedGroups) {
         try {
           const meetingsRes = await meetingAPI.getByGroup(group.id);
           const meetings = meetingsRes.data.results || meetingsRes.data || [];
-          // Count meetings without evaluation
+      
           pendingLogs += meetings.filter(m => !m.is_evaluated).length;
         } catch (err) {
-          // Ignore individual group errors
+         
         }
       }
       setPendingMeetingLogs(pendingLogs);
@@ -75,13 +75,12 @@ const [loadingStats, setLoadingStats] = useState(false);
           const res = await evaluationAPI.getSessionalByGroup(group.id);
           const evaluations = res.data;
           
-          // Agar group ke sab students ki evaluation nahi hui
+       
           if (evaluations.length < group.members.length) {
             pendingMarks++;
           }
         } catch (err) {
-          // Agar koi evaluation nahi hai toh pending count karo
-          pendingMarks++;
+         
         }
       }
       setPendingSessionalMarks(pendingMarks);
@@ -93,7 +92,7 @@ const [loadingStats, setLoadingStats] = useState(false);
     }
   };
 
-  // Fetch assigned groups useEffect ke baad yeh add karo
+ 
   useEffect(() => {
     if (assignedGroups.length > 0) {
       fetchDashboardStats();
@@ -120,7 +119,7 @@ const [loadingStats, setLoadingStats] = useState(false);
     loadUser();
   }, []);
 
-  // Fetch assigned groups
+
   useEffect(() => {
     const fetchAssignedGroups = async () => {
       try {
@@ -166,7 +165,7 @@ const [loadingStats, setLoadingStats] = useState(false);
     fetchAssignedGroups();
   }, []);
 
-  // Fetch pending proposals for supervisor
+ 
   useEffect(() => {
     const fetchProposals = async () => {
       try {
@@ -248,12 +247,12 @@ const [loadingStats, setLoadingStats] = useState(false);
     });
 
     if (existingMeeting) {
-      // Backend se aaye hue attendance records ko map karo
+    
       (existingMeeting.attendance_records || []).forEach(rec => {
 
       const member = selectedGroup.members.find(m => m.student_user_id === rec.student);
       if (member && member.id) {
-        attendanceMap[member.id] = rec.status;  //  GroupMember ID se map karo
+        attendanceMap[member.id] = rec.status; 
       }
     });
 
@@ -426,17 +425,16 @@ const handleReportReviewSubmit = async () => {
   }
 };
 
-  // Helper function to force download
-  // Robust File Download Function using Fetch API
+
   const handleFileDownload = async (fileUrl) => {
     try {
-      // Check if fileUrl is already a full URL or just a path
+     
       let fullUrl = fileUrl;
       if (!fileUrl.startsWith('http')) {
         fullUrl = `http://localhost:8000${fileUrl}`;
       }
 
-      // Fetch the file as a blob
+     
       const response = await fetch(fullUrl);
 
       if (!response.ok) {
@@ -446,19 +444,19 @@ const handleReportReviewSubmit = async () => {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
 
-      // Create a temporary link element
+
       const link = document.createElement('a');
       link.href = url;
 
-      // Extract filename from URL for the download attribute
+      
       const filename = fileUrl.split('/').pop() || 'proposal_document';
       link.setAttribute('download', filename);
 
-      // Append to body, click, and cleanup
+    
       document.body.appendChild(link);
       link.click();
 
-      // Cleanup
+   
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
@@ -471,7 +469,7 @@ const handleReportReviewSubmit = async () => {
   if (loading) return <div className="dashboard-container"><div className="loading-spinner">Loading...</div></div>;
   if (error) return <div className="dashboard-container"><div className="error-message">{error}</div></div>;
 
-  // Render Pending Proposals List
+ 
   const renderReviews = () => {
     if (loadingProposals) return <div className="overview-content"><div className="loading-spinner">Loading proposals...</div></div>;
 
@@ -516,7 +514,7 @@ const handleReportReviewSubmit = async () => {
     );
   };
 
-  // renderReportReviews function 
+ 
   const renderReportReviews = () => {
     if (loadingReports) return <div className="overview-content"><div className="loading-spinner">Loading reports...</div></div>;
 
@@ -678,7 +676,7 @@ const handleReportReviewSubmit = async () => {
     );
   };
 
-  // Render Proposal Review Modal
+  
   const renderProposalReviewModal = () => {
     return (
       <div className="meeting-form-overlay" style={{ zIndex: 1000 }}>

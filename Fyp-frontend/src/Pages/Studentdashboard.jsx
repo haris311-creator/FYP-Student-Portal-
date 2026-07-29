@@ -1,4 +1,4 @@
-// fyp-frontend/src/pages/StudentDashboard.jsx
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import api, { studentMeetingAPI, proposalAPI, reportAPI } from '../utils/api';
@@ -6,7 +6,7 @@ import './Studentdashboard.css';
 
 function StudentDashboard() {
   const [existingGroup, setExistingGroup] = useState(null);
-  const [activeTab, setActiveTab] = useState('progress'); // Default to 'progress' tab
+  const [activeTab, setActiveTab] = useState('progress'); 
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasSubmittedIdea, setHasSubmittedIdea] = useState(false);
   const [facultyList, setFacultyList] = useState([]);
@@ -44,7 +44,7 @@ function StudentDashboard() {
   const [proposalLoading, setProposalLoading] = useState(false);
 
 
-  // Load user info
+ 
   useEffect(() => {
     const loadUser = () => {
       try {
@@ -65,7 +65,7 @@ function StudentDashboard() {
   }, []);
 
 
-  // Fetch group data - Clean version
+ 
   useEffect(() => {
     const fetchGroupData = async () => {
       try {
@@ -183,7 +183,7 @@ function StudentDashboard() {
     fetchFaculty();
   }, []);
 
-  // Handle Member Changes
+
   const handleMemberChange = (index, field, value) => {
     const newMembers = [...formData.members];
     newMembers[index] = { ...newMembers[index], [field]: value };
@@ -250,7 +250,7 @@ function StudentDashboard() {
     }
   };
 
-    // Create Proposal Draft (Uses group details to auto-fill)
+   
   const handleCreateProposal = async () => {
     setLoading(true);
     setError('');
@@ -281,7 +281,7 @@ function StudentDashboard() {
     }
   };
 
-  //  Handle File Upload
+
   const handleFileUpload = async () => {
     if (!proposalFile) return;
     
@@ -295,8 +295,8 @@ function StudentDashboard() {
     try {
       const res = await proposalAPI.uploadProposal(proposalData.id, formData);
       setSuccess("Proposal uploaded successfully!");
-      setProposalData(res.data.data); // Update state with new data from backend
-      setProposalFile(null); // Clear file input
+      setProposalData(res.data.data); 
+      setProposalFile(null); 
     } catch (err) {
       console.error("Upload failed:", err.response?.data || err.message);
       setError(err.response?.data?.error || "Upload failed. Check file size (Max 10MB) and format (PDF/DOCX).");
@@ -331,16 +331,16 @@ function StudentDashboard() {
     }
   };
 
-    // Robust File Download Function using Fetch API
+   
   const handleFileDownload = async (fileUrl) => {
     try {
-      // Check if fileUrl is already a full URL or just a path
+     
       let fullUrl = fileUrl;
       if (!fileUrl.startsWith('http')) {
         fullUrl = `http://localhost:8000${fileUrl}`;
       }
       
-      // Fetch the file as a blob
+    
       const response = await fetch(fullUrl);
       
       if (!response.ok) {
@@ -350,15 +350,14 @@ function StudentDashboard() {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       
-      // Create a temporary link element
+      
       const link = document.createElement('a');
       link.href = url;
       
-      // Extract filename from URL for the download attribute
+   
       const filename = fileUrl.split('/').pop() || 'proposal_document';
       link.setAttribute('download', filename);
-      
-      // Append to body, click, and cleanup
+    
       document.body.appendChild(link);
       link.click();
       
@@ -372,9 +371,9 @@ function StudentDashboard() {
     }
   };
 
-  // Render Meeting Logs
+
   const renderMeetingLogs = () => {
-    // Check if group is approved first
+
     if (!existingGroup || !['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
       return (
         <div className="content-area">
@@ -449,7 +448,7 @@ function StudentDashboard() {
     );
   };
 
-  // Domain mapping helper
+ 
   const getFullDomainName = (domainValue) => {
     const domainMap = {
       'AI': 'AI & Machine Learning',

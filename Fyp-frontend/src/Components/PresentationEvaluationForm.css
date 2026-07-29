@@ -306,6 +306,25 @@
   background: #d1d5db;
 }
 
+.pef-print-btn {
+  background: #fff;
+  color: #1e3a8a;
+  border: 2px solid #1e3a8a;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.pef-print-btn:hover {
+  background: #f0f4ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+}
+
 /* Success */
 .pef-success {
   text-align: center;
@@ -345,5 +364,5 @@
   .pef-rubric-btn { margin-left: 0; width: 100%; }
   .pef-info-label { width: 120px; }
   .pef-actions { flex-direction: column; }
-  .pef-submit-btn, .pef-cancel-btn { width: 100%; }
+  .pef-submit-btn, .pef-cancel-btn, .pef-print-btn { width: 100%; }
 }

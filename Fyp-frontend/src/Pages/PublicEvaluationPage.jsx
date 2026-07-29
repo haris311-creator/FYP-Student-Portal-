@@ -14,7 +14,7 @@ const PublicEvaluationPage = () => {
     try {
       setLoading(true);
       
-      // Backend API call
+     
       const res = await evaluationAPI.getPublicEvaluation(token);
       
       console.log('API Response:', res.data); 

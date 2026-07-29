@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { evaluationAPI } from '../utils/api'; 
+import PresentationPrint from './PresentationPrint';
 import './PresentationEvaluationForm.css';
 
 const presentationCriteria = [
@@ -191,6 +192,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
   );
 
   const [comments, setComments] = useState('');
+  const [showPrintable, setShowPrintable] = useState(false);
 
   const handlePresentationRadio = (cIdx, value) => {
     setPresentationSelections(prev => ({ ...prev, [cIdx]: value }));
@@ -576,6 +578,11 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
 
       {/* Actions */}
       <div className="pef-actions">
+        {!isPublicLink && (
+          <button className="pef-print-btn" onClick={() => setShowPrintable(true)}>
+            Print Evaluation
+          </button>
+        )}
         <button className="pef-submit-btn" onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Submitting...' : 'Submit Evaluation'}
         </button>
@@ -583,6 +590,18 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
           <button className="pef-cancel-btn" onClick={onClose}>Cancel</button>
         )}
       </div>
+
+      <PresentationPrint
+        open={showPrintable}
+        onClose={() => setShowPrintable(false)}
+        group={group}
+        presentationMarks={presentationMarks}
+        presentationSelections={presentationSelections}
+        vivaMarks={vivaMarks}
+        vivaSelections={vivaSelections}
+        comments={comments}
+        evaluatorName={evaluatorName}
+      />
 
     </div>
   );

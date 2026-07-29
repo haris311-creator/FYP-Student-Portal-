@@ -26,14 +26,14 @@ function EnrollmentManagement() {
   const [rejectModal, setRejectModal] = useState({ show: false, studentId: null });
   const [rejectReason, setRejectReason] = useState('');
 
-  // Helper function to check if link is active
+
   const isActive = (path) => {
     return location.pathname === path;
   };
 
 
   useEffect(() => {
-    //  User info load karo localStorage se
+  
     const loadUser = () => {
       try {
         const userStr = localStorage.getItem('user');
@@ -122,7 +122,6 @@ function EnrollmentManagement() {
     return matchesSearch && matchesFilter;
   });
 
-  // Sidebar navigation helper - Admin Dashboard tab change karne ke liye
   const handleSidebarClick = (tabName) => {
     setMenuOpen(false);
     navigate(`/admin-dashboard?tab=${tabName}`);
