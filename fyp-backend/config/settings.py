@@ -46,11 +46,14 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     
+
+    # Local apps
     'accounts', 
     'portal',   
     'projects',
     'logbook',
     'evaluations',    
+    
 ]
 
 MIDDLEWARE = [
@@ -193,6 +196,23 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    # Throttling classes add karein
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    # Custom rates define karein
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/hour',       # Default for non-logged in users
+        'user': '50/hour',       # Default for logged in users
+        'otp_request': '5/hour', # Max 5 OTP requests per hour per IP
+        'otp_verify': '10/hour', # Max 10 OTP verifications per hour per IP
+        'login': '10/hour',      # Max 10 login attempts per hour per IP
+        'admin': '200/hour',     # Max 200 admin actions per hour per IP
+    },
+    # ✅ PAGINATION ADD KIYA
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,  # 20 records per page
 }
 
 MEDIA_URL = '/media/'
@@ -236,3 +256,44 @@ EMAIL_TIMEOUT = 30  # seconds
 #    print(f"✓ EMAIL_USE_TLS: {EMAIL_USE_TLS}")
 #    print(f"✓ DEFAULT_FROM_EMAIL: {DEFAULT_FROM_EMAIL}")
 #    print("="*60 + "\n")
+
+
+# 5MB limit for file uploads
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
+# Cache configuration (Throttling ke liye zaroori hai)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+
+# ============================================
+# SECURITY HEADERS - PRODUCTION READY
+# ============================================
+
+# Clickjacking protection - koi dusri site iframe mein nahi dikha sakti
+X_FRAME_OPTIONS = 'DENY'
+
+# MIME type sniffing protection
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Browser XSS filter enable
+SECURE_BROWSER_XSS_FILTER = True
+
+# Referrer policy - privacy ke liye
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# SSL redirect (Production mein True karein, development mein False rakhein)
+SECURE_SSL_REDIRECT = False  # Development ke liye False, Production mein True
+
+# HSTS (HTTP Strict Transport Security) - Production mein uncomment karein
+# SECURE_HSTS_SECONDS = 31536000  # 1 year
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+
+# Cookie security (Production mein uncomment karein)
+# CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
