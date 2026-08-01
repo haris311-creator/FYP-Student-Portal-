@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api'; 
 
-// Ensure you have this API base URL configured
+
 const API_BASE = 'http://localhost:8000/api/projects/';
 
 const GroupFormation = () => {
@@ -20,11 +20,11 @@ const GroupFormation = () => {
     project_title: '',
     domain: '',
     supervisor: '',
-    semester: 'Fall 2024', // Default or fetch from context
+    semester: 'Fall 2024', 
     fydp_phase: 'fydp1',
     members: [
       {
-        student: currentUser.id, // Auto-fill current user
+        student: currentUser.id, 
         role: 'lead',
         cgpa: '',
         earned_credit_hours: ''
@@ -32,7 +32,7 @@ const GroupFormation = () => {
     ]
   });
 
-  //  Load Faculty List on Mount
+
  useEffect(() => {
     const fetchFaculty = async () => {
       try {
@@ -56,7 +56,7 @@ const GroupFormation = () => {
     fetchFaculty();
   }, []);
 
-  //  Handle Input Changes
+ 
   const handleMemberChange = (index, field, value) => {
     const newMembers = [...formData.members];
     newMembers[index] = { ...newMembers[index], [field]: value };
@@ -83,20 +83,20 @@ const GroupFormation = () => {
   };
 
   const removeMember = (index) => {
-    if (index !== 0) { // Cannot remove the lead
+    if (index !== 0) { 
       const newMembers = formData.members.filter((_, i) => i !== index);
       setFormData({ ...formData, members: newMembers });
     }
   };
 
-  //  Submit Group
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccess('');
 
-    // Validation: Ensure all members have required fields
+    
     const isValid = formData.members.every(m => m.cgpa && m.earned_credit_hours);
     if (!isValid) {
       setError("Please fill CGPA and Credit Hours for all members.");
@@ -124,7 +124,7 @@ const GroupFormation = () => {
       setSuccess("Group Registered Successfully! Redirecting...");
       setTimeout(() => navigate('/student-dashboard'), 2000);
     } catch (err) {
-      // Handle soft validation warnings vs hard errors
+      
       if (err.response?.data?.members) {
         setError(`Member Error: ${JSON.stringify(err.response.data.members)}`);
       } else {

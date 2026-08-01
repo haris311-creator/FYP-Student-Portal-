@@ -1,0 +1,266 @@
+.agp-container {
+  padding: 24px;
+  background: #f0f4f8;
+  min-height: 100%;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.agp-controls {
+  margin-bottom: 16px;
+}
+
+.agp-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.agp-controls-row label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.agp-batch-input {
+  padding: 8px 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 140px;
+}
+
+.agp-batch-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.agp-print-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.agp-print-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.agp-preview-wrap {
+  background: #dfe7f1;
+  border-radius: 12px;
+  padding: 22px;
+  overflow: auto;
+  overflow-x: auto;
+}
+
+.agp-page {
+  width: min(100%, 840px);
+  margin: 0 auto;
+  background: white;
+  color: #000;
+  font-family: "Times New Roman", Times, serif;
+  padding: 18px 24px 24px;
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.14);
+}
+
+.agp-header-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.agp-header-spacer {
+  width: 1px;
+}
+
+.agp-logo-wrap {
+  justify-self: center;
+}
+
+.agp-logo {
+  width: 180px;
+  height: auto;
+  max-height: 70px;
+  object-fit: contain;
+  display: block;
+}
+
+.agp-form-tag {
+  justify-self: end;
+  border: 1px solid #000;
+  padding: 6px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  background: white;
+  white-space: nowrap;
+}
+
+.agp-header-block {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 8px;
+}
+
+.agp-faculty {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.agp-dept {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.agp-batch {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.agp-title {
+  text-align: center;
+  margin: 10px 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.agp-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+}
+
+.agp-table th,
+.agp-table td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.agp-table th {
+  background: #f5f5f5;
+  text-align: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.agp-center {
+  text-align: center;
+}
+
+.agp-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+  border: 1px solid #000;
+}
+
+.agp-footer-box {
+  padding: 12px;
+  min-height: 80px;
+}
+
+.agp-footer-box:not(:last-child) {
+  border-right: 1px solid #000;
+}
+
+.agp-footer-label {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+.agp-footer-value {
+  font-size: 12px;
+}
+
+.agp-footer-line {
+  border-bottom: 1px solid #000;
+  margin-top: 30px;
+}
+
+@media (max-width: 900px) {
+  .agp-controls-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .agp-page {
+    min-width: 700px;
+    padding: 16px 14px 20px;
+  }
+
+  .agp-logo {
+    width: 140px;
+    max-height: 55px;
+  }
+
+  .agp-form-tag {
+    padding: 4px 12px;
+    font-size: 12px;
+  }
+
+  .agp-faculty,
+  .agp-dept,
+  .agp-batch {
+    font-size: 12px;
+  }
+
+  .agp-title {
+    font-size: 14px;
+  }
+
+  .agp-table th,
+  .agp-table td {
+    padding: 4px 3px;
+    font-size: 10px;
+  }
+
+  .agp-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .agp-footer-box:not(:last-child) {
+    border-right: none;
+    border-bottom: 1px solid #000;
+  }
+}
+
+@media print {
+  .agp-controls,
+  .no-print {
+    display: none !important;
+  }
+
+  .agp-container {
+    background: none;
+    padding: 0;
+  }
+
+  .agp-preview-wrap {
+    background: none;
+    padding: 0;
+  }
+
+  .agp-page {
+    box-shadow: none;
+    min-width: auto;
+    width: 100%;
+    margin: 0;
+    padding: 18px 24px 24px;
+  }
+}

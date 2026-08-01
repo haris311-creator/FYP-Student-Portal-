@@ -13,85 +13,24 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from .models import EnrolledStudent
+import io
 from .serializers import (
     RegisterSerializer, 
     LoginSerializer, 
     UserSerializer, 
-    StudentRegistrationSerializer,
     EnrolledStudentSerializer,
     PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer
+    PasswordResetConfirmSerializer,
+    OTPRequestSerializer, 
+    OTPVerificationSerializer
 )
+from .utils import send_approval_email, send_rejection_email
+import pandas as pd
+from rest_framework.parsers import MultiPartParser
+from rest_framework.decorators import parser_classes
+from .throttles import OTPRequestThrottle, OTPVerifyThrottle, LoginThrottle, AdminThrottle
 
 User = get_user_model()
-
-
-
-# ============================================
-# EMAIL HELPER FUNCTIONS
-# ============================================
-
-def send_approval_email(student, user):
-    """
-    Send approval email to student
-    """
-    try:
-        context = {
-            'student_name': f"{user.first_name} {user.last_name}",
-            'student_email': user.email,
-            'student_id': user.student_id or 'N/A',
-            'login_url': 'http://localhost:5173/login',
-        }
-        
-        html_message = render_to_string('emails/approval_email.html', context)
-        
-        send_mail(
-            subject='Your FYP Portal Account Has Been Approved',
-            message='',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-        
-        print(f" Approval email sent to {user.email}")
-        return True
-        
-    except Exception as e:
-        print(f" Failed to send approval email: {str(e)}")
-        return False
-
-
-def send_rejection_email(student, rejection_reason):
-    """
-    Send rejection email to student
-    """
-    try:
-        context = {
-            'student_name': student.full_name,
-            'student_email': student.email,
-            'student_id': student.roll_number,
-            'rejection_reason': rejection_reason,
-            'registration_date': student.created_at.strftime('%B %d, %Y'),
-        }
-        
-        html_message = render_to_string('emails/rejection_email.html', context)
-        
-        send_mail(
-            subject='FYP Portal Registration Update',
-            message='',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[student.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-        
-        print(f" Rejection email sent to {student.email}")
-        return True
-        
-    except Exception as e:
-        print(f" Failed to send rejection email: {str(e)}")
-        return False
 
 
 class RegisterView(generics.CreateAPIView):
@@ -113,7 +52,7 @@ class RegisterView(generics.CreateAPIView):
             'user': UserSerializer(user).data,
             'tokens': {
                 'refresh': str(refresh),
-                'access': str(refetch.access_token),
+                'access': str(refresh.access_token),
             }
         }, status=status.HTTP_201_CREATED)
 
@@ -124,6 +63,8 @@ class LoginView(generics.GenericAPIView):
     """
     serializer_class = LoginSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [LoginThrottle] 
+    
     
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -196,42 +137,80 @@ class ProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-class StudentRegistrationView(generics.CreateAPIView):
-    serializer_class = StudentRegistrationSerializer
+class RequestOTPView(generics.CreateAPIView):
+    """
+    Step 1: Receives user details, validates, and sends OTP to email.
+    Rate Limit: 5 requests per hour per IP
+    """
+    serializer_class = OTPRequestSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [OTPRequestThrottle]
     
+   
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        
-        if not serializer.is_valid():
-            return Response({
-                "success": False,
-                "message": "Registration failed",
-                "errors": serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
         try:
-            user = serializer.save()
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
             
             return Response({
                 "success": True,
-                "message": "Registration successful! Your account is pending admin approval.",
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "student_id": user.student_id,
-                    "user_type": user.user_type
-                }
-            }, status=status.HTTP_201_CREATED)
+                "message": "OTP sent successfully to your email. It is valid for 10 minutes."
+            }, status=status.HTTP_200_OK)
+        except Ratelimited:
+            return Response(
+                {"error": "Too many registration attempts. Please wait 1 hour before trying again."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+
+class VerifyOTPView(generics.CreateAPIView):
+    """
+    Step 2: Verifies the OTP and creates the user account.
+    Rate Limit: 10 attempts per hour per IP
+    """
+    serializer_class = OTPVerificationSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [OTPVerifyThrottle]
+    
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
             
-        except Exception as e:
-            return Response({
-                "success": False,
-                "message": f"Registration failed: {str(e)}",
-                "errors": {"general": [str(e)]}
-            }, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                user = serializer.save()
+                
+                if user.is_active:
+                    message = "Registration successful! Your account has been automatically approved. You can now login."
+                else:
+                    message = "Registration successful! Your account is pending admin approval."
+                
+                return Response({
+                    "success": True,
+                    "message": message,
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                        "student_id": user.student_id,
+                        "user_type": user.user_type
+                    }
+                }, status=status.HTTP_201_CREATED)
+                
+            except Exception as e:
+                return Response({
+                    "success": False,
+                    "message": f"Registration failed: {str(e)}",
+                    "errors": {"general": [str(e)]}
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Ratelimited:
+            return Response(
+                {"error": "Too many verification attempts. Please wait 1 hour before trying again."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
         
 
 class EnrolledStudentViewSet(viewsets.ModelViewSet):
@@ -241,12 +220,24 @@ class EnrolledStudentViewSet(viewsets.ModelViewSet):
     queryset = EnrolledStudent.objects.all()
     serializer_class = EnrolledStudentSerializer
     permission_classes = [IsAdminUser]
+    throttle_classes = [AdminThrottle]  
     
     def get_queryset(self):
         queryset = super().get_queryset()
+        
+        # 1. Status Filter
         status_filter = self.request.query_params.get('status', None)
-        if status_filter:
+        if status_filter and status_filter != 'all':
             queryset = queryset.filter(approval_status=status_filter)
+        
+        # 2. Search Filter (Name ya Email par case-insensitive search)
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            queryset = queryset.filter(
+                Q(full_name__icontains=search_query) | 
+                Q(email__icontains=search_query)
+            )
+            
         return queryset
     
     @action(detail=True, methods=['post'])
@@ -354,54 +345,61 @@ class PasswordResetRequestView(generics.GenericAPIView):
     """
     serializer_class = PasswordResetRequestSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [OTPRequestThrottle]
     
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        email = serializer.validated_data['email'].lower().strip()
-        user = User.objects.filter(email=email).first()
-        
-        if user:
-            # Token generate karein
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
             
-            # Reset URL (frontend ka URL)
-            reset_url = f"http://localhost:5173/reset-password/{uid}/{token}"
+            email = serializer.validated_data['email'].lower().strip()
+            user = User.objects.filter(email=email).first()
             
-            # Email bhejein
-            try:
-                context = {
-                    'user_name': f"{user.first_name} {user.last_name}" or user.email,
-                    'reset_url': reset_url,
-                    'email': user.email,
-                }
+            if user:
+                # Token generate karein
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
                 
-                html_message = render_to_string(
-                    'emails/password_reset_email.html', 
-                    context
-                )
+                # Reset URL (frontend ka URL)
+                reset_url = f"http://localhost:5173/reset-password/{uid}/{token}"
                 
-                send_mail(
-                    subject='Password Reset Request - FYP Portal',
-                    message='',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    html_message=html_message,
-                    fail_silently=False,
-                )
-                
-                print(f" Password reset email sent to {user.email}")
-                
-            except Exception as e:
-                print(f" Failed to send reset email: {str(e)}")
-        
-        # Hamesha success message denge (security ke liye)
-        return Response({
-            "success": True,
-            "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
-        }, status=status.HTTP_200_OK)
+                # Email bhejein
+                try:
+                    context = {
+                        'user_name': f"{user.first_name} {user.last_name}" or user.email,
+                        'reset_url': reset_url,
+                        'email': user.email,
+                    }
+                    
+                    html_message = render_to_string(
+                        'emails/password_reset_email.html', 
+                        context
+                    )
+                    
+                    send_mail(
+                        subject='Password Reset Request - FYP Portal',
+                        message='',
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[user.email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                    
+                    print(f" Password reset email sent to {user.email}")
+                    
+                except Exception as e:
+                    print(f" Failed to send reset email: {str(e)}")
+            
+            # Hamesha success message denge (security ke liye)
+            return Response({
+                "success": True,
+                "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
+            }, status=status.HTTP_200_OK)
+        except Ratelimited:
+            return Response(
+                {"error": "Too many password reset requests. Please wait 1 hour before trying again."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
 
 
 class PasswordResetConfirmView(generics.GenericAPIView):
@@ -428,3 +426,91 @@ class PasswordResetConfirmView(generics.GenericAPIView):
             "success": True,
             "message": "Password has been reset successfully. You can now login with your new password."
         }, status=status.HTTP_200_OK)
+    
+
+
+
+class ExcelBulkUploadView(generics.GenericAPIView):
+    """
+    Admin will upload Excel/CSV for auto-approval whitelisting.
+    """
+    permission_classes = [IsAdminUser]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get('file')
+        if not file:
+            return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # File size check (5MB limit)
+        if file.size > 5 * 1024 * 1024:
+            return Response({"error": "File size exceeds 5MB limit"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Read file based on extension
+            if file.name.endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                df = pd.read_excel(file)
+
+            # Normalize column names (remove spaces, lowercase)
+            df.columns = df.columns.str.strip().str.lower()
+            
+            # Check required columns
+            required_cols = ['odoo_id', 'email', 'full_name']
+            missing_cols = [col for col in required_cols if col not in df.columns]
+            if missing_cols:
+                return Response({
+                    "error": f"Missing columns: {', '.join(missing_cols)}. Required: Odoo_ID, Email, Full_Name"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            stats = {"total_processed": 0, "new_pre_approved": 0, "overridden": 0, "skipped": 0}
+
+            for index, row in df.iterrows():
+                odoo_id = str(row['odoo_id']).strip().upper()
+                email = str(row['email']).strip().lower()
+                full_name = str(row['full_name']).strip().title()
+
+                if not odoo_id or not email or not full_name:
+                    continue
+
+                stats["total_processed"] += 1
+
+                # Check existing record
+                existing = EnrolledStudent.objects.filter(email=email).first()
+
+                if existing:
+                    if existing.approval_status in ['approved', 'pre_approved'] and existing.is_registered:
+                        stats["skipped"] += 1
+                        continue
+                    elif existing.approval_status == 'rejected':
+                        # Override rejected record
+                        existing.roll_number = odoo_id
+                        existing.full_name = full_name
+                        existing.approval_status = 'pre_approved'
+                        existing.rejected_reason = None
+                        existing.save()
+                        stats["overridden"] += 1
+                    else:
+                        stats["skipped"] += 1
+                else:
+                    # Create new pre-approved record
+                    EnrolledStudent.objects.create(
+                        roll_number=odoo_id,
+                        email=email,
+                        full_name=full_name,
+                        approval_status='pre_approved',
+                        is_registered=False
+                    )
+                    stats["new_pre_approved"] += 1
+
+            return Response({
+                "success": True,
+                "message": "File processed successfully",
+                "stats": stats
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "error": f"Failed to process file: {str(e)}"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

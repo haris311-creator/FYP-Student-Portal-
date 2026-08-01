@@ -1,4 +1,3 @@
-// fyp-frontend/src/pages/Admin/AdminDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { adminAPI } from "../api/admin"; 
@@ -7,6 +6,7 @@ import { toast } from 'react-toastify';
 import './Admindashboard.css';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
 import GroupMarksPage from './GroupMarksPage';
+import AllGroupsPrint from '../Components/AllGroupsPrint';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ function AdminDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isCommittee, setIsCommittee] = useState(false);
   
-  // Backend data states
+
   const [pendingProposals, setPendingProposals] = useState([]);
   const [allGroups, setAllGroups] = useState([]);
   const [loading, setLoading] = useState({ proposals: false, groups: false });
@@ -102,7 +102,7 @@ function AdminDashboard() {
   };
   loadUser();
   
-  //  URL se tab read karein (jab Enrollment page se aayein)
+  
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
   if (tabParam) {
@@ -110,7 +110,7 @@ function AdminDashboard() {
   }
 }, []);
 
-//  Jab URL change ho, tab bhi update karein
+
 useEffect(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam = urlParams.get('tab');
@@ -211,7 +211,7 @@ const fetchAnnouncements = async () => {
   try {
     const response = await api.get('/projects/announcements/');
     
-    // Handle both paginated and non-paginated responses
+
     let announcements = [];
     if (Array.isArray(response.data)) {
       announcements = response.data;
@@ -221,7 +221,7 @@ const fetchAnnouncements = async () => {
     
     setAnnouncementList(announcements);
     
-    // Force re-render
+    
     setTimeout(() => {
     }, 100);
     
@@ -241,7 +241,7 @@ const fetchAnnouncements = async () => {
         is_active: true
       });
       toast.success('Announcement posted successfully!');
-      fetchAnnouncements(); // Refresh list
+      fetchAnnouncements(); 
     } catch (error) {
       console.error('Error creating announcement:', error);
       toast.error('Failed to post announcement');
@@ -254,7 +254,7 @@ const fetchAnnouncements = async () => {
     try {
       await api.delete(`/projects/announcements/${id}/`);
       toast.success('Announcement deleted successfully!');
-      fetchAnnouncements(); // Refresh list
+      fetchAnnouncements(); 
     } catch (error) {
       console.error('Error deleting announcement:', error);
       toast.error('Failed to delete announcement');
@@ -273,7 +273,7 @@ const fetchAnnouncements = async () => {
     }
   };
 
-  // fetchFinalReports function
+  
   const fetchFinalReports = async () => {
     try {
       setLoadingFinalReports(true);
@@ -342,7 +342,7 @@ const fetchAnnouncements = async () => {
     }
   };
 
-  // handleFinalReportReviewSubmit function
+  
   const handleFinalReportReviewSubmit = async () => {
     if (!selectedFinalReport) return;
     
@@ -418,13 +418,13 @@ const handleAnnouncementSubmit = (e) => {
   e.preventDefault();
   if (!announcement.trim()) return;
   
-  // Backend API call with priority
+ 
   createAnnouncement(announcement, announcement, priority);
-  setAnnouncement(''); // Clear input
-  setPriority('medium'); // Reset to default
+  setAnnouncement(''); 
+  setPriority('medium'); 
 };
 
-  // Helper Function for Page Header with Back Button
+ 
   const renderPageHeader = (title) => (
     <div style={{ marginBottom: '1.5rem' }}>
       <button 
@@ -464,7 +464,7 @@ const handleAnnouncementSubmit = (e) => {
             <p className="stat-label">Total FYP Groups</p>
           </div>
         </div>
-        {!isCommittee && (  //  Committee ko yeh nahi dikhana
+        {!isCommittee && (  
           <div className="stat-card">
           <div>
             <p className="stat-number">{pendingProposals.length}</p>
@@ -494,7 +494,7 @@ const handleAnnouncementSubmit = (e) => {
 
       <h3 className="sub-title">Quick Actions</h3>
       <div className="actions-grid">
-        {!isCommittee && (  //  Committee ke liye hide
+        {!isCommittee && (  
           <>
         <button className="action-btn" onClick={() => setActiveTab('proposals')}>
           <span>Approve Groups & Ideas</span>
@@ -509,7 +509,7 @@ const handleAnnouncementSubmit = (e) => {
             <span>Report Approval</span>
           </button>
         )}
-        {!isCommittee && (  // Committee ke liye hide
+        {!isCommittee && (  
         <button className="action-btn" onClick={() => setActiveTab('announcements')}>
           <span>Announcements</span>
         </button>
@@ -965,11 +965,7 @@ const handleAnnouncementSubmit = (e) => {
   const generateEvalLink = async (groupId) => {
     setGeneratingLink(true);
     try {
-      // Backend API call hogi baad mein
-      // const res = await adminAPI.generateEvalLink(groupId);
-      // const token = res.data.token;
-      
-      // Abhi dummy token
+     
       const token = `eval_${groupId}_${Date.now()}`;
       const link = `${window.location.origin}/evaluate/${token}`;
       
@@ -1084,40 +1080,7 @@ const handleAnnouncementSubmit = (e) => {
           <p className="mt-2 text-gray-600">Loading groups...</p>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Group</th>
-                <th>Project Title</th>
-                <th>Phase</th>
-                <th>Supervisor</th>
-                <th>Group #</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allGroups.map(g => (
-                <tr key={g.id}>
-                  <td><span className="group-name-cell">{g.group}</span></td>
-                  <td>{g.title}</td>
-                  <td>
-                    <span className={`phase-badge ${g.phase === 'FYP-2' ? 'phase-2' : 'phase-1'}`}>
-                      {g.phase}
-                    </span>
-                  </td>
-                  <td>{g.supervisor}</td>
-                  <td className="group-number-cell">{g.groupNumber}</td>
-                  <td>
-                    <span className={`status-pill ${getStatusClass(g.status)}`}>
-                      {g.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AllGroupsPrint groups={allGroups} />
       )}
     </div>
   );
@@ -1219,7 +1182,7 @@ const handleAnnouncementSubmit = (e) => {
           <button className="sidebar-close" onClick={() => setMenuOpen(false)}>✕</button>
         </div>
         
-        {/* User Profile Card */}
+       
         <div style={{ 
           padding: '1rem',
           background: '#1e3a8a',
@@ -1297,7 +1260,7 @@ const handleAnnouncementSubmit = (e) => {
           </button>
         )}
 
-      {!isCommittee && (  // Committee ke liye hide
+      {!isCommittee && (  
         <button
           className={`sidebar-btn ${activeTab === 'announcements' ? 'active' : ''}`}
           onClick={() => { setActiveTab('announcements'); setMenuOpen(false); }}
@@ -1312,7 +1275,7 @@ const handleAnnouncementSubmit = (e) => {
     Marks & Evaluation
   </button>
 
-        {!isCommittee && (  // Committee ke liye hide
+        {!isCommittee && ( 
           <Link 
             to="/admin/enrollment" 
             className="sidebar-btn"

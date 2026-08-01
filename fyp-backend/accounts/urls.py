@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import RegisterView, LoginView, LogoutView, ProfileView, PasswordResetRequestView, PasswordResetConfirmView
+from .views import RegisterView, LoginView, LogoutView, ProfileView, PasswordResetRequestView, PasswordResetConfirmView, ExcelBulkUploadView, RequestOTPView, VerifyOTPView
 from . import views
 
 router = DefaultRouter()
@@ -15,7 +15,8 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     # Student Registration (Public)
-    path('register/student/', views.StudentRegistrationView.as_view(), name='student-register'),
+    path('register/request-otp/', RequestOTPView.as_view(), name='request-otp'),
+    path('register/verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     
     # Registration Stats (Admin)
     path('registration-stats/', views.registration_stats, name='registration-stats'),
@@ -25,4 +26,5 @@ urlpatterns = [
 
     path('password-reset/', PasswordResetRequestView.as_view(), name='password-reset'),
     path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
+    path('upload-whitelist/', ExcelBulkUploadView.as_view(), name='upload-whitelist'),
 ]

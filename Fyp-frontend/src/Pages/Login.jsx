@@ -4,11 +4,7 @@ import { loginAPI } from '../utils/api';
 import './Login.css';
 
 
-const DUMMY_USERS = {
-  'student@iqra.edu.pk': { password: '123456', role: 'student' },
-  'supervisor@iqra.edu.pk': { password: '123456', role: 'supervisor' },
-  'admin@iqra.edu.pk': { password: '123456', role: 'admin' },
-};
+
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -22,13 +18,13 @@ function Login() {
   try {
     const data = await loginAPI(email, password);
 
-    // Pehle purana data clear karo
+  
     localStorage.removeItem('user');
     localStorage.removeItem('user_type');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     
-    // Phir naya data save karo
+   
     localStorage.setItem('access_token', data.tokens.access);
     localStorage.setItem('refresh_token', data.tokens.refresh);
     localStorage.setItem('user', JSON.stringify(data.user));

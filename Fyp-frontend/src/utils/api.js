@@ -90,6 +90,22 @@ export const loginAPI = async (email, password) => {
   }
 };
 
+export const enrollmentAPI = {
+  getAll: (status) => api.get(`/auth/enrolled-students/${status ? `?status=${status}` : ''}`),
+  approve: (id) => api.post(`/auth/enrolled-students/${id}/approve/`),
+  reject: (id, data) => api.post(`/auth/enrolled-students/${id}/reject/`, data),
+  getStats: () => api.get('/auth/registration-stats/'),
+  
+  // New Excel Upload Function
+  uploadExcel: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/auth/upload-whitelist/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+};
+
 // =============================================================================
 // FACULTY ENDPOINTS
 // =============================================================================

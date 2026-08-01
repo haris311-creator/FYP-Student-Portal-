@@ -1,0 +1,64 @@
+.pp-modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); z-index: 9998; display: flex; align-items: center; justify-content: center; padding: 18px; }
+.pp-modal-shell { width: min(100%, 1180px); max-height: 100%; display: flex; flex-direction: column; gap: 14px; }
+.pp-toolbar { background: #fff; border: 1px solid #dbe4f0; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pp-toolbar-title { margin: 0; font-size: 16px; font-weight: 700; color: #102a43; }
+.pp-toolbar-subtitle { margin: 4px 0 0; font-size: 12px; color: #64748b; }
+.pp-toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.pp-btn { border: none; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+.pp-btn:hover { transform: translateY(-1px); }
+.pp-btn:disabled { cursor: not-allowed; opacity: .7; transform: none; }
+.pp-btn-primary { background: #1e3a8a; color: #fff; box-shadow: 0 8px 18px rgba(30, 58, 138, .18); }
+.pp-btn-secondary { background: #e2e8f0; color: #1e293b; }
+.pp-preview-wrap { background: #dfe7f1; border-radius: 12px; padding: 22px; overflow: auto; overflow-x: auto; max-height: 75vh; }
+.pp-page { width: min(100%, 840px); margin: 0 auto 24px; background: #fff; color: #000; font-family: "Times New Roman", Times, serif; padding: 18px 24px 24px; box-shadow: 0 8px 26px rgba(15, 23, 42, .14); page-break-after: always; }
+.pp-page:last-child { page-break-after: auto; }
+.pp-header-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 2px; }
+.pp-header-spacer { width: 1px; }
+.pp-logo-wrap { justify-self: center; }
+.pp-logo { width: 180px; max-height: 70px; object-fit: contain; display: block; }
+.pp-form-tag { justify-self: end; border: 1px solid #000; padding: 6px 18px; font-size: 14px; font-weight: 700; background: #fff; white-space: nowrap; }
+.pp-header-block { text-align: center; margin-top: 10px; margin-bottom: 14px; }
+.pp-title { margin: 0; font-size: 16px; font-weight: 700; text-decoration: underline; }
+.pp-info-table, .pp-rubric-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.pp-info-table { margin-bottom: 14px; }
+.pp-info-table td, .pp-rubric-table th, .pp-rubric-table td { border: 1px solid #000; padding: 6px 6px; }
+.pp-label { width: 18%; background: #f3f3f3; font-weight: 700; font-size: 12px; white-space: nowrap; }
+.pp-value { font-size: 12px; }
+.pp-rubric-table { font-size: 11px; }
+.pp-rubric-table th { background: #f5f5f5; text-align: center; font-size: 11px; font-weight: 700; }
+.pp-center { text-align: center; }
+.pp-bold { font-weight: 700; }
+.pp-medium { font-weight: 700; line-height: 1.2; }
+.pp-performance-cell { padding: 4px 6px !important; white-space: nowrap; }
+.pp-choice { display: inline-flex; align-items: center; gap: 5px; margin-right: 20px; font-size: 12px; }
+.pp-box { width: 11px; height: 11px; border: 1px solid #000; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; line-height: 1; }
+.pp-box-active { background: #fff; }
+.pp-mark-cell { font-size: 12px; font-weight: 700; }
+.pp-bottom-info { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 12px; margin-top: 14px; }
+.pp-comment-box, .pp-sign-box { border: 1px solid #000; min-height: 100px; }
+.pp-box-title { border-bottom: 1px solid #000; padding: 6px 8px; font-size: 12px; font-weight: 700; background: #f3f3f3; }
+.pp-box-body { padding: 10px 8px; font-size: 12px; line-height: 1.4; min-height: 22px; }
+.pp-signature-name { font-weight: 700; }
+.pp-sign-line { margin: 12px 16px 10px; border-bottom: 1px solid #000; }
+
+@media (max-width: 900px) {
+  .pp-toolbar { flex-direction: column; text-align: center; gap: 10px; }
+  .pp-toolbar-actions { justify-content: center; }
+  .pp-preview-wrap { padding: 12px; max-height: 80vh; }
+  .pp-page { width: 100%; min-width: 700px; padding: 16px 14px 20px; }
+  .pp-logo { width: 140px; max-height: 55px; }
+  .pp-form-tag { padding: 4px 12px; font-size: 12px; }
+  .pp-title { font-size: 14px; }
+  .pp-info-table td, .pp-rubric-table th, .pp-rubric-table td { padding: 4px 3px; font-size: 10px; }
+  .pp-choice { margin-right: 10px; font-size: 11px; }
+  .pp-box { width: 9px; height: 9px; font-size: 8px; }
+  .pp-bottom-info { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .pp-toolbar { display: none !important; }
+  .pp-modal-backdrop { position: static; background: none; padding: 0; }
+  .pp-modal-shell { width: 100%; max-height: none; }
+  .pp-preview-wrap { background: none; padding: 0; max-height: none; overflow: visible; }
+  .pp-page { box-shadow: none; margin: 0; min-width: auto; }
+}

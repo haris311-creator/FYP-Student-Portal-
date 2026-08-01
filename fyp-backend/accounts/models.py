@@ -64,8 +64,8 @@ class CustomUser(AbstractUser):
 
 
 class EnrolledStudent(models.Model):
-    roll_number = models.CharField(max_length=50, unique=True, blank=True)
-    email = models.EmailField(unique=True)
+    roll_number = models.CharField(max_length=50, unique=True, blank=True, db_index=True)
+    email = models.EmailField(unique=True, db_index=True)
     full_name = models.CharField(max_length=200)
     is_registered = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -73,8 +73,9 @@ class EnrolledStudent(models.Model):
     # Approval system fields
     approval_status = models.CharField(
         max_length=20,
-        choices=[('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')],
-        default='pending'
+        choices=[('pending', 'Pending'), ('pre_approved', 'Pre-Approved (Excel)'), ('approved', 'Approved'), ('rejected', 'Rejected')],
+        default='pending',
+        db_index=True
     )
     rejected_reason = models.TextField(blank=True, null=True)
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -84,3 +85,31 @@ class EnrolledStudent(models.Model):
     
     def __str__(self):
         return f"{self.roll_number or self.email} - {self.full_name}"
+    
+
+
+
+
+class OTPVerification(models.Model):
+    """
+    Temporary model to store OTP and registration data before final account creation.
+    Prevents spam and ensures email ownership.
+    """
+    email = models.EmailField()
+    student_id = models.CharField(max_length=50)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    otp_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_verified = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"OTP for {self.email} - Expires: {self.expires_at}"
+
+    def is_expired(self):
+        """Check if the OTP has expired"""
+        return timezone.now() > self.expires_at

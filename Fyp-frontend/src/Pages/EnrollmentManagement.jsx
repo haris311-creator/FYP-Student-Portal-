@@ -35,12 +35,14 @@ function EnrollmentManagement() {
   
   const fileInputRef = useRef(null);
 
+
   const isActive = (path) => {
     return location.pathname === path;
   };
 
   // 1. Initial Load (No debounce)
   useEffect(() => {
+  
     const loadUser = () => {
       try {
         const userStr = localStorage.getItem('user');

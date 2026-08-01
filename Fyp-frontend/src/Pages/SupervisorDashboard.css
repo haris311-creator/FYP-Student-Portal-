@@ -789,17 +789,18 @@
 .card-header h3 { margin: 0; font-size: 1.1rem; color: #1e3a8a; }
 
 .btn-outline {
-  background: transparent;
+  background: #1e3a8a;
   border: 1px solid #1e3a8a;
-  color: #1e3a8a;
+  color: white;
   padding: 0.4rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
+  transition: background 0.2s;
 }
 
-.btn-outline:hover { background: #1e3a8a; color: white; }
+.btn-outline:hover { background: #1e40af; color: white; }
 
 .table-responsive { overflow-x: auto; }
 
@@ -1225,4 +1226,19 @@
   .progress-detail {
     flex-direction: column;
   }
+}
+
+.meetings-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.meetings-section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1e3a8a;
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
+import PresentationPrint from '../Components/PresentationPrint';
 import ProjectReportEvaluationForm from '../Components/ProjectReportEvaluationForm';
 import MeetingLogMarksForm from '../Components/MeetingLogMarksForm';
 import AwardListTemplate from '../Components/AwardListTemplate';
@@ -17,6 +18,8 @@ const GroupMarksPage = ({ group, onBack }) => {
   const [presentationData, setPresentationData] = useState(null);
   const [loadingPresentation, setLoadingPresentation] = useState(true);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showPrintable, setShowPrintable] = useState(false);
+  const [selectedEvalIdx, setSelectedEvalIdx] = useState(0);
 
   if (!group) return null;
 
@@ -359,9 +362,26 @@ const GroupMarksPage = ({ group, onBack }) => {
                 padding: '16px',
                 marginBottom: '16px'
               }}>
-                <h4 style={{ margin: '0 0 12px 0', color: '#1e3a8a' }}>
-                  Evaluator {idx + 1}: {evaluation.evaluator_name || 'Unknown'}
-                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ margin: 0, color: '#1e3a8a' }}>
+                    Evaluator {idx + 1}: {evaluation.evaluator_name || 'Unknown'}
+                  </h4>
+                  <button
+                    onClick={() => { setSelectedEvalIdx(idx); setShowPrintable(true); }}
+                    style={{
+                      background: '#fff',
+                      color: '#1e3a8a',
+                      border: '2px solid #1e3a8a',
+                      borderRadius: '6px',
+                      padding: '6px 14px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Print
+                  </button>
+                </div>
                 <div style={{ marginBottom: '12px' }}>
                   <strong style={{ color: '#64748b' }}>Presentation (Group):</strong> 
                   <span style={{ marginLeft: '8px', color: '#1e293b' }}>
@@ -420,6 +440,24 @@ const GroupMarksPage = ({ group, onBack }) => {
           </div>
         </div>
       )}
+
+      <PresentationPrint
+        open={showPrintable}
+        onClose={() => setShowPrintable(false)}
+        group={group}
+        presentationMarks={presentationData?.results?.[selectedEvalIdx]?.presentation_criteria_marks || {}}
+        vivaMarks={(() => {
+          const ev = presentationData?.results?.[selectedEvalIdx];
+          if (!ev?.viva_marks) return {};
+          const converted = {};
+          (group?.members || []).forEach((m, i) => {
+            if (ev.viva_marks[m.id] !== undefined) converted[i] = String(ev.viva_marks[m.id]);
+          });
+          return converted;
+        })()}
+        comments={presentationData?.results?.[selectedEvalIdx]?.comments || ''}
+        evaluatorName={presentationData?.results?.[selectedEvalIdx]?.evaluator_name || ''}
+      />
     </div>
   );
 };

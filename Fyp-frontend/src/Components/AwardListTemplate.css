@@ -104,7 +104,7 @@
   width: 1px;
 }
 .alt-logo {
-  width: min(250px, 34vw);
+  width: min(190px, 34vw);
   height: auto;
   display: block;
 }
@@ -144,7 +144,7 @@
   font-size: 14px;
   font-weight: 700;
   margin: 14px 0 0;
-  text-decoration: underline;
+ 
 }
 
 .alt-title-row {

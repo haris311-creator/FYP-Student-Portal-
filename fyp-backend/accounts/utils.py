@@ -1,103 +1,108 @@
 """
 accounts/utils.py
 =================
-Yeh file enrollment system ke utility functions contain karti hai.
-Main kaam: Unique enrollment codes generate karna.
+Utility functions for email notifications.
 """
 
-import secrets
-import string
-from .models import EnrollmentCode
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+import random
 
 
-# Code generation ke liye configuration
-CODE_PREFIX = "FYP2026-"      # Har code ke aage yeh prefix hoga
-CODE_LENGTH = 5                # Prefix ke baad kitne random characters honge
-# Example final code: FYP2026-A7K9M (total 14 characters)
-
-
-def generate_unique_code(max_attempts=100):
-    """
-    Ek unique enrollment code generate karta hai.
-    
-    Format: FYP2026-XXXXX (jahan XXXXX random alphanumeric characters hain)
-    
-    Security Note:
-    - `secrets` module use kiya hai `random` ki jagah, kyunki yeh 
-      cryptographically secure hai (brute-force attacks ke against safe).
-    - Characters pool mein uppercase letters (A-Z) aur digits (0-9) hain.
-    - Lowercase letters exclude kiye hain taake confusion na ho (0 vs O, 1 vs l).
-    
-    Args:
-        max_attempts (int): Maximum attempts unique code dhundne ke liye.
-                           Default 100 rakha hai taake infinite loop na ho.
-    
-    Returns:
-        str: Unique enrollment code (e.g., "FYP2026-A7K9M")
-    
-    Raises:
-        RuntimeError: Agar unique code generate nahi ho pa raha (bahut zyada codes already exist).
-    """
-    
-    # Characters pool: Uppercase letters + digits (no lowercase to avoid confusion)
-    # Example: ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
-    alphabet = string.ascii_uppercase + string.digits
-    
-    for attempt in range(max_attempts):
-        # Random characters generate karo
-        random_part = ''.join(secrets.choice(alphabet) for _ in range(CODE_LENGTH))
+def send_approval_email(student, user):
+    """Send approval email to student"""
+    try:
+        context = {
+            'student_name': f"{user.first_name} {user.last_name}",
+            'student_email': user.email,
+            'student_id': user.student_id or 'N/A',
+            'login_url': 'http://localhost:5173/login',
+        }
         
-        # Full code banao prefix ke saath
-        candidate_code = f"{CODE_PREFIX}{random_part}"
+        try:
+            html_message = render_to_string('emails/approval_email.html', context)
+        except Exception:
+            html_message = f"Welcome {user.first_name}! Your FYP Portal account has been approved."
         
-        # Check karo ke yeh code database mein pehle se exist karta hai ya nahi
-        if not EnrollmentCode.objects.filter(code=candidate_code).exists():
-            return candidate_code
-    
-    # Agar max attempts tak bhi unique code nahi mila, toh error raise karo
-    raise RuntimeError(
-        f"Unique code generate nahi ho paya {max_attempts} attempts ke baad. "
-        "Database mein bahut zyada codes hain, CODE_LENGTH badhane ki zaroorat hai."
-    )
+        send_mail(
+            subject='Your FYP Portal Account Has Been Approved',
+            message='',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        print(f"Approval email sent to {user.email}")
+        return True
+    except Exception as e:
+        print(f"Failed to send approval email: {str(e)}")
+        return False
 
 
-def get_expiry_date(days=7):
-    """
-    Expiry date calculate karta hai current time se 'days' din aage.
-    
-    Args:
-        days (int): Kitne din baad code expire hoga. Default 7 days.
-    
-    Returns:
-        datetime: Expiry date and time
-    
-    Example:
-        >>> get_expiry_date(7)
-        datetime.datetime(2026, 6, 30, 14, 30, 0, tzinfo=<UTC>)
-    """
-    from django.utils import timezone
-    from datetime import timedelta
-    
-    return timezone.now() + timedelta(days=days)
+def send_rejection_email(student, rejection_reason):
+    """Send rejection email to student"""
+    try:
+        context = {
+            'student_name': student.full_name,
+            'student_email': student.email,
+            'student_id': student.roll_number or 'N/A',
+            'rejection_reason': rejection_reason,
+            'registration_date': student.created_at.strftime('%B %d, %Y') if student.created_at else 'N/A',
+        }
+        
+        try:
+            html_message = render_to_string('emails/rejection_email.html', context)
+        except Exception:
+            html_message = f"Dear {student.full_name}, your registration was rejected. Reason: {rejection_reason}"
+        
+        send_mail(
+            subject='FYP Portal Registration Update',
+            message='',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[student.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        print(f"Rejection email sent to {student.email}")
+        return True
+    except Exception as e:
+        print(f"Failed to send rejection email: {str(e)}")
+        return False
 
 
-# Valid expiry options jo admin choose kar sakta hai
-VALID_EXPIRY_OPTIONS = {
-    3: "3 days (Urgent)",
-    7: "7 days (Recommended)",
-    14: "14 days (Extended)",
-    30: "30 days (Special Cases)"
-}
+
+def generate_otp():
+    """Generates a secure 6-digit random OTP"""
+    return str(random.randint(100000, 999999))
 
 
-def validate_expiry_days(days):
-    """
-    Check karta hai ke admin ne valid expiry days choose kiye hain ya nahi.
-    
-    Args:
-        days (int): Expiry days jo admin ne select kiye
-    
-    Returns:
-        bool: True agar valid hai, False otherwise
-    """
-    return days in VALID_EXPIRY_OPTIONS.keys()
+def send_otp_email(email, otp_code):
+    """Sends the OTP code to the user's email"""
+    try:
+        context = {
+            'otp_code': otp_code,
+            'expiry_minutes': 10,
+        }
+        
+        # Plain text fallback if HTML template is missing
+        html_message = f"""
+        <h2>FYP Portal Email Verification</h2>
+        <p>Your One-Time Password (OTP) for registration is:</p>
+        <h1 style="color: #1e3a8a; letter-spacing: 2px;">{otp_code}</h1>
+        <p>This OTP is valid for 10 minutes. Do not share this with anyone.</p>
+        """
+        
+        send_mail(
+            subject='FYP Portal - Email Verification OTP',
+            message='',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        print(f"OTP email sent to {email}")
+        return True
+    except Exception as e:
+        print(f"Failed to send OTP email: {str(e)}")
+        return False

@@ -421,6 +421,24 @@
   background: #d1d5db;
 }
 
+.ssm-print-btn {
+  background: #ffffff;
+  color: #1e3a8a;
+  border: 2px solid #1e3a8a;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ssm-print-btn:hover {
+  background: #f0f4ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+}
+
 @media (max-width: 768px) {
   .ssm-container {
     padding: 16px;
@@ -445,7 +463,8 @@
   }
 
   .ssm-submit-btn,
-  .ssm-cancel-btn {
+  .ssm-cancel-btn,
+  .ssm-print-btn {
     width: 100%;
   }
 }
