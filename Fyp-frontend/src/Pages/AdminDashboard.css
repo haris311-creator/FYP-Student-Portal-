@@ -413,7 +413,7 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 0.8rem 1.5rem;
+  padding: 0.6rem 1.25rem;
   border-radius: 8px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -561,5 +561,138 @@
     display: flex !important;
     align-items: center;
     justify-content: center;
+  }
+}
+
+/* Reject Modal */
+.reject-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.reject-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+}
+
+.reject-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.reject-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.reject-modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.reject-modal-body {
+  padding: 20px;
+}
+
+.reject-modal-title {
+  margin: 0 0 16px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.reject-modal-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.reject-required {
+  color: #dc2626;
+}
+
+.reject-modal-textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.reject-modal-textarea:focus {
+  border-color: #1e3a8a;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.reject-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0px 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.reject-btn-cancel {
+  background: #e2e8f0;
+  color: #334155;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reject-btn-cancel:hover {
+  background: #cbd5e1;
+}
+
+.reject-btn-confirm {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reject-btn-confirm:hover {
+  background: #b91c1c;
+}
+
+.reject-btn-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .reject-modal-footer {
+    flex-direction: column-reverse;
+  }
+  .reject-btn-cancel, .reject-btn-confirm {
+    width: 100%;
   }
 }

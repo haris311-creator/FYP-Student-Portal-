@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { toast } from 'react-toastify';
 import './ProjectReportRubricsPrint.css';
 
 const formatDate = (value) => {
@@ -91,7 +92,7 @@ const ProjectReportRubricsPrint = ({
       pdf.save(`Project_Report_Rubrics_${group?.group_number || group?.title || 'group'}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      alert('Failed to generate printable PDF. Please try again.');
+      toast.error('Failed to generate printable PDF. Please try again.');
     } finally {
       setGenerating(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { meetingAPI, attendanceSheetAPI, evaluationAPI } from '../utils/api';
 import './MeetingLogMarksForm.css';
 
@@ -68,12 +69,12 @@ const MeetingLogMarksForm = ({ group, onClose }) => {
 
   const handleSubmit = async () => {
     if (!evaluatorName.trim()) {
-      alert('Please enter evaluator name.');
+      toast.warning('Please enter evaluator name.');
       return;
     }
     const num = parseFloat(marks);
     if (isNaN(num) || num < 0 || num > 10) {
-      alert('Please enter valid marks (0-10).');
+      toast.warning('Please enter valid marks (0-10).');
       return;
     }
     
@@ -97,6 +98,7 @@ const MeetingLogMarksForm = ({ group, onClose }) => {
       }
       
       setSubmitted(true);
+      toast.success('Meeting log marks submitted successfully!');
       
       // Refresh parent component
       if (onClose) {
@@ -109,7 +111,7 @@ const MeetingLogMarksForm = ({ group, onClose }) => {
                        err.response?.data?.detail || 
                        err.response?.data?.evaluator_name?.[0] ||
                        'Failed to submit. Please try again.';
-      alert(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }

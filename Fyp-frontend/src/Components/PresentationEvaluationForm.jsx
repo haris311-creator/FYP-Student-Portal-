@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { evaluationAPI } from '../utils/api'; 
 import PresentationPrint from './PresentationPrint';
 import './PresentationEvaluationForm.css';
@@ -241,7 +242,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
 
   const handleSubmit = async () => {
   if (!evaluatorName.trim()) {
-    alert('Please enter your name.');
+    toast.warning('Please enter your name.');
     return;
   }
 
@@ -276,6 +277,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
     }
     
     setSubmitted(true);
+    toast.success('Evaluation submitted successfully!');
     
     if (onClose && !isPublicLink) {
       setTimeout(() => onClose(), 1500);
@@ -283,7 +285,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
     
   } catch (err) {
     console.error('Error submitting evaluation:', err);
-    alert(err.response?.data?.error || 'Failed to submit evaluation.');
+    toast.error(err.response?.data?.error || 'Failed to submit evaluation.');
   } finally {
     setSubmitting(false);
   }

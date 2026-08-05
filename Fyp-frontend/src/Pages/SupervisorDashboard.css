@@ -489,7 +489,6 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 1.25rem;
   font-family: 'Inter', sans-serif;
 }
 
@@ -1143,6 +1142,7 @@
 
 .mform-actions {
   display: flex;
+  align-items: center;
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
@@ -1153,11 +1153,12 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 0.75rem 2rem;
+  padding: 0.6rem 1.25rem;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s;
 }
 
@@ -1177,11 +1178,12 @@
   background: white;
   color: #64748b;
   border: 1px solid #e2e8f0;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.25rem;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s;
 }
 

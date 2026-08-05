@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { toast } from 'react-toastify';
 import { evaluationAPI } from '../utils/api';
 import './AwardListTemplate.css';
 
@@ -184,7 +185,7 @@ const AwardListTemplate = ({ group }) => {
       pdf.save(fileName);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      alert('Failed to generate PDF. Please try again.');
+      toast.error('Failed to generate PDF. Please try again.');
     } finally {
       setGenerating(false);
     }

@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import api, { studentMeetingAPI, proposalAPI, reportAPI } from '../utils/api';
 import './Studentdashboard.css';
 
@@ -42,6 +43,8 @@ function StudentDashboard() {
   const [proposalFile, setProposalFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [proposalLoading, setProposalLoading] = useState(false);
+  const uploadLockRef = useRef(false);
+  const uploadReportLockRef = useRef(false);
 
 
  
@@ -129,9 +132,10 @@ function StudentDashboard() {
         try {
           setProposalLoading(true);
           const res = await api.get('/projects/proposals/');
+          const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.results) ? res.data.results : []);
           // Student ki sirf ek proposal hogi
-          if (res.data && res.data.length > 0) {
-            setProposalData(res.data[0]); 
+          if (list.length > 0) {
+            setProposalData(list[0]); 
           } else {
             setProposalData(null);
           }
@@ -152,8 +156,9 @@ function StudentDashboard() {
       try {
         setReportLoading(true);
         const res = await reportAPI.getMyReport();
-        if (res.data && res.data.length > 0) {
-          setReportData(res.data[0]);
+        const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.results) ? res.data.results : []);
+        if (list.length > 0) {
+          setReportData(list[0]);
         } else {
           setReportData(null);
         }
@@ -175,7 +180,8 @@ function StudentDashboard() {
         const response = await axios.get('http://localhost:8000/api/projects/faculty/', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        setFacultyList(response.data);
+        const data = response.data;
+        setFacultyList(Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : []));
       } catch (err) {
         console.error("Error fetching faculty:", err);
       }
@@ -284,6 +290,8 @@ function StudentDashboard() {
 
   const handleFileUpload = async () => {
     if (!proposalFile) return;
+    if (uploadLockRef.current) return;
+    uploadLockRef.current = true;
     
     setUploading(true);
     setError('');
@@ -292,15 +300,20 @@ function StudentDashboard() {
     const formData = new FormData();
     formData.append('proposal_file', proposalFile);
     
+    const toastId = toast.loading('Uploading proposal...');
     try {
       const res = await proposalAPI.uploadProposal(proposalData.id, formData);
+      toast.update(toastId, { render: 'Proposal uploaded successfully!', type: 'success', isLoading: false, autoClose: 3000 });
       setSuccess("Proposal uploaded successfully!");
       setProposalData(res.data.data); 
       setProposalFile(null); 
     } catch (err) {
       console.error("Upload failed:", err.response?.data || err.message);
-      setError(err.response?.data?.error || "Upload failed. Check file size (Max 10MB) and format (PDF/DOCX).");
+      const msg = err.response?.data?.error || "Upload failed. Check file size (Max 10MB) and format (PDF/DOCX).";
+      toast.update(toastId, { render: msg, type: 'error', isLoading: false, autoClose: 5000 });
+      setError(msg);
     } finally {
+      uploadLockRef.current = false;
       setUploading(false);
     }
   };
@@ -310,6 +323,8 @@ function StudentDashboard() {
   // handleFileUpload function 
   const handleReportUpload = async () => {
     if (!reportFile) return;
+    if (uploadReportLockRef.current) return;
+    uploadReportLockRef.current = true;
     
     setUploadingReport(true);
     setError('');
@@ -318,15 +333,20 @@ function StudentDashboard() {
     const formData = new FormData();
     formData.append('report_file', reportFile);
     
+    const toastId = toast.loading('Uploading report...');
     try {
       const res = await reportAPI.uploadReport(reportData.id, formData);
+      toast.update(toastId, { render: 'Report uploaded successfully!', type: 'success', isLoading: false, autoClose: 3000 });
       setSuccess("Report uploaded successfully!");
       setReportData(res.data.data);
       setReportFile(null);
     } catch (err) {
       console.error("Upload failed:", err.response?.data || err.message);
-      setError(err.response?.data?.error || "Upload failed. Check file size (Max 20MB) and format (PDF/DOCX).");
+      const msg = err.response?.data?.error || "Upload failed. Check file size (Max 20MB) and format (PDF/DOCX).";
+      toast.update(toastId, { render: msg, type: 'error', isLoading: false, autoClose: 5000 });
+      setError(msg);
     } finally {
+      uploadReportLockRef.current = false;
       setUploadingReport(false);
     }
   };
@@ -367,7 +387,7 @@ function StudentDashboard() {
       
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download file. Please check if the file exists.');
+      toast.error('Failed to download file. Please check if the file exists.');
     }
   };
 
@@ -649,7 +669,7 @@ function StudentDashboard() {
               <label>Select Internal Supervisor *</label>
               <select className="form-select" value={formData.supervisor} onChange={e => setFormData({...formData, supervisor: e.target.value})} required>
                 <option value="">-- Choose Supervisor --</option>
-                {facultyList.map(fac => (<option key={fac.id} value={fac.id}>{fac.full_name} - {fac.designation}</option>))}
+                {(Array.isArray(facultyList) ? facultyList : []).map(fac => (<option key={fac.id} value={fac.id}>{fac.full_name} - {fac.designation}</option>))}
               </select>
               <p className="form-note"> Meet your supervisor physically before selecting</p>
             </div>
@@ -937,7 +957,7 @@ const renderProjectProgress = () => {
         window.URL.revokeObjectURL(url);
       } catch (error) {
         console.error('Download failed:', error);
-        alert('Failed to download file.');
+        toast.error('Failed to download file.');
       }
     };
 
@@ -1081,7 +1101,7 @@ const renderProjectProgress = () => {
     // 3. Proposal exists, show status and upload options
     const statusColors = {
       'draft': '#64748b',
-      'submitted': '#3b82f6',
+      'submitted': '#1e3a8a',
       'approved_by_supervisor': '#8b5cf6',
       'revision_needed': '#f59e0b',
       'approved': '#15803d',

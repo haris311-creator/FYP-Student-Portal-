@@ -3,6 +3,7 @@ import SupervisorSessionalMarkForm from '../Components/SupervisorSessionalMarkFo
 import SupervisorMeetingPrint from '../Components/SupervisorMeetingPrint';
 import SupervisorAttendancePrint from '../Components/SupervisorAttendancePrint';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI, reportAPI, evaluationAPI } from '../utils/api';
 import './Supervisordashboard.css';
 
@@ -300,7 +301,7 @@ const [loadingStats, setLoadingStats] = useState(false);
 
   const handleSubmitMeeting = async () => {
     if (!formData.date || !formData.agenda || !formData.new_task) {
-      alert('Please fill all required fields (Date, Agenda, New Task)');
+      toast.warning('Please fill all required fields (Date, Agenda, New Task)');
       return;
     }
 
@@ -331,10 +332,10 @@ const [loadingStats, setLoadingStats] = useState(false);
 
       if (existingMeeting) {
         await meetingAPI.update(existingMeeting.id, payload);
-        alert('Meeting updated successfully!');
+        toast.success('Meeting updated successfully!');
       } else {
         await meetingAPI.create(selectedGroup, payload);
-        alert('Meeting saved successfully!');
+        toast.success('Meeting saved successfully!');
       }
 
 
@@ -360,7 +361,7 @@ const [loadingStats, setLoadingStats] = useState(false);
     } catch (err) {
       console.error("Error saving meeting:", err);
       console.error("Response data:", err.response?.data);
-      alert("Failed to save meeting. Please try again.");
+      toast.error("Failed to save meeting. Please try again.");
     } finally {
       setFormLoading(false);
     }
@@ -375,14 +376,14 @@ const [loadingStats, setLoadingStats] = useState(false);
     if (!selectedProposal) return;
 
     if (reviewForm.action === 'revision' && !reviewForm.remarks.trim()) {
-      alert('Remarks are required when requesting a revision.');
+      toast.warning('Remarks are required when requesting a revision.');
       return;
     }
 
     setSubmittingReview(true);
     try {
       await proposalAPI.supervisorReview(selectedProposal.id, reviewForm);
-      alert(`Proposal ${reviewForm.action === 'approve' ? 'approved and sent to Admin' : 'sent back to students for revision'}!`);
+      toast.success(`Proposal ${reviewForm.action === 'approve' ? 'approved and sent to Admin' : 'sent back to students for revision'}!`);
       setSelectedProposal(null);
       setReviewForm({ action: 'approve', remarks: '' });
 
@@ -391,7 +392,7 @@ const [loadingStats, setLoadingStats] = useState(false);
       setPendingProposals(res.data.results || []);
     } catch (err) {
       console.error("Review failed:", err);
-      alert(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
+      toast.error(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
     } finally {
       setSubmittingReview(false);
     }
@@ -403,14 +404,14 @@ const handleReportReviewSubmit = async () => {
   if (!selectedReport) return;
 
   if (reportReviewForm.action === 'revision' && !reportReviewForm.remarks.trim()) {
-    alert('Remarks are required when requesting a revision.');
+    toast.warning('Remarks are required when requesting a revision.');
     return;
   }
 
   setSubmittingReportReview(true);
   try {
     await reportAPI.supervisorReview(selectedReport.id, reportReviewForm);
-    alert(`Report ${reportReviewForm.action === 'approve' ? 'approved and sent to Admin' : 'sent back to students for revision'}!`);
+    toast.success(`Report ${reportReviewForm.action === 'approve' ? 'approved and sent to Admin' : 'sent back to students for revision'}!`);
     setSelectedReport(null);
     setReportReviewForm({ action: 'approve', remarks: '' });
 
@@ -419,7 +420,7 @@ const handleReportReviewSubmit = async () => {
     setPendingReports(res.data.results || []);
   } catch (err) {
     console.error("Review failed:", err);
-    alert(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
+    toast.error(err.response?.data?.error || err.response?.data?.remarks?.[0] || "Failed to submit review.");
   } finally {
     setSubmittingReportReview(false);
   }
@@ -462,7 +463,7 @@ const handleReportReviewSubmit = async () => {
 
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download file. Please check if the file exists.');
+      toast.error('Failed to download file. Please check if the file exists.');
     }
   };
 
@@ -868,7 +869,7 @@ const handleReportReviewSubmit = async () => {
                     document.body.appendChild(link);
                     link.click();
                   } catch (err) {
-                    alert("Excel export failed. Make sure openpyxl is installed on backend.");
+                    toast.error("Excel export failed. Make sure openpyxl is installed on backend.");
                   }
                 }}
               >

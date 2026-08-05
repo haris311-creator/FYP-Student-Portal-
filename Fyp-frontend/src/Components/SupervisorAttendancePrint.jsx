@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'react-toastify';
 import { downloadNodeAsPdf } from './printUtils';
 import './SupervisorPrintBase.css';
 import './SupervisorAttendancePrint.css';
@@ -31,7 +32,7 @@ const SupervisorAttendancePrint = ({
       await downloadNodeAsPdf(printRef.current, `Attendance_${selectedGroup?.group_number || 'group'}.pdf`);
     } catch (err) {
       console.error('Attendance PDF failed:', err);
-      alert('Failed to generate attendance printable PDF. Please try again.');
+      toast.error('Failed to generate attendance printable PDF. Please try again.');
     } finally {
       setGenerating(false);
     }

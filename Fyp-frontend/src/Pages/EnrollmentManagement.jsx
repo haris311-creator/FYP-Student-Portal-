@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api, { enrollmentAPI } from '../utils/api';
+import { toast } from 'react-toastify';
+import ConfirmModal from '../Components/ConfirmModal';
 import './Login.css';
 import './Admindashboard.css'; 
 import './EnrollmentManagement.css';
@@ -24,6 +26,7 @@ function EnrollmentManagement() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [menuOpen, setMenuOpen] = useState(false);
   const [rejectModal, setRejectModal] = useState({ show: false, studentId: null });
+  const [confirmState, setConfirmState] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [uploading, setUploading] = useState(false);
   
@@ -160,21 +163,29 @@ function EnrollmentManagement() {
     }
   };
 
-  const handleApprove = async (id) => {
-    if (!window.confirm('Are you sure you want to approve this student?')) return;
-    try {
-      await api.post(`/auth/enrolled-students/${id}/approve/`);
-      setSuccessMessage('Student approved successfully');
-      fetchStudents(); // Resets to page 1 with current filters
-      fetchStats();
-    } catch (error) {
-      setError('Error approving student');
-    }
+  const handleApprove = (id) => {
+    setConfirmState({
+      title: 'Approve Student',
+      message: 'Are you sure you want to approve this student?',
+      confirmText: 'Approve',
+      onConfirm: async () => {
+        try {
+          await api.post(`/auth/enrolled-students/${id}/approve/`);
+          setSuccessMessage('Student approved successfully');
+          toast.success('Student approved successfully');
+          fetchStudents(); // Resets to page 1 with current filters
+          fetchStats();
+        } catch (error) {
+          setError('Error approving student');
+          toast.error('Error approving student');
+        }
+      }
+    });
   };
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      alert('Rejection reason is required');
+      toast.warning('Rejection reason is required');
       return;
     }
     try {
@@ -445,6 +456,21 @@ function EnrollmentManagement() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={!!confirmState}
+        title={confirmState?.title}
+        message={confirmState?.message}
+        confirmText={confirmState?.confirmText}
+        cancelText={confirmState?.cancelText}
+        danger={confirmState?.danger}
+        onConfirm={() => {
+          const action = confirmState?.onConfirm;
+          setConfirmState(null);
+          if (action) action();
+        }}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'react-toastify';
 import { downloadNodeAsPdf } from './printUtils';
 import './SupervisorPrintBase.css';
 import './SupervisorMeetingPrint.css';
@@ -129,7 +130,7 @@ const SupervisorMeetingPrint = ({
       await downloadNodeAsPdf(printRef.current, `FYP_Meeting_${suffix}.pdf`);
     } catch (err) {
       console.error('Meeting PDF failed:', err);
-      alert('Failed to generate meeting printable PDF. Please try again.');
+      toast.error('Failed to generate meeting printable PDF. Please try again.');
     } finally {
       setGenerating(false);
     }

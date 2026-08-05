@@ -7,6 +7,7 @@ import './Admindashboard.css';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
 import GroupMarksPage from './GroupMarksPage';
 import AllGroupsPrint from '../Components/AllGroupsPrint';
+import ConfirmModal from '../Components/ConfirmModal';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -28,6 +29,10 @@ function AdminDashboard() {
   const [finalReportReviewForm, setFinalReportReviewForm] = useState({ action: 'approve', remarks: '' });
   const [submittingFinalReportReview, setSubmittingFinalReportReview] = useState(false);
   const [turnitinScore, setTurnitinScore] = useState('');
+  const [rejectModal, setRejectModal] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [submittingReject, setSubmittingReject] = useState(false);
+  const [confirmState, setConfirmState] = useState(null);
   
   // Local states
   const [announcement, setAnnouncement] = useState('');
@@ -200,7 +205,12 @@ useEffect(() => {
   const fetchActiveSupervisors = async () => {
     try {
       const response = await api.get('/projects/faculty/?is_active=true');
-      setActiveSupervisors(response.data.length || 0);
+      const data = response.data;
+      setActiveSupervisors(
+        typeof data === 'number' ? data :
+        Array.isArray(data) ? data.length :
+        (data?.count ?? (data?.results?.length ?? 0))
+      );
     } catch (error) {
       console.error('Error fetching supervisors:', error);
       setActiveSupervisors(0);
@@ -248,17 +258,23 @@ const fetchAnnouncements = async () => {
     }
   };
 
-  const deleteAnnouncement = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this announcement?')) return;
-    
-    try {
-      await api.delete(`/projects/announcements/${id}/`);
-      toast.success('Announcement deleted successfully!');
-      fetchAnnouncements(); 
-    } catch (error) {
-      console.error('Error deleting announcement:', error);
-      toast.error('Failed to delete announcement');
-    }
+  const deleteAnnouncement = (id) => {
+    setConfirmState({
+      title: 'Delete Announcement',
+      message: 'Are you sure you want to delete this announcement? This action cannot be undone.',
+      confirmText: 'Delete',
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/projects/announcements/${id}/`);
+          toast.success('Announcement deleted successfully!');
+          fetchAnnouncements(); 
+        } catch (error) {
+          console.error('Error deleting announcement:', error);
+          toast.error('Failed to delete announcement');
+        }
+      }
+    });
   };
 
   const fetchFinalProposals = async () => {
@@ -286,36 +302,50 @@ const fetchAnnouncements = async () => {
     }
   };
 
-  const handleApprove = async (proposal) => {
-    if (!window.confirm(`Approve "${proposal.title}" for ${proposal.group}?`)) return;
-    
-    try {
-      const response = await adminAPI.approveGroup(proposal.id);
-      toast.success(response.data.message || 'Group approved successfully!');
-      setPendingProposals(prev => prev.filter(p => p.id !== proposal.id));
-      fetchAllGroups();
-    } catch (error) {
-      console.error('Approval error:', error);
-      toast.error(error.response?.data?.error || 'Approval failed');
-    }
+  const handleApprove = (proposal) => {
+    setConfirmState({
+      title: 'Approve Idea',
+      message: `Approve "${proposal.title}" for ${proposal.group}?`,
+      confirmText: 'Approve',
+      onConfirm: async () => {
+        try {
+          const response = await adminAPI.approveGroup(proposal.id);
+          toast.success(response.data.message || 'Group approved successfully!');
+          setPendingProposals(prev => prev.filter(p => p.id !== proposal.id));
+          fetchAllGroups();
+        } catch (error) {
+          console.error('Approval error:', error);
+          toast.error(error.response?.data?.error || 'Approval failed');
+        }
+      }
+    });
   };
 
-  const handleReject = async (proposal) => {
-    const reason = window.prompt('Enter rejection reason (required):');
-    if (!reason || !reason.trim()) {
+  const handleReject = (proposal) => {
+    setRejectReason('');
+    setRejectModal(proposal);
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectModal) return;
+    const reason = rejectReason.trim();
+    if (!reason) {
       toast.warning('Rejection reason is required');
       return;
     }
-    
-    if (!window.confirm(`Reject "${proposal.title}"?\nReason: ${reason}`)) return;
-    
+
+    setSubmittingReject(true);
     try {
-      const response = await adminAPI.rejectGroup(proposal.id, reason);
+      const response = await adminAPI.rejectGroup(rejectModal.id, reason);
       toast.success(response.data.message || 'Group rejected');
-      setPendingProposals(prev => prev.filter(p => p.id !== proposal.id));
+      setPendingProposals(prev => prev.filter(p => p.id !== rejectModal.id));
+      setRejectModal(null);
+      setRejectReason('');
     } catch (error) {
       console.error('Rejection error:', error);
       toast.error(error.response?.data?.error || 'Rejection failed');
+    } finally {
+      setSubmittingReject(false);
     }
   };
 
@@ -410,7 +440,7 @@ const fetchAnnouncements = async () => {
       
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download file. Please check if the file exists.');
+      toast.error('Failed to download file. Please check if the file exists.');
     }
   };
 
@@ -978,9 +1008,10 @@ const handleAnnouncementSubmit = (e) => {
         }
       }));
       
-      alert(`Link generated!\n\n${link}\n\nCopy this and share via WhatsApp/Email`);
+      navigator.clipboard?.writeText(link);
+      toast.success('Evaluation link generated and copied!');
     } catch (err) {
-      alert('Failed to generate link');
+      toast.error('Failed to generate link');
     } finally {
       setGeneratingLink(false);
     }
@@ -1302,6 +1333,58 @@ const handleAnnouncementSubmit = (e) => {
         {activeTab === 'marks' && renderMarksEvaluation()}
         {selectedFinalProposal && renderFinalProposalModal()}
       </div>
+
+      {rejectModal && (
+        <div className="reject-modal-backdrop" onClick={() => setRejectModal(null)}>
+          <div className="reject-modal" onClick={e => e.stopPropagation()}>
+            <div className="reject-modal-header">
+              <h3>Reject Idea</h3>
+              <button className="reject-modal-close" onClick={() => setRejectModal(null)}>&times;</button>
+            </div>
+            <div className="reject-modal-body">
+              <p className="reject-modal-title">
+                Rejecting <strong>"{rejectModal.title}"</strong>
+              </p>
+              <label className="reject-modal-label" htmlFor="reject-reason">
+                Rejection Reason <span className="reject-required">*</span>
+              </label>
+              <textarea
+                id="reject-reason"
+                className="reject-modal-textarea"
+                rows="4"
+                placeholder="Reason will be shown to the student..."
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+              />
+            </div>
+            <div className="reject-modal-footer">
+              <button className="reject-btn-cancel" onClick={() => setRejectModal(null)}>Cancel</button>
+              <button
+                className="reject-btn-confirm"
+                onClick={handleRejectConfirm}
+                disabled={submittingReject}
+              >
+                {submittingReject ? 'Rejecting...' : 'Reject Idea'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={!!confirmState}
+        title={confirmState?.title}
+        message={confirmState?.message}
+        confirmText={confirmState?.confirmText}
+        cancelText={confirmState?.cancelText}
+        danger={confirmState?.danger}
+        onConfirm={() => {
+          const action = confirmState?.onConfirm;
+          setConfirmState(null);
+          if (action) action();
+        }}
+        onCancel={() => setConfirmState(null)}
+      />
     </div>
   );
 }
