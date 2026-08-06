@@ -1144,7 +1144,6 @@ const handleAnnouncementSubmit = (e) => {
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
             className="form-input"
-            style={{ marginTop: '0.5rem' }}
           >
             <option value="low">Low Priority</option>
             <option value="medium">Medium Priority</option>

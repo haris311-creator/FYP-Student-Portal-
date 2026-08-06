@@ -360,7 +360,7 @@
 }
 
 .phase-badge {
-  padding: 0.25rem 0.625rem;
+  /* padding: 0.25rem 0.625rem; */
   border-radius: 20px;
   font-size: 0.7rem;
   font-weight: 600;
