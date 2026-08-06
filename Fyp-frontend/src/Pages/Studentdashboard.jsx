@@ -534,7 +534,7 @@ function StudentDashboard() {
             <h2>Group & Idea Pitch</h2>
             <div className="status-card approved">
               <h3> Group Approved</h3>
-              <p style={{ color: '#64748b', margin: '0 0 1rem 0' }}>
+              <p style={{ color: '#64748b' }}>
                 {status === 'idea_pitch' ? 'Your idea has been approved. Proceed to submit proposal.' : 
                 status === 'proposal_pending' ? 'Proposal submitted. Waiting for supervisor review.' :
                 status === 'proposal_approved' ? 'Proposal approved! You can now submit your project report.' :
@@ -556,7 +556,7 @@ function StudentDashboard() {
                 status === 'completed' ? ' Completed' : 'Active'}
               </span>
               {existingGroup.group_number && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'white', borderRadius: '8px' }}>
+                <div style={{ marginTop: '1rem',  borderRadius: '8px' }}>
                   <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Group Number</p>
                   <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>{existingGroup.group_number}</p>
                 </div>
@@ -1142,7 +1142,7 @@ const renderProjectProgress = () => {
 
           {/* Remarks Section */}
           {proposalData.supervisor_remarks && (
-            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #1e3a8a' }}>
               <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
               <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{proposalData.supervisor_remarks}</p>
             </div>
@@ -1296,7 +1296,7 @@ const renderProjectProgress = () => {
 
           {/* Remarks Section */}
           {reportData.supervisor_remarks && (
-            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #1e3a8a' }}>
               <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
               <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{reportData.supervisor_remarks}</p>
             </div>
