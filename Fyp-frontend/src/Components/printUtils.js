@@ -24,17 +24,17 @@ const toPdfPage = (pdf, canvas, startNewPage) => {
   }
 };
 
-export const downloadNodeAsPdf = async (node, filename) => {
+export const downloadNodeAsPdf = async (node, filename, options = {}) => {
   if (!node) return;
 
-  const options = { scale: 2, useCORS: true, backgroundColor: '#ffffff' };
+  const opts = { scale: 2, useCORS: true, backgroundColor: '#ffffff', ...options };
   const pageNodes = Array.from(node.querySelectorAll('.sp-page, .pp-page'));
   const nodes = pageNodes.length ? pageNodes : [node];
 
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   for (let i = 0; i < nodes.length; i++) {
-    const canvas = await html2canvas(nodes[i], options);
+    const canvas = await html2canvas(nodes[i], opts);
     toPdfPage(pdf, canvas, i > 0);
   }
 
