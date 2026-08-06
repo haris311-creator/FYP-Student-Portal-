@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api, { enrollmentAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../Components/ConfirmModal';
-import './Login.css';
-import './Admindashboard.css'; 
 import './EnrollmentManagement.css';
 
 function EnrollmentManagement() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const [userInfo, setUserInfo] = useState({ name: '', role: '', email: '' });
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +17,6 @@ function EnrollmentManagement() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [menuOpen, setMenuOpen] = useState(false);
   const [rejectModal, setRejectModal] = useState({ show: false, studentId: null });
   const [confirmState, setConfirmState] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -38,32 +30,8 @@ function EnrollmentManagement() {
   
   const fileInputRef = useRef(null);
 
-
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-
   // 1. Initial Load (No debounce)
   useEffect(() => {
-  
-    const loadUser = () => {
-      try {
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-          setUserInfo({
-            name: fullName || user.email || 'User',
-            role: user.user_type || 'admin',
-            email: user.email || ''
-          });
-        }
-      } catch (e) {
-        console.log('User info not found');
-      }
-    };
-    
-    loadUser();
     fetchInitialData();
     fetchStats();
   }, []);
@@ -231,60 +199,10 @@ function EnrollmentManagement() {
     }
   };
 
-  const handleSidebarClick = (tabName) => {
-    setMenuOpen(false);
-    navigate(`/admin-dashboard?tab=${tabName}`);
-  };
-
   return (
-    <div className="dashboard-page">
-      {/* Sidebar */}
-      <div className={`dashboard-sidebar ${menuOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <h2 className="sidebar-title">Admin Panel</h2>
-          <button className="sidebar-close" onClick={() => setMenuOpen(false)}>X</button>
-        </div>
-        
-        <div style={{ 
-          padding: '1rem', background: '#1e3a8a', borderRadius: '12px', margin: '0 0.75rem 1rem 0.75rem',
-          display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', color: 'white'
-        }}>
-          <div style={{
-            width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', fontSize: '1.1rem', flexShrink: 0, backdropFilter: 'blur(10px)'
-          }}>
-            {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <div style={{ overflow: 'visible', flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', color: 'white', whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2', overflowWrap: 'break-word' }}>
-              {userInfo.name}
-            </p>
-            <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', textTransform: 'capitalize' }}>
-              {userInfo.role === 'admin' ? 'Administrator' : userInfo.role === 'committee' ? 'Committee Member' : userInfo.role === 'supervisor' ? 'Supervisor' : 'User'}
-            </p>
-          </div>
-        </div>
-        
-        <Link to="/admin-dashboard" className="sidebar-btn" onClick={() => setMenuOpen(false)}>Overview</Link>
-        <Link to="/admin-dashboard?tab=proposals" className="sidebar-btn" onClick={() => setMenuOpen(false)}>Approve Groups & Ideas</Link>
-        <Link to="/admin-dashboard?tab=finalProposals" className="sidebar-btn" onClick={() => setMenuOpen(false)}>Proposal Approval</Link>
-        <Link to="/admin-dashboard?tab=finalReports" className="sidebar-btn" onClick={() => setMenuOpen(false)}>Report Approval</Link>
-        <Link to="/admin-dashboard?tab=groups" className="sidebar-btn" onClick={() => setMenuOpen(false)}>View All Groups</Link>
-        <Link to="/admin-dashboard?tab=announcements" className="sidebar-btn" onClick={() => setMenuOpen(false)}>Announcements</Link>
-        <Link to="/admin-dashboard?tab=marks" className="sidebar-btn" onClick={() => setMenuOpen(false)}>Marks & Evaluation</Link>
-        <Link to="/admin/enrollment" className={`sidebar-btn ${isActive('/admin/enrollment') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>Enrollment Management</Link>
-      </div>
-
-      <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>Menu</button>
-
-      {/* Main Content */}
-      <div className="dashboard-content">
-        <div className="back-button-wrapper">
-          <button onClick={() => navigate('/admin-dashboard')} className="back-button">Back to Overview</button>
-        </div>
-
-        <h2 className="content-title">Student Registration Approvals</h2>
-        <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Approve or reject student registration requests</p>
+    <div>
+      <h2 className="content-title">Student Registration Approvals</h2>
+      <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Approve or reject student registration requests</p>
 
         {/* Stats Grid */}
         <div className="stats-grid">
@@ -434,7 +352,6 @@ function EnrollmentManagement() {
             </>
           )}
         </div>
-      </div>
 
       {/* Reject Modal */}
       {rejectModal.show && (

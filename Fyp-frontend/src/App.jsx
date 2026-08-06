@@ -14,7 +14,6 @@ import AdminDashboard from "./Pages/Admindashboard";
 import GroupApprovals from './Pages/Admin/GroupApprovals';
 import PublicEvaluationPage from './Pages/PublicEvaluationPage';
 import StudentRegistration from './Pages/StudentRegistration';
-import EnrollmentManagement from './Pages/EnrollmentManagement';
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
 
@@ -40,9 +39,6 @@ function App() {
 
         {/* Registration Route */}
         <Route path="/register" element={<StudentRegistration />} />
-
-        {/*  Admin Enrollment Route */}
-        <Route path="/admin/enrollment" element={<EnrollmentManagement />} />        
 
         {/* Public Evaluation Route */}
         <Route path="/evaluate/:token" element={<PublicEvaluationPage />} />

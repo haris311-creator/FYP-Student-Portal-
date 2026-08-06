@@ -8,6 +8,7 @@ import PresentationEvaluationForm from '../Components/PresentationEvaluationForm
 import GroupMarksPage from './GroupMarksPage';
 import AllGroupsPrint from '../Components/AllGroupsPrint';
 import ConfirmModal from '../Components/ConfirmModal';
+import EnrollmentManagement from './EnrollmentManagement';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -548,13 +549,9 @@ const handleAnnouncementSubmit = (e) => {
           <span>Marks & Evaluation</span>
         </button>
         {!isCommittee && (  
-          <Link 
-            to="/admin/enrollment" 
-            className="action-btn"
-            style={{ textDecoration: 'none' }}
-          >
+          <button className="action-btn" onClick={() => setActiveTab('enrollment')}>
             <span>Enrollment Management</span>
-          </Link>
+          </button>
         )}       
       </div>
     </div>
@@ -1306,15 +1303,13 @@ const handleAnnouncementSubmit = (e) => {
     Marks & Evaluation
   </button>
 
-        {!isCommittee && ( 
-          <Link 
-            to="/admin/enrollment" 
-            className="sidebar-btn"
-            style={{ textDecoration: 'none', color: 'inherit' }}
-            onClick={() => setMenuOpen(false)}
+        {!isCommittee && (
+          <button
+            className={`sidebar-btn ${activeTab === 'enrollment' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('enrollment'); setMenuOpen(false); }}
           >
-             Enrollment Management
-          </Link>
+            Enrollment Management
+          </button>
         )}
       </div>
 
@@ -1331,6 +1326,7 @@ const handleAnnouncementSubmit = (e) => {
         {activeTab === 'groups' && !isCommittee && renderGroups()}
         {activeTab === 'announcements' && !isCommittee && renderAnnouncements()}
         {activeTab === 'marks' && renderMarksEvaluation()}
+        {activeTab === 'enrollment' && !isCommittee && <EnrollmentManagement />}
         {selectedFinalProposal && renderFinalProposalModal()}
       </div>
 
