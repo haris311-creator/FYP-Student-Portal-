@@ -18,10 +18,16 @@ const SupervisorAttendancePrint = ({
   const [generating, setGenerating] = useState(false);
 
   const meetingDates = useMemo(() => {
-    // Optional per-meeting dates, if ever provided by the caller.
-    // Falls back to blank cells (matches the paper FP-5 form).
-    return attendanceData?.meeting_dates || [];
+    const summary = attendanceData?.meetings_summary || [];
+    return Array.from({ length: MEETING_COUNT }, (_, i) => summary[i]?.date || null);
   }, [attendanceData]);
+
+  const formatShortDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
 
   if (!open) return null;
 
@@ -93,16 +99,22 @@ const SupervisorAttendancePrint = ({
             <table className="sp-data-table sp-att-table">
               <thead>
                 <tr>
-                  <th rowSpan={2} style={{ width: '7%' }}>Seat No.</th>
-                  <th rowSpan={2} style={{ width: '20%' }}>Name of the Student</th>
-                  <th colSpan={MEETING_COUNT + 1}>Meetings</th>
-                  <th rowSpan={2} style={{ width: '10%' }}>Meetings Attended</th>
+                  <th rowSpan={3} style={{ width: '7%' }}>Seat No.</th>
+                  <th rowSpan={3} style={{ width: '20%' }}>Name of the Student</th>
+                  <th colSpan={MEETING_COUNT}>Meetings</th>
+                  <th rowSpan={3} style={{ width: '10%' }}>Meetings Attended</th>
                 </tr>
                 <tr>
                   {Array.from({ length: MEETING_COUNT }, (_, i) => (
                     <th key={i} className="sp-att-meeting-col">{i + 1}</th>
                   ))}
-                  <th className="sp-att-date-col">Date</th>
+                </tr>
+                <tr>
+                  {Array.from({ length: MEETING_COUNT }, (_, mIdx) => (
+                    <th key={mIdx} className="sp-att-date-col">
+                      {meetingDates[mIdx] ? formatShortDate(meetingDates[mIdx]) : ''}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -119,7 +131,6 @@ const SupervisorAttendancePrint = ({
                           </td>
                         );
                       })}
-                      <td className="sp-att-date-cell">{meetingDates[idx] || ''}</td>
                       <td className="sp-center sp-bold">
                         {member.total_present !== undefined ? `${member.total_present}/${member.total_meetings}` : ''}
                       </td>
@@ -133,7 +144,6 @@ const SupervisorAttendancePrint = ({
                       {Array.from({ length: MEETING_COUNT }, (_, mIdx) => (
                         <td key={mIdx}>&nbsp;</td>
                       ))}
-                      <td>&nbsp;</td>
                       <td>&nbsp;</td>
                     </tr>
                   ))

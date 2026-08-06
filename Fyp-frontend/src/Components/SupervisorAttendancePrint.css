@@ -107,9 +107,11 @@
   width: 3.4%;
 }
 
-.sp-att-date-col,
-.sp-att-date-cell {
-  width: 4%;
+.sp-att-date-col {
+  width: 3.4%;
+  height: 14px;
+  font-size: 8px;
+  font-weight: 400;
 }
 
 .sp-left {
