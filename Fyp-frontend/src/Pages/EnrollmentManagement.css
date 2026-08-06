@@ -83,33 +83,39 @@
 }
 
 .btn-cancel {
-  padding: 0.6rem 1.2rem;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  padding: 12px 32px;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
 }
 
 .btn-cancel:hover {
-  background: #e2e8f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-reject {
-  padding: 0.6rem 1.2rem;
-  background: #ef4444;
+  background: #dc2626;
   color: white;
   border: none;
+  padding: 12px 32px;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
 }
 
 .btn-reject:hover {
-  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /* Mobile Responsive */

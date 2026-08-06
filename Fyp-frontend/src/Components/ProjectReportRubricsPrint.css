@@ -50,15 +50,17 @@
 .rpt-btn {
   border: none;
   border-radius: 8px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 700;
+  padding: 12px 32px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
 }
 
 .rpt-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .rpt-btn:disabled {
@@ -70,12 +72,11 @@
 .rpt-btn-primary {
   background: #1e3a8a;
   color: white;
-  box-shadow: 0 8px 18px rgba(30, 58, 138, 0.18);
 }
 
 .rpt-btn-secondary {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .rpt-preview-wrap {

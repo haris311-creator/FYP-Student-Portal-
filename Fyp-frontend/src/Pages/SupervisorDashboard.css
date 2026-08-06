@@ -425,20 +425,21 @@
 }
 
 .view-details-btn {
-  background: transparent;
-  color: #1e3a8a;
-  border: 1px solid #1e3a8a;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s;
 }
 
 .view-details-btn:hover {
-  background: #1e3a8a;
-  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /* =========================================
@@ -493,9 +494,8 @@
 }
 
 .back-btn:hover {
-  background: #f8fafc;
-  color: #1e3a8a;
-  border-color: #1e3a8a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .detail-title {
@@ -529,7 +529,10 @@
   transition: all 0.2s;
 }
 
-.tab-btn:hover { background: #f8fafc; }
+.tab-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
 .tab-btn.active {
   background: #1e3a8a;
   color: white;
@@ -747,24 +750,6 @@
   margin-top: 1rem;
 }
 
-.tab-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.tab-btn:hover { background: #f8fafc; }
-.tab-btn.active {
-  background: #1e3a8a;
-  color: white;
-  border-color: #1e3a8a;
-}
-
 .meetings-container {
   display: flex;
   flex-direction: column;
@@ -786,20 +771,6 @@
 }
 
 .card-header h3 { margin: 0; font-size: 1.1rem; color: #1e3a8a; }
-
-.btn-outline {
-  background: #1e3a8a;
-  border: 1px solid #1e3a8a;
-  color: white;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-
-.btn-outline:hover { background: #1e40af; color: white; }
 
 .table-responsive { overflow-x: auto; }
 
@@ -954,8 +925,8 @@
 }
 
 .close-form-btn:hover {
-  background: #f1f5f9;
-  color: #ef4444;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .form-info-row {
@@ -1153,19 +1124,19 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 0.6rem 1.25rem;
+  padding: 12px 32px;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
   white-space: nowrap;
   transition: all 0.2s;
 }
 
 .submit-btn:hover {
-  background: #1e40af;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .submit-btn:disabled {
@@ -1188,8 +1159,8 @@
 }
 
 .back-btn:hover {
-  background: #f8fafc;
-  color: #1e3a8a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .meeting-active {

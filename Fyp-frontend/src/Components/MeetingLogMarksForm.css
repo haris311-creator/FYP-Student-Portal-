@@ -219,17 +219,18 @@
   background: #e5e7eb;
   color: #374151;
   border: none;
-  padding: 12px 24px;
+  padding: 12px 32px;
   border-radius: 8px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: all 0.2s;
 }
 
 .mlm-cancel-btn:hover {
-  background: #d1d5db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.3);
 }
 
 .mlm-success {
