@@ -857,7 +857,7 @@ const handleReportReviewSubmit = async () => {
               <button type="button" className="btn-outline" onClick={() => setAttendancePrintOpen(true)}>
                 Print PDF
               </button>
-              <button
+              {/* <button
                 className="btn-outline"
                 onClick={async () => {
                   try {
@@ -874,7 +874,7 @@ const handleReportReviewSubmit = async () => {
                 }}
               >
                  Export Excel
-              </button>
+              </button> */}
             </div>
           </div>
           {attendanceData ? (
@@ -919,7 +919,6 @@ const handleReportReviewSubmit = async () => {
                 type="button"
                 className="btn-outline"
                 onClick={() => setMeetingPrintMode('single')}
-                disabled={!activeMeetingForm}
               >
                 Print Current
               </button>
@@ -1114,7 +1113,6 @@ const handleReportReviewSubmit = async () => {
                             type="button"
                             className="btn-outline"
                             onClick={() => setMeetingPrintMode('single')}
-                            disabled={!activeMeetingForm}
                           >
                             Print This
                           </button>

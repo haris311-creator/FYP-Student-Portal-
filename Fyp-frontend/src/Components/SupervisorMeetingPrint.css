@@ -76,10 +76,6 @@
 }
 
 .sp-signature-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  align-items: center;
   font-size: 15px;
   line-height: 1.25;
   margin-top: 10px;
