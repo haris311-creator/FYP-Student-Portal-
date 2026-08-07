@@ -134,6 +134,7 @@ const [loadingStats, setLoadingStats] = useState(false);
             group_number: group.group_number,
             name: `Group ${group.group_number}`,
             project: group.project_title || 'Untitled Project',
+            supervisor_name: group.supervisor_name || group.supervisor_details?.name || '',
             members: group.members?.map(m => {
               return {
                 id: m.id,                              

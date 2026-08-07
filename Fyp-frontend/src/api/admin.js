@@ -58,9 +58,9 @@ export const adminAPI = {
   // Get pending groups
   getPendingGroups: () => api.get('/projects/admin/approval/pending/'),
 
-    //  Get all groups - Committee + Admin
+  //  Get all groups (Only Approved/Active groups for Print Sheet)
   getAllGroups: (params = {}) => 
-    api.get('/projects/groups/', { params }),  //  Normal groups endpoint
+    api.get('/projects/admin/approval/all/', { params }), 
   
 
   

@@ -123,6 +123,9 @@ class OTPRequestSerializer(serializers.Serializer):
     def validate(self, data):
         email = data['email']
         student_id = data['student_id']
+        first_name = data['first_name']
+        last_name = data['last_name']
+        full_name = f"{first_name} {last_name}".strip().title()
         
         # Check if this email or ID exists in pre-approved list
         pre_approved_record = EnrolledStudent.objects.filter(
@@ -134,11 +137,14 @@ class OTPRequestSerializer(serializers.Serializer):
             # Pre-approved record mila hai - ab strict check karein
             sheet_email = pre_approved_record.email.lower().strip()
             sheet_id = pre_approved_record.roll_number
+            sheet_name = pre_approved_record.full_name.strip().title()
             
             email_matches = (email == sheet_email)
             id_matches = (student_id == sheet_id)
+            name_matches = (full_name == sheet_name)
             
-            if email_matches and id_matches:
+            #  TRIPLE VALIDATION: Email + ID + Name
+            if email_matches and id_matches and name_matches:
                 # Perfect match - allow OTP
                 pass
             elif email_matches and not id_matches:
@@ -150,6 +156,12 @@ class OTPRequestSerializer(serializers.Serializer):
                 # ID match hai lekin email galat hai
                 raise serializers.ValidationError({
                     "email": f"This Odoo ID is pre-approved. Please use the correct email."
+                })
+            elif email_matches and id_matches and not name_matches:
+                #  Email aur ID match hain lekin NAME galat hai
+                raise serializers.ValidationError({
+                    "non_field_errors": f"Name does not match university records. "
+                    f"Please use exact name."
                 })
             else:
                 # Dono galat hain - yeh possible nahi hona chahiye lekin just in case

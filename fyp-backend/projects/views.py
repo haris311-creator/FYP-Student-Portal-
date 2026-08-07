@@ -545,11 +545,14 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
         """GET /api/projects/admin/approval/all/"""
         self.check_admin_permission(request)
         
-        groups = ProjectGroup.objects.all().prefetch_related(
+        groups = ProjectGroup.objects.filter(
+            status__in=['idea_pitch', 'approved', 'proposal_approved', 'in_progress', 'completed']
+        ).prefetch_related(
             'members__student',
             'supervisor',
             'co_supervisor'
         ).order_by('-created_at')
+
         
         # Optional filtering
         status_filter = request.query_params.get('status', None)

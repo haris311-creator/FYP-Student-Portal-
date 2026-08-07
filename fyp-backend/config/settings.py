@@ -198,17 +198,17 @@ REST_FRAMEWORK = {
     ),
     # Throttling classes add karein
     'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
+        #'rest_framework.throttling.AnonRateThrottle',
+        #'rest_framework.throttling.UserRateThrottle',
     ],
     # Custom rates define karein
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '20/hour',       # Default for non-logged in users
-        'user': '50/hour',       # Default for logged in users
-        'otp_request': '5/hour', # Max 5 OTP requests per hour per IP
-        'otp_verify': '10/hour', # Max 10 OTP verifications per hour per IP
-        'login': '10/hour',      # Max 10 login attempts per hour per IP
-        'admin': '200/hour',     # Max 200 admin actions per hour per IP
+        'anon': 'none',       # Default for non-logged in users
+        'user': 'none',       # Default for logged in users
+        'otp_request': 'none', # Max 5 OTP requests per hour per IP
+        'otp_verify': 'none', # Max 10 OTP verifications per hour per IP
+        'login': 'none',      # Max 10 login attempts per hour per IP
+        'admin': 'none',     # Max 20000 admin actions per hour per IP
     },
     # ✅ PAGINATION ADD KIYA
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',

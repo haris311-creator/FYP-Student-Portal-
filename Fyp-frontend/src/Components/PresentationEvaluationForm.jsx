@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { evaluationAPI } from '../utils/api'; 
 import PresentationPrint from './PresentationPrint';
 import './PresentationEvaluationForm.css';
@@ -176,6 +176,8 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
   const [evaluatorName, setEvaluatorName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(true);
 
   const [presentationSelections, setPresentationSelections] = useState(
     Object.fromEntries(presentationCriteria.map((_, i) => [i, null]))
@@ -193,6 +195,49 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
 
   const [comments, setComments] = useState('');
   const [showPrintable, setShowPrintable] = useState(false);
+
+  useEffect(() => {
+  const loadExisting = async () => {
+    if (!group?.id || isPublicLink) { setLoadingExisting(false); return; }
+    try {
+      const res = await evaluationAPI.getPresentationByGroup(group.id);
+      const existing = res.data?.results?.[0] || res.data?.[0];
+      if (existing?.is_submitted) {
+        const pMarks = existing.presentation_criteria_marks || {};
+        const pSelections = Object.fromEntries(
+          Object.entries(pMarks).map(([idx, val]) => {
+            const max = presentationCriteria[idx]?.maxMarks || 5;
+            const num = parseFloat(val);
+            return [idx, !isNaN(num) ? Math.round((num / max) * 5) : null];
+          })
+        );
+
+        const vMarksById = existing.viva_marks || {};
+        const vMarksByIdx = {};
+        const vSelectionsByIdx = {};
+        (group.members || []).forEach((member, idx) => {
+          const val = vMarksById[member.id];
+          vMarksByIdx[idx] = val ?? '';
+          const num = parseFloat(val);
+          vSelectionsByIdx[idx] = !isNaN(num) ? Math.round((num / 5) * 5) : null;
+        });
+
+        setEvaluatorName(existing.evaluator_name || '');
+        setPresentationMarks(pMarks);
+        setPresentationSelections(pSelections);
+        setVivaMarks(vMarksByIdx);
+        setVivaSelections(vSelectionsByIdx);
+        setComments(existing.comments || '');
+        setIsLocked(true);
+      }
+    } catch (err) {
+      console.error('Error loading existing evaluation:', err);
+    } finally {
+      setLoadingExisting(false);
+    }
+  };
+  loadExisting();
+}, [group?.id]);
 
   const handlePresentationRadio = (cIdx, value) => {
     setPresentationSelections(prev => ({ ...prev, [cIdx]: value }));
@@ -397,6 +442,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
                     placeholder="Enter your full name"
                     value={evaluatorName}
                     onChange={e => setEvaluatorName(e.target.value)}
+                    disabled={isLocked}
                   />
                 </td>
               </tr>
@@ -442,6 +488,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
                         value={level}
                         checked={presentationSelections[cIdx] === level}
                         onChange={() => handlePresentationRadio(cIdx, level)}
+                        disabled={isLocked}
                       />
                     </td>
                   ))}
@@ -454,6 +501,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
                       step="0.5"
                       value={presentationMarks[cIdx]}
                       onChange={e => handlePresentationManual(cIdx, e.target.value)}
+                      disabled={isLocked}
                       placeholder={`/${row.maxMarks}`}
                     />
                   </td>
@@ -503,6 +551,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
                         value={level}
                         checked={vivaSelections[sIdx] === level}
                         onChange={() => handleVivaRadio(sIdx, level)}
+                        disabled={isLocked}
                       />
                     </td>
                   ))}
@@ -515,7 +564,9 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
                       step="0.5"
                       value={vivaMarks[sIdx]}
                       onChange={e => handleVivaManual(sIdx, e.target.value)}
+                      disabled={isLocked}
                       placeholder="/5"
+                      
                     />
                   </td>
                 </tr>
@@ -583,8 +634,8 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
             Print Evaluation
           </button>
         )}
-        <button className="pef-submit-btn" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? 'Submitting...' : 'Submit Evaluation'}
+        <button className="pef-submit-btn" onClick={handleSubmit} disabled={submitting || isLocked}>
+          {isLocked ? 'Already Submitted' : submitting ? 'Submitting...' : 'Submit Evaluation'}
         </button>
         {!isPublicLink && onClose && (
           <button className="pef-cancel-btn" onClick={onClose}>Cancel</button>

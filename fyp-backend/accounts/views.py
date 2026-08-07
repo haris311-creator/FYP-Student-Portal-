@@ -63,7 +63,7 @@ class LoginView(generics.GenericAPIView):
     """
     serializer_class = LoginSerializer
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [LoginThrottle] 
+    #throttle_classes = [LoginThrottle] 
     
     
     def post(self, request, *args, **kwargs):
@@ -144,11 +144,10 @@ class RequestOTPView(generics.CreateAPIView):
     """
     serializer_class = OTPRequestSerializer
     permission_classes = [AllowAny]
-    throttle_classes = [OTPRequestThrottle]
+    #throttle_classes = [OTPRequestThrottle]
     
    
     def create(self, request, *args, **kwargs):
-        try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -157,11 +156,6 @@ class RequestOTPView(generics.CreateAPIView):
                 "success": True,
                 "message": "OTP sent successfully to your email. It is valid for 10 minutes."
             }, status=status.HTTP_200_OK)
-        except Ratelimited:
-            return Response(
-                {"error": "Too many registration attempts. Please wait 1 hour before trying again."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
 
 
 class VerifyOTPView(generics.CreateAPIView):
@@ -171,10 +165,9 @@ class VerifyOTPView(generics.CreateAPIView):
     """
     serializer_class = OTPVerificationSerializer
     permission_classes = [AllowAny]
-    throttle_classes = [OTPVerifyThrottle]
+    #throttle_classes = [OTPVerifyThrottle]
     
     def create(self, request, *args, **kwargs):
-        try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             
@@ -205,13 +198,7 @@ class VerifyOTPView(generics.CreateAPIView):
                     "message": f"Registration failed: {str(e)}",
                     "errors": {"general": [str(e)]}
                 }, status=status.HTTP_400_BAD_REQUEST)
-                
-        except Ratelimited:
-            return Response(
-                {"error": "Too many verification attempts. Please wait 1 hour before trying again."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
-        
+                        
 
 class EnrolledStudentViewSet(viewsets.ModelViewSet):
     """
@@ -220,7 +207,7 @@ class EnrolledStudentViewSet(viewsets.ModelViewSet):
     queryset = EnrolledStudent.objects.all()
     serializer_class = EnrolledStudentSerializer
     permission_classes = [IsAdminUser]
-    throttle_classes = [AdminThrottle]  
+    #throttle_classes = [AdminThrottle]  
     
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -345,10 +332,9 @@ class PasswordResetRequestView(generics.GenericAPIView):
     """
     serializer_class = PasswordResetRequestSerializer
     permission_classes = [AllowAny]
-    throttle_classes = [OTPRequestThrottle]
+    #throttle_classes = [OTPRequestThrottle]
     
     def post(self, request, *args, **kwargs):
-        try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             
@@ -395,11 +381,6 @@ class PasswordResetRequestView(generics.GenericAPIView):
                 "success": True,
                 "message": "If an account exists with this email, a password reset link has been sent. Please check your inbox."
             }, status=status.HTTP_200_OK)
-        except Ratelimited:
-            return Response(
-                {"error": "Too many password reset requests. Please wait 1 hour before trying again."},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
 
 
 class PasswordResetConfirmView(generics.GenericAPIView):

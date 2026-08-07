@@ -169,19 +169,28 @@ function StudentDashboard() {
 
   // Fetch Faculty
   useEffect(() => {
-    const fetchFaculty = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        const response = await axios.get('http://localhost:8000/api/projects/faculty/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setFacultyList(response.data);
-      } catch (err) {
-        console.error("Error fetching faculty:", err);
+  const fetchFaculty = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get('http://localhost:8000/api/projects/faculty/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Check karein ke response paginated hai ya nahi
+      if (response.data.results) {
+        setFacultyList(response.data.results); // Paginated response
+      } else if (Array.isArray(response.data)) {
+        setFacultyList(response.data); // Non-paginated array
+      } else {
+        setFacultyList([]); // Empty array fallback
       }
-    };
-    fetchFaculty();
-  }, []);
+    } catch (err) {
+      console.error("Error fetching faculty:", err);
+      setFacultyList([]); // Error par empty array set karein
+    }
+  };
+  fetchFaculty();
+}, []);
 
 
   const handleMemberChange = (index, field, value) => {

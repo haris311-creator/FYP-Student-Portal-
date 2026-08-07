@@ -145,67 +145,81 @@ useEffect(() => {
   };
 
   const fetchAllGroups = async () => {
-    try {
-      setLoading(prev => ({ ...prev, groups: true }));
-      const response = await adminAPI.getAllGroups();
-      const data = response.data.results || response.data;
-      
-      let inProgressCount = 0;
-      let completedCount = 0;
-      
-      const formatted = data.map(group => {
-        let displayStatus = 'Pending';
-        const status = group.status?.toLowerCase();
-        
-        if (status === 'completed') {
-          completedCount++;
-          displayStatus = 'Completed';
-        } else if (status === 'approved' || status === 'idea_pitch') {
-          inProgressCount++;
-          displayStatus = 'Active';
-        } else if (status === 'rejected') {
-          displayStatus = 'Rejected';
-        } else if (status === 'in_progress' || status === 'proposal_approved') {
-          inProgressCount++;
-          displayStatus = 'In Progress';
-        } else if (status === 'proposal_pending') {
-          inProgressCount++;
-          displayStatus = 'Proposal Pending';
-        }
+  try {
+    setLoading(prev => ({ ...prev, groups: true }));
+    const response = await adminAPI.getAllGroups();
+    const data = response.data.results || response.data;
 
-        return {
-          ...group,
-          id: group.id,
-          group: group.members_details?.map(m => m.full_name || m.email).join(', ') || 'Unknown',
-          title: group.project_title || group.name || 'Untitled Project',
-          phase: group.fydp_phase === 'fydp2' ? 'FYP-2' : 'FYP-1',
-          supervisor: group.supervisor_details?.name || group.supervisor_details?.email || 'Not Assigned',
-          status: displayStatus,
-          groupNumber: group.group_number || '-',
-          _fullData: group,
-        };
-      });
+    
+    // Backend already filter kar chuka hai, sirf approved groups hain
+    // Ab sirf unko format karein
+    
+    let inProgressCount = 0;
+    let completedCount = 0;
+    
+    const formatted = data.map(group => {
+      let displayStatus = 'Unknown';
+      const status = group.status?.toLowerCase();
       
-      setAllGroups(formatted);
-      setInProgressProjects(inProgressCount);
-      setCompletedProjects(completedCount);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-      toast.error('Failed to load groups');
-    } finally {
-      setLoading(prev => ({ ...prev, groups: false }));
-    }
-  };
+      if (status === 'completed') {
+        completedCount++;
+        displayStatus = 'Completed';
+      } else if (status === 'approved' || status === 'idea_pitch') {
+        inProgressCount++;
+        displayStatus = 'Active';
+      } else if (status === 'in_progress' || status === 'proposal_approved') {
+        inProgressCount++;
+        displayStatus = 'In Progress';
+      }
+      // 'rejected' aur 'proposal_pending' ko skip karein
+      // Backend already inko exclude kar chuka hai
+
+      return {
+        ...group,
+        id: group.id,
+        group: group.members_details?.map(m => m.full_name || m.email).join(', ') || 'Unknown',
+        title: group.project_title || group.name || 'Untitled Project',
+        phase: group.fydp_phase === 'fydp2' ? 'FYP-2' : 'FYP-1',
+        supervisor: group.supervisor_details?.name || group.supervisor_details?.email || 'Not Assigned',
+        status: displayStatus,
+        groupNumber: group.group_number || '-',
+        _fullData: group,
+      };
+    });
+    
+    setAllGroups(formatted);
+    setInProgressProjects(inProgressCount);
+    setCompletedProjects(completedCount);
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    toast.error('Failed to load groups');
+  } finally {
+    setLoading(prev => ({ ...prev, groups: false }));
+  }
+};
 
   const fetchActiveSupervisors = async () => {
-    try {
-      const response = await api.get('/projects/faculty/?is_active=true');
+  try {
+    const response = await api.get('/projects/faculty/?is_active=true');
+    
+    // Check karein ke response paginated hai ya nahi
+    if (response.data.results) {
+      // Paginated response - results array ka length lein
+      setActiveSupervisors(response.data.results.length || 0);
+    } else if (Array.isArray(response.data)) {
+      // Non-paginated array - direct length lein
       setActiveSupervisors(response.data.length || 0);
-    } catch (error) {
-      console.error('Error fetching supervisors:', error);
+    } else if (response.data.count !== undefined) {
+      // Count field available hai - use karein
+      setActiveSupervisors(response.data.count || 0);
+    } else {
       setActiveSupervisors(0);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching supervisors:', error);
+    setActiveSupervisors(0);
+  }
+};
 
 const fetchAnnouncements = async () => {
   try {

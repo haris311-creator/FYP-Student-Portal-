@@ -67,10 +67,10 @@ const AllGroupsPrint = ({ groups = [] }) => {
           <table className="agp-table">
             <thead>
               <tr>
-                <th style={{ width: '12%' }}>Group No</th>
+                <th style={{ width: '15%' }}>Group No</th>
                 <th style={{ width: '28%' }}>Project Title</th>
                 <th style={{ width: '35%' }}>Student Name with Seat No.</th>
-                <th style={{ width: '25%' }}>Supervisor / Co-Supervisor</th>
+                <th style={{ width: '22%' }}>Supervisor / Co-Supervisor</th>
               </tr>
             </thead>
             <tbody>
