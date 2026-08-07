@@ -4,11 +4,11 @@
 .pp-toolbar-title { margin: 0; font-size: 16px; font-weight: 700; color: #102a43; }
 .pp-toolbar-subtitle { margin: 4px 0 0; font-size: 12px; color: #64748b; }
 .pp-toolbar-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.pp-btn { border: none; border-radius: 8px; padding: 10px 16px; font-size: 13px; font-weight: 700; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
-.pp-btn:hover { transform: translateY(-1px); }
+.pp-btn { border: none; border-radius: 8px; padding: 12px 32px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all .2s ease; }
+.pp-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, .3); }
 .pp-btn:disabled { cursor: not-allowed; opacity: .7; transform: none; }
-.pp-btn-primary { background: #1e3a8a; color: #fff; box-shadow: 0 8px 18px rgba(30, 58, 138, .18); }
-.pp-btn-secondary { background: #e2e8f0; color: #1e293b; }
+.pp-btn-primary { background: #1e3a8a; color: #fff; }
+.pp-btn-secondary { background: #e5e7eb; color: #374151; }
 .pp-preview-wrap { background: #dfe7f1; border-radius: 12px; padding: 22px; overflow: auto; overflow-x: auto; max-height: 75vh; }
 .pp-page { width: min(100%, 840px); margin: 0 auto 24px; background: #fff; color: #000; font-family: "Times New Roman", Times, serif; padding: 18px 24px 24px; box-shadow: 0 8px 26px rgba(15, 23, 42, .14); page-break-after: always; }
 .pp-page:last-child { page-break-after: auto; }

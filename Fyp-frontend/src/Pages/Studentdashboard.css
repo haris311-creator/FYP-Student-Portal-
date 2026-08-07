@@ -314,7 +314,8 @@
 }
 
 .btn-remove:hover {
-  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .checkbox-group {
@@ -340,37 +341,38 @@
   background: #10b981;
   color: white;
   border: none;
-  padding: 0.75rem 1.25rem;
+  padding: 12px 32px;
   border-radius: 8px;
-  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
-  font-size: 0.875rem;
-  transition: opacity 0.2s, transform 0.2s;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
 }
 
 .btn-add:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-submit {
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 0.875rem 2rem;
+  padding: 12px 32px;
   border-radius: 8px;
-  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
   width: 100%;
   margin-top: 1rem;
 }
 
 .btn-submit:hover {
-  background: #1e40af;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-submit:disabled {
@@ -430,13 +432,12 @@
 
 .status-badge {
   display: inline-block;
-  padding: 0.375rem 0.75rem;
+  padding: 5px 4px;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
   background: #eff6ff;
   color: #1e3a8a;
-  margin-top: 1rem;
 }
 
 /* =========================================

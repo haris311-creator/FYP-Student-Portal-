@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { reportAPI, evaluationAPI } from '../utils/api';
 import { reportCriteria } from './reportRubricData';
 import ProjectReportRubricsPrint from './ProjectReportRubricsPrint';
@@ -120,7 +121,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
 
   const handleSubmit = async () => {
     if (!evaluatorName.trim()) {
-      alert('Please enter evaluator name.');
+      toast.warning('Please enter evaluator name.');
       return;
     }
     setSubmitting(true);
@@ -144,6 +145,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
       }
       
       setSubmitted(true);
+      toast.success('Report evaluation submitted successfully!');
 
       // Parent component ko refresh karne ka signal
       if (onClose) {
@@ -152,7 +154,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
 
     } catch (err) {
       console.error('Error submitting report evaluation:', err);
-      alert(err.response?.data?.detail || 'Failed to submit. Please try again.');
+      toast.error(err.response?.data?.detail || 'Failed to submit. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -164,7 +166,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
   if (reportData?.report_file) {
     window.open(reportData.report_file, '_blank');
   } else {
-    alert('Report not uploaded yet.');
+    toast.warning('Report not uploaded yet.');
   }
 };
 
@@ -175,7 +177,7 @@ const ProjectReportEvaluationForm = ({ group, onClose }) => {
       link.download = `Report_${group.project_title}.pdf`;
       link.click();
     } else {
-      alert('Report not uploaded yet.');
+      toast.warning('Report not uploaded yet.');
     }
   };
 

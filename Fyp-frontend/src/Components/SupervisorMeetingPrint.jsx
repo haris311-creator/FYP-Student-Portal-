@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'react-toastify';
 import { downloadNodeAsPdf } from './printUtils';
 import './SupervisorPrintBase.css';
 import './SupervisorMeetingPrint.css';
@@ -60,21 +61,16 @@ const MeetingPage = ({ meeting, selectedGroup, supervisorName }) => {
       </table>
 
       <div className="sp-signature-block">
+        <div className="sp-signature-row">
+          Supervisor Name &amp; Signature: {supervisorName ? `${supervisorName} __________________` : '__________________'}
+        </div>
         {Array.from({ length: signatureRows }, (_, idx) => {
           const member = members[idx];
-          const isLeadLine = idx === 0;
-          const studentLabel = member ? `Student ID & Signature: ${member.odoo_id || '____________'}` : 'Student ID & Signature:';
+          const studentId = member ? member.odoo_id : null;
 
           return (
             <div key={idx} className="sp-signature-row">
-              <div className="sp-signature-left">{studentLabel}</div>
-              {isLeadLine ? (
-                <div className="sp-signature-right">
-                  Supervisor Name &amp; Signature <span className="sp-signature-fill">{supervisorName || '__________________'}</span>
-                </div>
-              ) : (
-                <div className="sp-signature-right">____________________</div>
-              )}
+              Student ID &amp; Signature:{studentId ? ` ${studentId} ______________` : ' ______________'}
             </div>
           );
         })}
@@ -129,7 +125,7 @@ const SupervisorMeetingPrint = ({
       await downloadNodeAsPdf(printRef.current, `FYP_Meeting_${suffix}.pdf`);
     } catch (err) {
       console.error('Meeting PDF failed:', err);
-      alert('Failed to generate meeting printable PDF. Please try again.');
+      toast.error('Failed to generate meeting printable PDF. Please try again.');
     } finally {
       setGenerating(false);
     }

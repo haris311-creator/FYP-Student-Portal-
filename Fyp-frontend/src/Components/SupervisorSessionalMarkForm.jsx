@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { evaluationAPI } from '../utils/api';
 import { sessionalCriteria as rubricData } from './sessionalRubricData';
 import SupervisorSessionalPrint from './SupervisorSessionalPrint';
@@ -262,7 +263,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
     // Validate that all students have marks entered
     const validation = validateMarks();
     if (!validation.valid) {
-      alert(validation.message);
+      toast.warning(validation.message);
       return;
     }
 
@@ -322,7 +323,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
       setExistingEvaluations(results);
 
       // Show success message
-      alert('Sessional marks submitted successfully!');
+      toast.success('Sessional marks submitted successfully!');
 
       // Close the form modal after 2 seconds
       if (onClose) {
@@ -357,8 +358,8 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
       // Update error state
       setError(errorMessage);
       
-      // Show error alert to user
-      alert(`Error:\n${errorMessage}`);
+      // Show error toast to user
+      toast.error(errorMessage);
     } finally {
       // Reset submitting state regardless of success or failure
       setSubmitting(false);

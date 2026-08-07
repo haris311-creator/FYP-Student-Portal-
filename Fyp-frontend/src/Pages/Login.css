@@ -86,12 +86,12 @@
 
 .login-button {
   margin-top: 0.5rem;
-  padding: 0.9rem;
+  padding: 12px 32px;
   background: #1e3a8a;
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -100,9 +100,14 @@
 }
 
 .login-button:hover {
-  background: #1e40af;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .login-error {
@@ -127,24 +132,6 @@
   .login-card {
     padding: 2rem 1.25rem;
   }
-}
-.login-button {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #1e3a8a;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.login-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(54, 87, 240, 0.33);
-  background: linear-gradient(135deg, #1e3a8a, #4338ca);
 }
 
 .login-info {

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { toast } from 'react-toastify';
 import { presentationCriteria, vivaCriteria } from './rubricData/presentationCriteria';
 import './PresentationPrint.css';
 
@@ -211,7 +212,7 @@ const PresentationPrint = ({
       pdf.save(`Presentation_Rubrics_${group?.group_number || group?.title || 'group'}.pdf`);
     } catch (err) {
       console.error('PDF generation failed:', err);
-      alert('Failed to generate PDF.');
+      toast.error('Failed to generate PDF.');
     } finally { setGenerating(false); }
   };
 

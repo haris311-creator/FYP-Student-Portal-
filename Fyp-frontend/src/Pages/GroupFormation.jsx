@@ -47,7 +47,8 @@ const GroupFormation = () => {
         });
         
         console.log(" Faculty data received:", response.data);
-        setFacultyList(response.data);
+        const data = response.data;
+        setFacultyList(Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : []));
       } catch (error) {
         console.error(" Error fetching faculty:", error);
       }
@@ -189,7 +190,7 @@ const GroupFormation = () => {
                 required
               >
                 <option value="">-- Choose Supervisor --</option>
-                {facultyList.map(fac => (
+                {(Array.isArray(facultyList) ? facultyList : []).map(fac => (
                   <option key={fac.id} value={fac.id}>
                      {fac.full_name} - {fac.designation}
                   </option>

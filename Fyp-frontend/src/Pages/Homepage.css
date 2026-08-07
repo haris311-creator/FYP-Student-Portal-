@@ -72,19 +72,20 @@
 .hero-btn-primary {
   background: #1e3a8a;
   color: white;
-  padding: 0.85rem 2rem;
+  padding: 12px 32px;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
   border: none;
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
 }
 
 .hero-btn-primary:hover {
-  background: #2563eb;
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .hero-btn-secondary {
@@ -98,11 +99,6 @@
   transition: all 0.2s ease;
   border: 1px solid rgba(255,255,255,0.2);
   cursor: pointer;
-}
-
-.hero-btn-secondary:hover {
-  border-color: rgba(255,255,255,0.4);
-  color: white;
 }
 
 

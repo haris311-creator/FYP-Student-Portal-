@@ -1,29 +1,15 @@
 import React, { useState, useRef } from 'react';
 import './AllGroupsPrint.css';
+import { downloadNodeAsPdf } from './printUtils';
 
 const AllGroupsPrint = ({ groups = [] }) => {
   const [batch, setBatch] = useState('');
   const printRef = useRef(null);
 
-  const handlePrint = () => {
-    const content = printRef.current;
-    if (!content) return;
-
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html><head>
-        <title>All FYP Groups</title>
-        <link rel="stylesheet" href="/src/Components/AllGroupsPrint.css">
-        <style>
-          body { margin: 0; padding: 0; font-family: "Times New Roman", Times, serif; }
-          @media print { body { margin: 0; } }
-        </style>
-      </head><body>${content.innerHTML}</body></html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+  const handlePrint = async () => {
+    if (!printRef.current) return;
+    const suffix = batch ? batch.trim().replace(/\s+/g, '_') : 'All_Groups';
+    await downloadNodeAsPdf(printRef.current, `FYP_All_Groups_${suffix}.pdf`, { scale: 3 });
   };
 
   const today = new Date().toLocaleDateString('en-GB');
@@ -41,7 +27,7 @@ const AllGroupsPrint = ({ groups = [] }) => {
             onChange={(e) => setBatch(e.target.value)}
           />
           <button className="agp-print-btn" onClick={handlePrint}>
-            Print Sheet
+            Download PDF
           </button>
         </div>
       </div>

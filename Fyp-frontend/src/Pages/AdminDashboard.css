@@ -163,11 +163,8 @@
 }
 
 .action-btn:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1e3a8a;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .action-icon {
@@ -230,7 +227,7 @@
 .phase-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.3rem 0.75rem;
+ 
   border-radius: 20px;
 }
 
@@ -282,52 +279,40 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 0.4rem 0.9rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  transition: background 0.2s;
+  transition: all 0.2s;
   white-space: nowrap;
 }
 
 .approve-btn:hover {
-  background: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.reject-btn {
-  background: white;
-  color: #ef4444;
-  border: 1px solid #fecaca;
-  padding: 0.4rem 0.9rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.reject-btn:hover {
-  background: #fef2f2;
-}
-
+.reject-btn,
 .delete-btn {
-  background: white;
-  color: #ef4444;
-  border: 1px solid #fecaca;
-  padding: 0.4rem 0.9rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: all 0.2s;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
+.reject-btn:hover,
 .delete-btn:hover {
-  background: #fef2f2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 /*  Loading State & Refresh Button */
@@ -339,20 +324,21 @@
 
 .refresh-btn {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
+  background: #e5e7eb;
   color: #374151;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s;
 }
 
 .refresh-btn:hover {
-  background: #eff6ff;
-  border-color: #3b82f6;
-  color: #1e40af;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .empty-state {
@@ -413,19 +399,19 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 0.8rem 1.5rem;
+  padding: 12px 32px;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
   white-space: nowrap;
 }
 
 .submit-btn:hover {
-  background: #1e40af;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .announce-note {
@@ -561,5 +547,142 @@
     display: flex !important;
     align-items: center;
     justify-content: center;
+  }
+}
+
+/* Reject Modal */
+.reject-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.reject-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+}
+
+.reject-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.reject-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.reject-modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+
+.reject-modal-title {
+  margin: 0 0 16px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.reject-modal-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.reject-required {
+  color: #dc2626;
+}
+
+.reject-modal-textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.reject-modal-textarea:focus {
+  border-color: #1e3a8a;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.reject-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0px 20px;
+
+}
+
+.reject-btn-cancel {
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.reject-btn-cancel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.reject-btn-confirm {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.reject-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.reject-btn-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 480px) {
+  .reject-modal-footer {
+    flex-direction: column-reverse;
+  }
+  .reject-btn-cancel, .reject-btn-confirm {
+    width: 100%;
   }
 }

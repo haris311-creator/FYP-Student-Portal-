@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import api, { studentMeetingAPI, proposalAPI, reportAPI } from '../utils/api';
 import './Studentdashboard.css';
 
@@ -42,6 +43,8 @@ function StudentDashboard() {
   const [proposalFile, setProposalFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [proposalLoading, setProposalLoading] = useState(false);
+  const uploadLockRef = useRef(false);
+  const uploadReportLockRef = useRef(false);
 
 
  
@@ -129,9 +132,10 @@ function StudentDashboard() {
         try {
           setProposalLoading(true);
           const res = await api.get('/projects/proposals/');
+          const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.results) ? res.data.results : []);
           // Student ki sirf ek proposal hogi
-          if (res.data && res.data.length > 0) {
-            setProposalData(res.data[0]); 
+          if (list.length > 0) {
+            setProposalData(list[0]); 
           } else {
             setProposalData(null);
           }
@@ -152,8 +156,9 @@ function StudentDashboard() {
       try {
         setReportLoading(true);
         const res = await reportAPI.getMyReport();
-        if (res.data && res.data.length > 0) {
-          setReportData(res.data[0]);
+        const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.results) ? res.data.results : []);
+        if (list.length > 0) {
+          setReportData(list[0]);
         } else {
           setReportData(null);
         }
@@ -169,25 +174,17 @@ function StudentDashboard() {
 
   // Fetch Faculty
   useEffect(() => {
-  const fetchFaculty = async () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      const response = await axios.get('http://localhost:8000/api/projects/faculty/', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      // Check karein ke response paginated hai ya nahi
-      if (response.data.results) {
-        setFacultyList(response.data.results); // Paginated response
-      } else if (Array.isArray(response.data)) {
-        setFacultyList(response.data); // Non-paginated array
-      } else {
-        setFacultyList([]); // Empty array fallback
+    const fetchFaculty = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        const response = await axios.get('http://localhost:8000/api/projects/faculty/', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = response.data;
+        setFacultyList(Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : []));
+      } catch (err) {
+        console.error("Error fetching faculty:", err);
       }
-    } catch (err) {
-      console.error("Error fetching faculty:", err);
-      setFacultyList([]); // Error par empty array set karein
-    }
   };
   fetchFaculty();
 }, []);
@@ -293,6 +290,8 @@ function StudentDashboard() {
 
   const handleFileUpload = async () => {
     if (!proposalFile) return;
+    if (uploadLockRef.current) return;
+    uploadLockRef.current = true;
     
     setUploading(true);
     setError('');
@@ -301,15 +300,20 @@ function StudentDashboard() {
     const formData = new FormData();
     formData.append('proposal_file', proposalFile);
     
+    const toastId = toast.loading('Uploading proposal...');
     try {
       const res = await proposalAPI.uploadProposal(proposalData.id, formData);
+      toast.update(toastId, { render: 'Proposal uploaded successfully!', type: 'success', isLoading: false, autoClose: 3000 });
       setSuccess("Proposal uploaded successfully!");
       setProposalData(res.data.data); 
       setProposalFile(null); 
     } catch (err) {
       console.error("Upload failed:", err.response?.data || err.message);
-      setError(err.response?.data?.error || "Upload failed. Check file size (Max 10MB) and format (PDF/DOCX).");
+      const msg = err.response?.data?.error || "Upload failed. Check file size (Max 10MB) and format (PDF/DOCX).";
+      toast.update(toastId, { render: msg, type: 'error', isLoading: false, autoClose: 5000 });
+      setError(msg);
     } finally {
+      uploadLockRef.current = false;
       setUploading(false);
     }
   };
@@ -319,6 +323,8 @@ function StudentDashboard() {
   // handleFileUpload function 
   const handleReportUpload = async () => {
     if (!reportFile) return;
+    if (uploadReportLockRef.current) return;
+    uploadReportLockRef.current = true;
     
     setUploadingReport(true);
     setError('');
@@ -327,15 +333,20 @@ function StudentDashboard() {
     const formData = new FormData();
     formData.append('report_file', reportFile);
     
+    const toastId = toast.loading('Uploading report...');
     try {
       const res = await reportAPI.uploadReport(reportData.id, formData);
+      toast.update(toastId, { render: 'Report uploaded successfully!', type: 'success', isLoading: false, autoClose: 3000 });
       setSuccess("Report uploaded successfully!");
       setReportData(res.data.data);
       setReportFile(null);
     } catch (err) {
       console.error("Upload failed:", err.response?.data || err.message);
-      setError(err.response?.data?.error || "Upload failed. Check file size (Max 20MB) and format (PDF/DOCX).");
+      const msg = err.response?.data?.error || "Upload failed. Check file size (Max 20MB) and format (PDF/DOCX).";
+      toast.update(toastId, { render: msg, type: 'error', isLoading: false, autoClose: 5000 });
+      setError(msg);
     } finally {
+      uploadReportLockRef.current = false;
       setUploadingReport(false);
     }
   };
@@ -376,7 +387,7 @@ function StudentDashboard() {
       
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download file. Please check if the file exists.');
+      toast.error('Failed to download file. Please check if the file exists.');
     }
   };
 
@@ -523,7 +534,7 @@ function StudentDashboard() {
             <h2>Group & Idea Pitch</h2>
             <div className="status-card approved">
               <h3> Group Approved</h3>
-              <p style={{ color: '#64748b', margin: '0 0 1rem 0' }}>
+              <p style={{ color: '#64748b' }}>
                 {status === 'idea_pitch' ? 'Your idea has been approved. Proceed to submit proposal.' : 
                 status === 'proposal_pending' ? 'Proposal submitted. Waiting for supervisor review.' :
                 status === 'proposal_approved' ? 'Proposal approved! You can now submit your project report.' :
@@ -545,7 +556,7 @@ function StudentDashboard() {
                 status === 'completed' ? ' Completed' : 'Active'}
               </span>
               {existingGroup.group_number && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'white', borderRadius: '8px' }}>
+                <div style={{ marginTop: '1rem',  borderRadius: '8px' }}>
                   <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Group Number</p>
                   <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>{existingGroup.group_number}</p>
                 </div>
@@ -658,7 +669,7 @@ function StudentDashboard() {
               <label>Select Internal Supervisor *</label>
               <select className="form-select" value={formData.supervisor} onChange={e => setFormData({...formData, supervisor: e.target.value})} required>
                 <option value="">-- Choose Supervisor --</option>
-                {facultyList.map(fac => (<option key={fac.id} value={fac.id}>{fac.full_name} - {fac.designation}</option>))}
+                {(Array.isArray(facultyList) ? facultyList : []).map(fac => (<option key={fac.id} value={fac.id}>{fac.full_name} - {fac.designation}</option>))}
               </select>
               <p className="form-note"> Meet your supervisor physically before selecting</p>
             </div>
@@ -946,7 +957,7 @@ const renderProjectProgress = () => {
         window.URL.revokeObjectURL(url);
       } catch (error) {
         console.error('Download failed:', error);
-        alert('Failed to download file.');
+        toast.error('Failed to download file.');
       }
     };
 
@@ -1090,7 +1101,7 @@ const renderProjectProgress = () => {
     // 3. Proposal exists, show status and upload options
     const statusColors = {
       'draft': '#64748b',
-      'submitted': '#3b82f6',
+      'submitted': '#1e3a8a',
       'approved_by_supervisor': '#8b5cf6',
       'revision_needed': '#f59e0b',
       'approved': '#15803d',
@@ -1131,7 +1142,7 @@ const renderProjectProgress = () => {
 
           {/* Remarks Section */}
           {proposalData.supervisor_remarks && (
-            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #1e3a8a' }}>
               <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
               <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{proposalData.supervisor_remarks}</p>
             </div>
@@ -1285,7 +1296,7 @@ const renderProjectProgress = () => {
 
           {/* Remarks Section */}
           {reportData.supervisor_remarks && (
-            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
+            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #1e3a8a' }}>
               <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
               <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{reportData.supervisor_remarks}</p>
             </div>

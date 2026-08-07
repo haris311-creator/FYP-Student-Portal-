@@ -40,17 +40,18 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 10px 24px;
+  padding: 12px 32px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s;
 }
 
 .agp-print-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .agp-preview-wrap {

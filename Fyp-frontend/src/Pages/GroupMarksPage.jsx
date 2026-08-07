@@ -5,6 +5,7 @@ import ProjectReportEvaluationForm from '../Components/ProjectReportEvaluationFo
 import MeetingLogMarksForm from '../Components/MeetingLogMarksForm';
 import AwardListTemplate from '../Components/AwardListTemplate';
 import { evaluationAPI } from '../utils/api';
+import { toast } from 'react-toastify';
 import './GroupMarksPage.css';
 
 const GroupMarksPage = ({ group, onBack }) => {
@@ -108,10 +109,11 @@ const GroupMarksPage = ({ group, onBack }) => {
         { token, link, generated_at: new Date().toLocaleString(), status: 'active' }
       ]);
       
-      alert(`Evaluation link generated!\n\n${link}\n\nShare via WhatsApp or Email`);
+      navigator.clipboard?.writeText(link);
+      toast.success('Evaluation link generated and copied!');
     } catch (err) {
       console.error('Error generating link:', err);
-      alert('Failed to generate link');
+      toast.error('Failed to generate link');
     } finally {
       setGeneratingLink(false);
     }
@@ -119,7 +121,7 @@ const GroupMarksPage = ({ group, onBack }) => {
 
   const copyLink = (link) => {
     navigator.clipboard.writeText(link);
-    alert('Link copied!');
+    toast.success('Link copied!');
   };
 
   if (view === 'report') {
