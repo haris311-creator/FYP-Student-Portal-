@@ -30,8 +30,6 @@ function StudentDashboard() {
         full_name: '',
         odoo_id: '',
         role: 'lead',
-        cgpa: '',
-        earned_credit_hours: '',
       }
     ]
   });
@@ -202,7 +200,7 @@ function StudentDashboard() {
         ...formData,
         members: [
           ...formData.members,
-          { full_name: '', odoo_id: '', role: 'member', cgpa: '', earned_credit_hours: '' }
+          { full_name: '', odoo_id: '', role: 'member' }
         ]
       });
     }
@@ -222,9 +220,9 @@ function StudentDashboard() {
     setError('');
     setSuccess('');
 
-    const isValid = formData.members.every(m => m.full_name && m.odoo_id && m.cgpa && m.earned_credit_hours);
+    const isValid = formData.members.every(m => m.full_name && m.odoo_id);
     if (!isValid) {
-      setError("Please fill Full Name, Odoo ID, CGPA, and Credit Hours for all members.");
+      setError("Please fill Full Name and Odoo ID for all members.");
       setLoading(false);
       return;
     }
@@ -236,11 +234,7 @@ function StudentDashboard() {
         supervisor: formData.supervisor,
         semester: formData.semester,
         fydp_phase: formData.fydp_phase,
-        members: formData.members.map(m => ({
-          ...m,
-          cgpa: parseFloat(m.cgpa),
-          earned_credit_hours: parseInt(m.earned_credit_hours)
-        }))
+        members: formData.members
       };
 
       const res = await api.post('/projects/groups/', payload);
@@ -595,10 +589,6 @@ function StudentDashboard() {
                     </div>
                     <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
                       <span>Odoo ID: {member.odoo_id || 'N/A'}</span>
-                      <span style={{ margin: '0 1rem' }}>|</span>
-                      <span>CGPA: {member.cgpa || 'N/A'}</span>
-                      <span style={{ margin: '0 1rem' }}>|</span>
-                      <span>Credits: {member.earned_credit_hours || 'N/A'}</span>
                     </div>
                   </div>
                 ))}
@@ -693,20 +683,6 @@ function StudentDashboard() {
                   <div className="form-group">
                     <label>Odoo ID *</label>
                     <input type="text" className="form-input" value={member.odoo_id} onChange={e => handleMemberChange(index, 'odoo_id', e.target.value)} placeholder="e.g., IU02-0322-0288" required />
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1rem' }}>
-                  <div className="form-group">
-                    <label>CGPA *</label>
-                    <input type="number" step="0.01" min="0" max="4" className="form-input" value={member.cgpa} onChange={e => handleMemberChange(index, 'cgpa', e.target.value)} placeholder="e.g., 3.50" required />
-                    <p className="form-note">Minimum: <strong>2.0</strong></p>
-                  </div>
-                  <div className="form-group">
-                    <label>Earned Credit Hours *</label>
-                    <input type="number" min="0" max="200" className="form-input" value={member.earned_credit_hours} onChange={e => handleMemberChange(index, 'earned_credit_hours', e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 100" required />
-                    <p className="form-note">
-                      {!member.earned_credit_hours ? 'Enter credits' : member.earned_credit_hours < 100 ? ' HOD approval needed' : '✓ Eligible'}
-                    </p>
                   </div>
                 </div>
               </div>
