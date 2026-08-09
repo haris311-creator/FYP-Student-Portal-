@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
+from django.conf import settings
 from .models import (
     EvaluationCriteria,
     SessionalEvaluation,
@@ -422,7 +423,7 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
         token = str(evaluation.evaluation_token)
         
         
-        frontend_url = "http://localhost:5173"
+        frontend_url = settings.FRONTEND_URL
         evaluation_link = f"{frontend_url}/evaluate/{token}"
         
         return Response({

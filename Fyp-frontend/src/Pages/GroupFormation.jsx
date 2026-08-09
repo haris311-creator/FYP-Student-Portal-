@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
+import { facultyAPI } from '../utils/api';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api'; 
 
 
-const API_BASE = 'http://localhost:8000/api/projects/';
 
 const GroupFormation = () => {
   const navigate = useNavigate();
@@ -115,12 +115,7 @@ const GroupFormation = () => {
         members: formData.members
       };
 
-      const res = await axios.post(`${API_BASE}groups/`, payload, {
-        headers: { 
-          Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const res = await api.post('/projects/groups/', payload);
 
       setSuccess("Group Registered Successfully! Redirecting...");
       setTimeout(() => navigate('/student-dashboard'), 2000);

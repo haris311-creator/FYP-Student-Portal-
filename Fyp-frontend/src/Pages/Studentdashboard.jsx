@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { facultyAPI } from '../utils/api';
 import api, { studentMeetingAPI, proposalAPI, reportAPI } from '../utils/api';
 import './Studentdashboard.css';
 
@@ -176,10 +177,7 @@ function StudentDashboard() {
   useEffect(() => {
     const fetchFaculty = async () => {
       try {
-        const token = localStorage.getItem('access_token');
-        const response = await axios.get('http://localhost:8000/api/projects/faculty/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const response = await facultyAPI.getAll();
         const data = response.data;
         setFacultyList(Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : []));
       } catch (err) {
@@ -357,7 +355,8 @@ function StudentDashboard() {
      
       let fullUrl = fileUrl;
       if (!fileUrl.startsWith('http')) {
-        fullUrl = `http://localhost:8000${fileUrl}`;
+        const mediaBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace('/api', '');
+        fullUrl = `${mediaBase}${fileUrl}`;
       }
       
     

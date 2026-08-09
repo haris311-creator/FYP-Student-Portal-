@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import api from '../utils/api';
 
 function AnnouncementTicker() {
   const [announcements, setAnnouncements] = useState([]);
@@ -9,7 +10,7 @@ function AnnouncementTicker() {
     const fetchAnnouncements = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:8000/api/projects/announcements/active/');
+        const response = await api.get('/projects/announcements/active/');
         setAnnouncements(response.data.results || []);
       } catch (err) {
         console.error('Error fetching announcements:', err);

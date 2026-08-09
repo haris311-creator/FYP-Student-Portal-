@@ -433,7 +433,8 @@ const handleReportReviewSubmit = async () => {
      
       let fullUrl = fileUrl;
       if (!fileUrl.startsWith('http')) {
-        fullUrl = `http://localhost:8000${fileUrl}`;
+        const mediaBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace('/api', '');
+        fullUrl = `${mediaBase}${fileUrl}`;
       }
 
      

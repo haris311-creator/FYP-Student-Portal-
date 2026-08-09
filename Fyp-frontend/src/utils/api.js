@@ -1,11 +1,12 @@
 // src/utils/api.js
 import axios from 'axios';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 // =============================================================================
 // 1. AXIOS INSTANCE CREATE KAREIN (Default Export)
 // =============================================================================
 const api = axios.create({
-  baseURL: 'http://localhost:8000/api',  // Django backend URL
+  baseURL: API_BASE_URL, 
   headers: {
     'Content-Type': 'application/json',
   },
@@ -35,7 +36,7 @@ api.interceptors.response.use(
       
       try {
         const refreshToken = localStorage.getItem('refresh_token');
-        const response = await axios.post('http://localhost:8000/api/token/refresh/', {
+        const response = await axios.post(`${API_BASE_URL}/token/refresh/`, {
           refresh: refreshToken
         });
         
@@ -71,7 +72,7 @@ export default api;
  */
 export const loginAPI = async (email, password) => {
   try {
-    const response = await fetch('http://localhost:8000/api/auth/login/', {
+    const response = await fetch(`${API_BASE_URL}/auth/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -308,11 +309,10 @@ export const evaluationAPI = {
   
   // Public Evaluation (no auth)
   getPublicEvaluation: (token) => 
-    axios.get(`http://localhost:8000/api/evaluations/public/presentation/${token}/`),
+    axios.get(`${API_BASE_URL}/evaluations/public/presentation/${token}/`),
   
   submitPublicEvaluation: (token, data) => 
-    axios.post(`http://localhost:8000/api/evaluations/public/presentation/${token}/`, data),
-
+    axios.post(`${API_BASE_URL}/evaluations/public/presentation/${token}/`, data),
   
   // Final Results
   calculateFinalMarks: (groupId) => api.post('/evaluations/final-results/calculate/', { group_id: groupId }),
