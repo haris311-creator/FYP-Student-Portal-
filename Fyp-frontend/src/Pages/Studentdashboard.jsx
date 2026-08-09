@@ -721,7 +721,7 @@ const renderProjectProgress = () => {
       {/* Status Cards - 5 cards ab */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         {/* Current Phase */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Current Phase
           </p>
@@ -731,7 +731,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Idea Pitch Status */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Idea Pitch
           </p>
@@ -741,7 +741,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Proposal Status */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Proposal
           </p>
@@ -751,7 +751,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Report Status */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Report
           </p>
@@ -761,7 +761,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Meetings Conducted */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Meetings
           </p>
