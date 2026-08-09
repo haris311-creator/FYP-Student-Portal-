@@ -319,7 +319,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
       </div>
 
       {/* Group Info */}
-      <div className="pef-info-table">
+      <div className="pef-info-table pef-info-scroll">
         <table>
           <tbody>
             <tr>

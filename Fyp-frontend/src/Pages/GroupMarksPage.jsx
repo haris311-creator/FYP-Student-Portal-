@@ -278,7 +278,7 @@ const GroupMarksPage = ({ group, onBack }) => {
               <h3>Presentation</h3>
               <p className="gmp-card-sub">Weightage: 40 marks &middot; Committee Evaluation</p>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="gmp-header-actions" style={{ display: 'flex', gap: '10px' }}>
               {presentationData && presentationData.count > 0 && (
                 <button 
                   className="gmp-evaluate-btn" 

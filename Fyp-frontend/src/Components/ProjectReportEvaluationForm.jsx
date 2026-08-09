@@ -227,18 +227,20 @@ if (submitted) {
           )}
         </div>
         
-        <button 
-          className="mlm-submit-btn" 
-          onClick={() => {
-            setSubmitted(false);
-            setExistingEvaluation(null);
-          }}
-        >
-          Re-evaluate
-        </button>
-        <button className="mlm-cancel-btn" onClick={onClose} style={{ marginLeft: '10px' }}>
-          Back to Group
-        </button>
+        <div className="pref-reeval-actions">
+          <button
+            className="pref-reeval-btn"
+            onClick={() => {
+              setSubmitted(false);
+              setExistingEvaluation(null);
+            }}
+          >
+            Re-evaluate
+          </button>
+          <button className="pref-reeval-btn pref-reeval-btn-ghost" onClick={onClose}>
+            Back to Group
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -258,7 +260,7 @@ if (submitted) {
       </div>
 
       {/* Group Info */}
-      <div className="pref-info-table">
+      <div className="pref-info-table pref-info-scroll">
         <table>
           <tbody>
             <tr>

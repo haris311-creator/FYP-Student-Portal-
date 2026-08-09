@@ -364,6 +364,27 @@
   .pef-header { flex-direction: column; gap: 12px; }
   .pef-rubric-btn { margin-left: 0; width: 100%; }
   .pef-info-label { width: 120px; }
+  .pef-info-scroll table,
+  .pef-info-scroll tbody,
+  .pef-info-scroll tr {
+    display: block;
+    width: 100%;
+  }
+  .pef-info-scroll td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .pef-info-scroll .pef-info-label {
+    border-right: none;
+    border-bottom: none;
+    padding: 10px 16px 4px;
+  }
+  .pef-info-scroll .pef-info-value {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 2px 16px 10px;
+  }
   .pef-actions { flex-direction: column; }
   .pef-submit-btn, .pef-cancel-btn, .pef-print-btn { width: 100%; }
 }
