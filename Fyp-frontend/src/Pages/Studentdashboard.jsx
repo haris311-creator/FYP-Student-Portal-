@@ -840,6 +840,93 @@ const renderProjectProgress = () => {
   );
 };
 
+  // Render Remarks & Feedback
+  const renderRemarks = () => {
+    const remarks = [];
+
+    if (existingGroup?.rejection_reason) {
+      remarks.push({
+        id: 'group-rejection',
+        type: 'danger',
+        source: 'Admin',
+        title: 'Group Registration Feedback',
+        text: existingGroup.rejection_reason,
+      });
+    }
+    if (proposalData?.supervisor_remarks) {
+      remarks.push({
+        id: 'proposal-supervisor',
+        type: 'supervisor',
+        source: 'Supervisor',
+        title: 'Proposal Remarks',
+        text: proposalData.supervisor_remarks,
+      });
+    }
+    if (proposalData?.admin_remarks) {
+      remarks.push({
+        id: 'proposal-admin',
+        type: 'admin',
+        source: 'Admin',
+        title: 'Proposal Feedback',
+        text: proposalData.admin_remarks,
+      });
+    }
+    if (reportData?.supervisor_remarks) {
+      remarks.push({
+        id: 'report-supervisor',
+        type: 'supervisor',
+        source: 'Supervisor',
+        title: 'Project Report Remarks',
+        text: reportData.supervisor_remarks,
+      });
+    }
+    if (reportData?.admin_remarks) {
+      remarks.push({
+        id: 'report-admin',
+        type: 'admin',
+        source: 'Admin',
+        title: 'Project Report Feedback',
+        text: reportData.admin_remarks,
+      });
+    }
+    if (myMeetingsData?.current_task) {
+      remarks.push({
+        id: 'current-task',
+        type: 'task',
+        source: 'Supervisor',
+        title: 'Current Task',
+        text: myMeetingsData.current_task,
+      });
+    }
+
+    return (
+      <div className="content-area">
+        <h2>Remarks & Feedback</h2>
+
+        {remarks.length === 0 ? (
+          <div className="status-card">
+            <h3 style={{ margin: '0 0 0.5rem 0' }}>No Remarks Yet</h3>
+            <p style={{ margin: 0 }}>
+              Comments and feedback from your supervisor and admin will appear here once they review your work.
+            </p>
+          </div>
+        ) : (
+          <div className="remarks-list">
+            {remarks.map((r) => (
+              <div key={r.id} className={`remark-card remark-${r.type}`}>
+                <div className="remark-header">
+                  <span className={`remark-badge remark-badge-${r.type}`}>{r.source}</span>
+                  <span className="remark-title">{r.title}</span>
+                </div>
+                <p className="remark-text">{r.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderMaterials = () => {
     const materials = [
       {
@@ -1365,6 +1452,7 @@ const renderProjectProgress = () => {
           <button className={`nav-btn ${activeTab === 'proposal' ? 'active' : ''}`} onClick={() => { setActiveTab('proposal'); setMenuOpen(false); }}> Project Proposal</button>
           <button className={`nav-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => { setActiveTab('report'); setMenuOpen(false); }}> Project Report</button>
           <button className={`nav-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); setMenuOpen(false); }}> Meeting Logs & Attendance</button>
+          <button className={`nav-btn ${activeTab === 'remarks' ? 'active' : ''}`} onClick={() => { setActiveTab('remarks'); setMenuOpen(false); }}> Remarks & Feedback</button>
           <button className={`nav-btn ${activeTab === 'materials' ? 'active' : ''}`} onClick={() => { setActiveTab('materials'); setMenuOpen(false); }}> Materials & Downloads</button>
         </nav>
       </aside>
@@ -1379,6 +1467,7 @@ const renderProjectProgress = () => {
         {activeTab === 'proposal' && renderProposal()}
         {activeTab === 'report' && renderProjectReport()}
         {activeTab === 'logs' && renderMeetingLogs()}
+        {activeTab === 'remarks' && renderRemarks()}
         {activeTab === 'progress' && renderProjectProgress()} 
         {activeTab === 'materials' && renderMaterials()}
       </main>

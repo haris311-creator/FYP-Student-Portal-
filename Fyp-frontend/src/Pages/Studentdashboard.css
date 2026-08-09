@@ -740,6 +740,81 @@
 
 
 /* =========================================
+   14.1 REMARKS & FEEDBACK SECTION
+   ========================================= */
+.remarks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.remark-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #64748b;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.remark-supervisor { border-left-color: #1e40af; }
+.remark-admin { border-left-color: #7c3aed; }
+.remark-danger { border-left-color: #ef4444; background: #fef2f2; }
+.remark-task { border-left-color: #15803d; }
+
+.remark-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.remark-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.remark-badge-supervisor { background: #eff6ff; color: #1e40af; }
+.remark-badge-admin { background: #f3e8ff; color: #6b21a8; }
+.remark-badge-danger { background: #fee2e2; color: #b91c1c; }
+.remark-badge-task { background: #dcfce7; color: #15803d; }
+
+.remark-title {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.remark-text {
+  margin: 0;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-style: italic;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 400px) {
+  .remark-card {
+    padding: 1rem;
+  }
+
+  .remark-header {
+    flex-wrap: wrap;
+  }
+
+  .remark-text {
+    font-size: 0.9rem;
+  }
+}
+
+/* =========================================
    15. ULTRA SMALL SCREENS (320px - 400px)
    ========================================= */
 @media (max-width: 400px) {
