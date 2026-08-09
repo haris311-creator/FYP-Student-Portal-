@@ -31,8 +31,6 @@ function StudentDashboard() {
         full_name: '',
         odoo_id: '',
         role: 'lead',
-        cgpa: '',
-        earned_credit_hours: '',
       }
     ]
   });
@@ -200,7 +198,7 @@ function StudentDashboard() {
         ...formData,
         members: [
           ...formData.members,
-          { full_name: '', odoo_id: '', role: 'member', cgpa: '', earned_credit_hours: '' }
+          { full_name: '', odoo_id: '', role: 'member' }
         ]
       });
     }
@@ -220,9 +218,9 @@ function StudentDashboard() {
     setError('');
     setSuccess('');
 
-    const isValid = formData.members.every(m => m.full_name && m.odoo_id && m.cgpa && m.earned_credit_hours);
+    const isValid = formData.members.every(m => m.full_name && m.odoo_id);
     if (!isValid) {
-      setError("Please fill Full Name, Odoo ID, CGPA, and Credit Hours for all members.");
+      setError("Please fill Full Name and Odoo ID for all members.");
       setLoading(false);
       return;
     }
@@ -234,11 +232,7 @@ function StudentDashboard() {
         supervisor: formData.supervisor,
         semester: formData.semester,
         fydp_phase: formData.fydp_phase,
-        members: formData.members.map(m => ({
-          ...m,
-          cgpa: parseFloat(m.cgpa),
-          earned_credit_hours: parseInt(m.earned_credit_hours)
-        }))
+        members: formData.members
       };
 
       const res = await api.post('/projects/groups/', payload);
@@ -594,10 +588,6 @@ function StudentDashboard() {
                     </div>
                     <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
                       <span>Odoo ID: {member.odoo_id || 'N/A'}</span>
-                      <span style={{ margin: '0 1rem' }}>|</span>
-                      <span>CGPA: {member.cgpa || 'N/A'}</span>
-                      <span style={{ margin: '0 1rem' }}>|</span>
-                      <span>Credits: {member.earned_credit_hours || 'N/A'}</span>
                     </div>
                   </div>
                 ))}
@@ -694,20 +684,6 @@ function StudentDashboard() {
                     <input type="text" className="form-input" value={member.odoo_id} onChange={e => handleMemberChange(index, 'odoo_id', e.target.value)} placeholder="e.g., IU02-0322-0288" required />
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '1rem' }}>
-                  <div className="form-group">
-                    <label>CGPA *</label>
-                    <input type="number" step="0.01" min="0" max="4" className="form-input" value={member.cgpa} onChange={e => handleMemberChange(index, 'cgpa', e.target.value)} placeholder="e.g., 3.50" required />
-                    <p className="form-note">Minimum: <strong>2.0</strong></p>
-                  </div>
-                  <div className="form-group">
-                    <label>Earned Credit Hours *</label>
-                    <input type="number" min="0" max="200" className="form-input" value={member.earned_credit_hours} onChange={e => handleMemberChange(index, 'earned_credit_hours', e.target.value === '' ? '' : Number(e.target.value))} placeholder="e.g., 100" required />
-                    <p className="form-note">
-                      {!member.earned_credit_hours ? 'Enter credits' : member.earned_credit_hours < 100 ? ' HOD approval needed' : '✓ Eligible'}
-                    </p>
-                  </div>
-                </div>
               </div>
             ))}
             {formData.members.length < 3 && (<button type="button" className="btn-add" onClick={addMember}>+ Add Member ({formData.members.length}/3)</button>)}
@@ -744,7 +720,7 @@ const renderProjectProgress = () => {
       {/* Status Cards - 5 cards ab */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         {/* Current Phase */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Current Phase
           </p>
@@ -754,7 +730,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Idea Pitch Status */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Idea Pitch
           </p>
@@ -764,7 +740,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Proposal Status */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Proposal
           </p>
@@ -774,7 +750,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Report Status */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Report
           </p>
@@ -784,7 +760,7 @@ const renderProjectProgress = () => {
         </div>
         
         {/* Meetings Conducted */}
-        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px'}}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Meetings
           </p>
@@ -862,6 +838,93 @@ const renderProjectProgress = () => {
     </div>
   );
 };
+
+  // Render Remarks & Feedback
+  const renderRemarks = () => {
+    const remarks = [];
+
+    if (existingGroup?.rejection_reason) {
+      remarks.push({
+        id: 'group-rejection',
+        type: 'danger',
+        source: 'Admin',
+        title: 'Group Registration Feedback',
+        text: existingGroup.rejection_reason,
+      });
+    }
+    if (proposalData?.supervisor_remarks) {
+      remarks.push({
+        id: 'proposal-supervisor',
+        type: 'supervisor',
+        source: 'Supervisor',
+        title: 'Proposal Remarks',
+        text: proposalData.supervisor_remarks,
+      });
+    }
+    if (proposalData?.admin_remarks) {
+      remarks.push({
+        id: 'proposal-admin',
+        type: 'admin',
+        source: 'Admin',
+        title: 'Proposal Feedback',
+        text: proposalData.admin_remarks,
+      });
+    }
+    if (reportData?.supervisor_remarks) {
+      remarks.push({
+        id: 'report-supervisor',
+        type: 'supervisor',
+        source: 'Supervisor',
+        title: 'Project Report Remarks',
+        text: reportData.supervisor_remarks,
+      });
+    }
+    if (reportData?.admin_remarks) {
+      remarks.push({
+        id: 'report-admin',
+        type: 'admin',
+        source: 'Admin',
+        title: 'Project Report Feedback',
+        text: reportData.admin_remarks,
+      });
+    }
+    if (myMeetingsData?.current_task) {
+      remarks.push({
+        id: 'current-task',
+        type: 'task',
+        source: 'Supervisor',
+        title: 'Current Task',
+        text: myMeetingsData.current_task,
+      });
+    }
+
+    return (
+      <div className="content-area">
+        <h2>Remarks & Feedback</h2>
+
+        {remarks.length === 0 ? (
+          <div className="status-card">
+            <h3 style={{ margin: '0 0 0.5rem 0' }}>No Remarks Yet</h3>
+            <p style={{ margin: 0 }}>
+              Comments and feedback from your supervisor and admin will appear here once they review your work.
+            </p>
+          </div>
+        ) : (
+          <div className="remarks-list">
+            {remarks.map((r) => (
+              <div key={r.id} className={`remark-card remark-${r.type}`}>
+                <div className="remark-header">
+                  <span className={`remark-badge remark-badge-${r.type}`}>{r.source}</span>
+                  <span className="remark-title">{r.title}</span>
+                </div>
+                <p className="remark-text">{r.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderMaterials = () => {
     const materials = [
@@ -1388,6 +1451,7 @@ const renderProjectProgress = () => {
           <button className={`nav-btn ${activeTab === 'proposal' ? 'active' : ''}`} onClick={() => { setActiveTab('proposal'); setMenuOpen(false); }}> Project Proposal</button>
           <button className={`nav-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => { setActiveTab('report'); setMenuOpen(false); }}> Project Report</button>
           <button className={`nav-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => { setActiveTab('logs'); setMenuOpen(false); }}> Meeting Logs & Attendance</button>
+          <button className={`nav-btn ${activeTab === 'remarks' ? 'active' : ''}`} onClick={() => { setActiveTab('remarks'); setMenuOpen(false); }}> Remarks & Feedback</button>
           <button className={`nav-btn ${activeTab === 'materials' ? 'active' : ''}`} onClick={() => { setActiveTab('materials'); setMenuOpen(false); }}> Materials & Downloads</button>
         </nav>
       </aside>
@@ -1402,6 +1466,7 @@ const renderProjectProgress = () => {
         {activeTab === 'proposal' && renderProposal()}
         {activeTab === 'report' && renderProjectReport()}
         {activeTab === 'logs' && renderMeetingLogs()}
+        {activeTab === 'remarks' && renderRemarks()}
         {activeTab === 'progress' && renderProjectProgress()} 
         {activeTab === 'materials' && renderMaterials()}
       </main>

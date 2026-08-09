@@ -226,10 +226,16 @@
 }
 
 @media (max-width: 768px) {
+  .alt-print-area {
+    padding: 12px;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
   .alt-page {
     padding: 20px;
+    min-width: 620px;
   }
   .alt-table {
-    font-size: 9px;
+    font-size: 10px;
   }
 }

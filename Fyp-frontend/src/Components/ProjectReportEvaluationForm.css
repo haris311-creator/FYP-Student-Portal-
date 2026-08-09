@@ -358,14 +358,73 @@
   margin: 0;
 }
 
+.pref-reeval-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.pref-reeval-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+
+.pref-reeval-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
+.pref-reeval-btn-ghost {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .pref-container { padding: 16px; }
   .pref-header { flex-direction: column; gap: 12px; }
   .pref-rubric-btn { margin-left: 0; width: 100%; }
   .pref-info-label { width: 120px; }
+  .pref-info-scroll table,
+  .pref-info-scroll tbody,
+  .pref-info-scroll tr {
+    display: block;
+    width: 100%;
+  }
+  .pref-info-scroll td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .pref-info-scroll .pref-info-label {
+    border-right: none;
+    border-bottom: none;
+    padding: 10px 16px 4px;
+  }
+  .pref-info-scroll .pref-info-value {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 2px 16px 10px;
+  }
   .pref-actions { flex-direction: column; }
   .pref-submit-btn, .pref-cancel-btn { width: 100%; }
+  .pref-reeval-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pref-reeval-btn {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 .pref-final-row td {

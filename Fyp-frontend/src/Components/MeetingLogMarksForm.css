@@ -191,6 +191,13 @@
   margin-top: 20px;
 }
 
+.mlm-reeval-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 .mlm-submit-btn {
   background: #1e3a8a;
   color: white;
@@ -267,6 +274,35 @@
 @media (max-width: 768px) {
   .mlm-container { padding: 16px; }
   .mlm-info-label { width: 120px; }
+  .mlm-info-scroll table,
+  .mlm-info-scroll tbody,
+  .mlm-info-scroll tr {
+    display: block;
+    width: 100%;
+  }
+  .mlm-info-scroll td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .mlm-info-scroll .mlm-info-label {
+    border-right: none;
+    border-bottom: none;
+    padding: 10px 16px 4px;
+  }
+  .mlm-info-scroll .mlm-info-value {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 2px 16px 10px;
+  }
   .mlm-actions { flex-direction: column; }
   .mlm-submit-btn, .mlm-cancel-btn { width: 100%; }
+  .mlm-reeval-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mlm-reeval-actions .mlm-submit-btn,
+  .mlm-reeval-actions .mlm-cancel-btn {
+    width: 100%;
+  }
 }

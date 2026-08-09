@@ -181,18 +181,20 @@ const MeetingLogMarksForm = ({ group, onClose }) => {
             </div>
           </div>
           
-          <button 
-            className="mlm-submit-btn" 
-            onClick={() => {
-              setSubmitted(false);
-              setExistingEvaluation(null);
-            }}
-          >
-            Re-evaluate
-          </button>
-          <button className="mlm-cancel-btn" onClick={onClose} style={{ marginLeft: '10px' }}>
-            Back to Group
-          </button>
+          <div className="mlm-reeval-actions">
+            <button
+              className="mlm-submit-btn"
+              onClick={() => {
+                setSubmitted(false);
+                setExistingEvaluation(null);
+              }}
+            >
+              Re-evaluate
+            </button>
+            <button className="mlm-cancel-btn" onClick={onClose}>
+              Back to Group
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -209,7 +211,7 @@ const MeetingLogMarksForm = ({ group, onClose }) => {
       </div>
 
       {/* Group Info */}
-      <div className="mlm-info-table">
+      <div className="mlm-info-table mlm-info-scroll">
         <table>
           <tbody>
             <tr>
