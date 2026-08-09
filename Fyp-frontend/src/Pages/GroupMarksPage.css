@@ -148,4 +148,9 @@
   .gmp-container { padding: 16px; }
   .gmp-card-header { flex-direction: column; align-items: flex-start; }
   .gmp-evaluate-btn { width: 100%; }
+  .gmp-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
 }
