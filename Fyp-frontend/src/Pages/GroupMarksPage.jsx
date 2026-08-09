@@ -3,6 +3,7 @@ import PresentationEvaluationForm from '../Components/PresentationEvaluationForm
 import PresentationPrint from '../Components/PresentationPrint';
 import ProjectReportEvaluationForm from '../Components/ProjectReportEvaluationForm';
 import MeetingLogMarksForm from '../Components/MeetingLogMarksForm';
+import TitleDefenseEvaluationForm from '../Components/TitleDefenseEvaluationForm';
 import AwardListTemplate from '../Components/AwardListTemplate';
 import { evaluationAPI } from '../utils/api';
 import { toast } from 'react-toastify';
@@ -217,6 +218,22 @@ const GroupMarksPage = ({ group, onBack }) => {
     );
   }
 
+  if (view === 'titleDefense') {
+    return (
+      <div className="gmp-container">
+        <button className="gmp-back-btn" onClick={() => setView('main')}>
+          &larr; Back to Group
+        </button>
+        <div style={{ margin: '-24px' }}>
+          <TitleDefenseEvaluationForm
+            group={group}
+            onClose={() => setView('main')}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="gmp-container">
       <div className="gmp-header">
@@ -255,6 +272,19 @@ const GroupMarksPage = ({ group, onBack }) => {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Title Defense */}
+        <div className="gmp-card">
+          <div className="gmp-card-header">
+            <div>
+              <h3>Title Defense</h3>
+              <p className="gmp-card-sub">Weightage: 10 marks &middot; Committee Evaluation</p>
+            </div>
+            <button className="gmp-evaluate-btn" onClick={() => setView('titleDefense')}>
+              Evaluate
+            </button>
           </div>
         </div>
 
