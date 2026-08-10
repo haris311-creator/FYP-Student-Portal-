@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { toast } from 'react-toastify';
-import { presentationCriteria, vivaCriteria } from './rubricData/presentationCriteria';
+import { presentationCriteria, vivaCriteria } from '../data/presentationCriteria';
 import './PresentationPrint.css';
 
 const getLevel = (selections, idx, marks, criteria) => {

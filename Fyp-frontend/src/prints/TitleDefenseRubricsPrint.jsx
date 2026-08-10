@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
-import { downloadNodeAsPdf } from './printUtils';
+import { downloadNodeAsPdf } from '../utils/printUtils';
 import './SupervisorPrintBase.css';
 import './TitleDefenseRubricsPrint.css';
 

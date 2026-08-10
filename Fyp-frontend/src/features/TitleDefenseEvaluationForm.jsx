@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { titleDefenseCriteria } from './titleDefenseRubricData';
-import TitleDefenseRubricsPrint from './TitleDefenseRubricsPrint';
+import { titleDefenseCriteria } from '../data/titleDefenseRubricData';
+import TitleDefenseRubricsPrint from '../prints/TitleDefenseRubricsPrint';
 import './TitleDefenseEvaluationForm.css';
 
 const EVALUATORS = [

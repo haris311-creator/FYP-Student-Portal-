@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
-import PresentationPrint from '../Components/PresentationPrint';
-import ProjectReportEvaluationForm from '../Components/ProjectReportEvaluationForm';
-import MeetingLogMarksForm from '../Components/MeetingLogMarksForm';
-import TitleDefenseEvaluationForm from '../Components/TitleDefenseEvaluationForm';
-import AwardListTemplate from '../Components/AwardListTemplate';
+import PresentationEvaluationForm from '../features/PresentationEvaluationForm';
+import PresentationPrint from '../prints/PresentationPrint';
+import ProjectReportEvaluationForm from '../features/ProjectReportEvaluationForm';
+import MeetingLogMarksForm from '../features/MeetingLogMarksForm';
+import TitleDefenseEvaluationForm from '../features/TitleDefenseEvaluationForm';
+import AwardListTemplate from '../prints/AwardListTemplate';
 import { evaluationAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import './GroupMarksPage.css';
