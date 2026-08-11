@@ -1,11 +1,11 @@
-.alt-wrapper {
+.tal-wrapper {
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   overflow: hidden;
 }
 
-.alt-toolbar {
+.tal-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -14,14 +14,14 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.alt-toolbar-title {
+.tal-toolbar-title {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
   color: #1e3a8a;
 }
 
-.alt-download-btn {
+.tal-download-btn {
   background: #1e3a8a;
   color: white;
   border: none;
@@ -34,19 +34,19 @@
   transition: all 0.2s;
 }
 
-.alt-download-btn:hover {
+.tal-download-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.alt-print-area {
+.tal-print-area {
   padding: 24px;
   background: #e5e7eb;
   display: flex;
   justify-content: center;
 }
 
-.alt-page {
+.tal-page {
   background: white;
   width: 100%;
   max-width: 800px;
@@ -56,59 +56,33 @@
   color: #000;
 }
 
-.alt-doc-header {
+.tal-doc-header {
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 18px;
 }
 
-.alt-uni-name {
-  font-size: 17px;
-  font-weight: 700;
-  margin: 2px 0 0;
+.tal-logo-wrap {
+  justify-self: center;
 }
 
-.alt-faculty {
-  font-size: 15px;
-  margin: 2px 0;
-}
-
-.alt-dept-line {
-  font-size: 14px;
-  margin: 4px 0 0;
-}
-
-.alt-batch-line {
-  font-size: 14px;
-  margin: 6px 0 0;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.alt-fixed-fill {
-  display: inline-block;
-  min-width: 77px;
-  padding: 0 4px 1px;
-  text-align: center;
-}
-.gc-logo{
-    justify-self: center;
-}
-.alt-header-top {
+.tal-header-top {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   margin-bottom: 2px;
 }
-.alt-header-spacer {
+
+.tal-header-spacer {
   width: 1px;
 }
-.alt-logo {
+
+.tal-logo {
   width: min(190px, 34vw);
   height: auto;
   display: block;
 }
 
-.alt-award-tag {
+.tal-award-tag {
   justify-self: end;
   border: 1px solid #000;
   padding: 6px 18px;
@@ -116,7 +90,38 @@
   font-weight: 700;
   background: white;
 }
-.alt-header-input {
+
+.tal-uni-name {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.tal-faculty {
+  font-size: 15px;
+  margin: 2px 0;
+}
+
+.tal-dept-line {
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+.tal-batch-line {
+  font-size: 14px;
+  margin: 6px 0 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tal-fixed-fill {
+  display: inline-block;
+  min-width: 77px;
+  padding: 0 4px 1px;
+  text-align: center;
+}
+
+.tal-header-input {
   border: none;
   outline: none;
   -webkit-appearance: none;
@@ -130,26 +135,22 @@
   background: transparent;
 }
 
-.alt-header-input-short {
+.tal-header-input-short {
   width: 40px;
 }
 
-.alt-header-input[type="date"] {
-  width: 108px;
-}
-
-.alt-header-input:focus {
+.tal-header-input:focus {
   background: #fffbea;
 }
 
-.alt-doc-title {
+.tal-doc-title {
   font-size: 14px;
   font-weight: 700;
   margin: 14px 0 0;
- 
+  text-decoration: underline;
 }
 
-.alt-title-row {
+.tal-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -157,12 +158,12 @@
   font-size: 14px;
 }
 
-.alt-title-label {
+.tal-title-label {
   font-weight: 700;
   white-space: nowrap;
 }
 
-.alt-title-input {
+.tal-title-input {
   flex: 1;
   border: none;
   border-bottom: 1px solid #000;
@@ -173,41 +174,41 @@
   background: transparent;
 }
 
-.alt-title-input:focus {
+.tal-title-input:focus {
   background: #fffbea;
 }
 
-.alt-table {
+.tal-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   table-layout: fixed;
 }
 
-.alt-table th, .alt-table td {
+.tal-table th, .tal-table td {
   border: 1px solid #000;
   padding: 8px 4px;
   text-align: center;
 }
 
-.alt-table th {
+.tal-table th {
   font-weight: 700;
   background: #f1f5f9;
 }
 
-.alt-name-cell {
+.tal-name-cell {
   text-align: left !important;
 }
 
-.alt-center {
+.tal-center {
   text-align: center;
 }
 
-.alt-input-cell {
+.tal-input-cell {
   padding: 0 !important;
 }
 
-.alt-cell-input {
+.tal-cell-input {
   width: 100%;
   height: 100%;
   min-height: 38px;
@@ -221,21 +222,21 @@
   box-sizing: border-box;
 }
 
-.alt-cell-input:focus {
+.tal-cell-input:focus {
   background: #fffbea;
 }
 
 @media (max-width: 768px) {
-  .alt-print-area {
+  .tal-print-area {
     padding: 12px;
     overflow-x: auto;
     justify-content: flex-start;
   }
-  .alt-page {
+  .tal-page {
     padding: 20px;
     min-width: 620px;
   }
-  .alt-table {
+  .tal-table {
     font-size: 10px;
   }
 }

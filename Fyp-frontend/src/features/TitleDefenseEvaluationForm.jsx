@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { evaluationAPI } from '../utils/api';
 import { titleDefenseCriteria } from '../data/titleDefenseRubricData';
 import TitleDefenseRubricsPrint from '../prints/TitleDefenseRubricsPrint';
 import './TitleDefenseEvaluationForm.css';
@@ -23,6 +24,13 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
   const [submitted, setSubmitted] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
 
+  const [linkToken, setLinkToken] = useState('');
+  const [linkGenerated, setLinkGenerated] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [status, setStatus] = useState(null);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+
   const [evaluatorData, setEvaluatorData] = useState(
     Object.fromEntries(EVALUATORS.map((e) => [e.key, initEvaluatorState()]))
   );
@@ -34,6 +42,51 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
       ...prev,
       [activeEvaluator]: { ...prev[activeEvaluator], ...patch }
     }));
+  };
+
+  const buildEvalLink = (token) => `${window.location.origin}/evaluate/title-defense/${token}`;
+
+  const handleGenerateLink = async () => {
+    setGeneratingLink(true);
+    setLinkCopied(false);
+    try {
+      const res = await evaluationAPI.createTitleDefenseSession(group?.id);
+      const token = res?.data?.token || res?.data?.evaluation_token;
+      if (token) {
+        setLinkToken(token);
+        setLinkGenerated(true);
+        toast.success('Evaluation link generated. Share it with the committee members.');
+        fetchStatus();
+      }
+    } catch (err) {
+      // backend not connected yet; silently ignore
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    const link = buildEvalLink(linkToken);
+    navigator.clipboard?.writeText(link);
+    setLinkCopied(true);
+    toast.success('Link copied to clipboard.');
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const fetchStatus = async () => {
+    setLoadingStatus(true);
+    try {
+      const res = await evaluationAPI.getTitleDefenseStatus(group?.id);
+      setStatus(res?.data || null);
+    } catch (err) {
+      setStatus(null);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
+  const handleOpenLink = () => {
+    window.open(buildEvalLink(linkToken), '_blank');
   };
 
   const handleRadio = (cIdx, value) => {
@@ -167,6 +220,58 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* Evaluation Committee Link */}
+      <div className="tdf-section">
+        <h3 className="tdf-section-title">Evaluation Committee Link (5%)</h3>
+
+        {!linkGenerated ? (
+          <button
+            className="tdf-link-btn"
+            onClick={handleGenerateLink}
+            disabled={generatingLink}
+          >
+            {generatingLink ? 'Generating...' : 'Generate Evaluation Link'}
+          </button>
+        ) : (
+          <div className="tdf-link-panel">
+            <div className="tdf-link-row">
+              <input
+                type="text"
+                readOnly
+                className="tdf-link-input"
+                value={buildEvalLink(linkToken)}
+                onFocus={(e) => e.target.select()}
+              />
+              <button className="tdf-copy-btn" onClick={handleCopyLink}>
+                {linkCopied ? 'Copied!' : 'Copy'}
+              </button>
+              <button className="tdf-open-btn" onClick={handleOpenLink}>Open</button>
+            </div>
+            <div className="tdf-link-status">
+              {loadingStatus ? (
+                'Loading status...'
+              ) : status ? (
+                <>
+                  <strong>{status.submitted || 0} / {status.total || 0}</strong> committee members submitted
+                </>
+              ) : (
+                'Status not available'
+              )}
+              <button
+                className="tdf-refresh-btn"
+                onClick={fetchStatus}
+                disabled={loadingStatus}
+              >
+                Refresh
+              </button>
+            </div>
+            <button className="tdf-link-regenerate" onClick={handleGenerateLink} disabled={generatingLink}>
+              Regenerate Link
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Rubric Reference — full descriptions, hidden by default */}

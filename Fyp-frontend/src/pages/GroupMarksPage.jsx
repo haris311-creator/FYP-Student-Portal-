@@ -5,6 +5,7 @@ import ProjectReportEvaluationForm from '../features/ProjectReportEvaluationForm
 import MeetingLogMarksForm from '../features/MeetingLogMarksForm';
 import TitleDefenseEvaluationForm from '../features/TitleDefenseEvaluationForm';
 import AwardListTemplate from '../prints/AwardListTemplate';
+import TitleDefenseAwardList from '../prints/TitleDefenseAwardList';
 import { evaluationAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import './GroupMarksPage.css';
@@ -342,6 +343,7 @@ const GroupMarksPage = ({ group, onBack }) => {
 
       {/* Award List */}
       <div className="gmp-award-section">
+        <TitleDefenseAwardList group={group} />
         <AwardListTemplate group={group} />
       </div>
 
