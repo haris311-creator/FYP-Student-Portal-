@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { facultyAPI } from '../utils/api';
-import api, { studentMeetingAPI, proposalAPI, reportAPI } from '../utils/api';
+import api, { studentMeetingAPI, proposalAPI, reportAPI, evaluationAPI, deadlineAPI  } from '../utils/api';
 import './Studentdashboard.css';
 
 function StudentDashboard() {
@@ -19,6 +19,12 @@ function StudentDashboard() {
   const [reportFile, setReportFile] = useState(null);
   const [uploadingReport, setUploadingReport] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
+  const [sessionalEvalData, setSessionalEvalData] = useState(null);
+  const [proposalDeadline, setProposalDeadline] = useState(null);
+  const [reportDeadline, setReportDeadline] = useState(null);
+  const [meetingLogEvalData, setMeetingLogEvalData] = useState(null);
+  const [reportEvalData, setReportEvalData] = useState(null);
+  const [presentationEvalData, setPresentationEvalData] = useState(null);
     
   const [formData, setFormData] = useState({
     project_title: '',
@@ -171,6 +177,47 @@ function StudentDashboard() {
   fetchReport();
 }, [existingGroup]);
 
+
+
+  useEffect(() => {
+  const fetchEvaluations = async () => {
+    if (!existingGroup?.id) return;
+    try {
+      const [sessional, meetingLog, reportEval, presentation] = await Promise.all([
+        evaluationAPI.getSessionalByGroup(existingGroup.id).catch(() => null),
+        evaluationAPI.getMeetingLogByGroup(existingGroup.id).catch(() => null),
+        evaluationAPI.getReportByGroup(existingGroup.id).catch(() => null),
+        evaluationAPI.getPresentationByGroup(existingGroup.id).catch(() => null),
+      ]);
+      const pick = (res) => res?.data?.results?.[0] || res?.data?.[0] || null;
+      setSessionalEvalData(pick(sessional));
+      setMeetingLogEvalData(pick(meetingLog));
+      setReportEvalData(pick(reportEval));
+      setPresentationEvalData(pick(presentation));
+    } catch (err) {
+      console.error("Error fetching evaluations:", err);
+    }
+  };
+  fetchEvaluations();
+}, [existingGroup?.id]);
+
+useEffect(() => {
+  const fetchDeadlines = async () => {
+    if (!existingGroup?.semester || !existingGroup?.fydp_phase) return;
+    try {
+      const [propRes, repRes] = await Promise.all([
+        deadlineAPI.getCurrent(existingGroup.semester, existingGroup.fydp_phase, 'proposal').catch(() => null),
+        deadlineAPI.getCurrent(existingGroup.semester, existingGroup.fydp_phase, 'report').catch(() => null),
+      ]);
+      setProposalDeadline(propRes?.data?.deadline_date ? propRes.data : null);
+      setReportDeadline(repRes?.data?.deadline_date ? repRes.data : null);
+    } catch (err) {
+      console.error("Error fetching deadlines:", err);
+    }
+  };
+  fetchDeadlines();
+}, [existingGroup?.semester, existingGroup?.fydp_phase]);
+
   // Fetch Faculty
   useEffect(() => {
     const fetchFaculty = async () => {
@@ -193,7 +240,7 @@ function StudentDashboard() {
   };
 
   const addMember = () => {
-    if (formData.members.length < 3) {
+    if (formData.members.length < 4) {
       setFormData({
         ...formData,
         members: [
@@ -225,6 +272,16 @@ function StudentDashboard() {
       return;
     }
 
+    const odooIdPattern = /^IU\d{2}-\d{4}-\d{4}$/;
+    for (let i = 0; i < formData.members.length; i++) {
+      const rawId = formData.members[i].odoo_id.trim().toUpperCase().replace(/\s/g, '');
+      if (!odooIdPattern.test(rawId) && !/^IU\d{10}$/.test(rawId)) {
+        setError(`Member ${i + 1}: Invalid Odoo ID format. Use pattern: IU02-0122-0289`);
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const payload = {
         project_title: formData.project_title,
@@ -242,7 +299,13 @@ function StudentDashboard() {
       if (response.data) setExistingGroup(response.data);
     } catch (err) {
       console.error("Submission failed:", err.response?.data || err.message);
-      setError(err.response?.data?.detail || "Registration failed. Check console.");
+      const memberErrors = err.response?.data?.member_errors;
+      if (memberErrors && memberErrors.length > 0) {
+        const messages = memberErrors.map(e => `Member ${e.index + 1}: ${e.error}`).join(' | ');
+        setError(messages);
+      } else {
+        setError(err.response?.data?.detail || "Registration failed. Please check your details.");
+      }
     } finally {
       setLoading(false);
     }
@@ -473,6 +536,14 @@ function StudentDashboard() {
     return domainMap[domainValue] || domainValue;
   };
 
+  const formatDesignation = (designation) => {
+  if (!designation) return '';
+  return designation
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
   // Render Group Formation
   const renderGroupFormation = () => {
     if (hasSubmittedIdea && existingGroup) {
@@ -513,7 +584,7 @@ function StudentDashboard() {
                   setSuccess('');
                 }}
               >
-                 Re-apply with New Group
+                 Re-apply
               </button>
             </div>
           </div>
@@ -658,14 +729,14 @@ function StudentDashboard() {
               <label>Select Internal Supervisor *</label>
               <select className="form-select" value={formData.supervisor} onChange={e => setFormData({...formData, supervisor: e.target.value})} required>
                 <option value="">-- Choose Supervisor --</option>
-                {(Array.isArray(facultyList) ? facultyList : []).map(fac => (<option key={fac.id} value={fac.id}>{fac.full_name} - {fac.designation}</option>))}
+                {(Array.isArray(facultyList) ? facultyList : []).map(fac => (<option key={fac.id} value={fac.id}>{fac.full_name} - {formatDesignation(fac.designation)}</option>))}
               </select>
               <p className="form-note"> Meet your supervisor physically before selecting</p>
             </div>
           </div>
           {/* Group Members */}
           <div className="form-section">
-            <h3>Group Members <small style={{ fontWeight: '400', color: '#64748b' }}>(Maximum 3 Members)</small></h3>
+            <h3>Group Members <small style={{ fontWeight: '400', color: '#64748b' }}>(Maximum 4 Members)</small></h3>
             {formData.members.map((member, index) => (
               <div key={index} className="member-card">
                 <div className="member-header">
@@ -681,12 +752,28 @@ function StudentDashboard() {
                   </div>
                   <div className="form-group">
                     <label>Odoo ID *</label>
-                    <input type="text" className="form-input" value={member.odoo_id} onChange={e => handleMemberChange(index, 'odoo_id', e.target.value)} placeholder="e.g., IU02-0322-0288" required />
+                   <input 
+                      type="text" 
+                      className="form-input" 
+                      value={member.odoo_id} 
+                      onChange={e => handleMemberChange(index, 'odoo_id', e.target.value)} 
+                      onBlur={e => {
+                        const raw = e.target.value.trim().toUpperCase().replace(/\s/g, '');
+                        const noDashMatch = /^IU\d{10}$/.test(raw);
+                        if (noDashMatch) {
+                          handleMemberChange(index, 'odoo_id', `${raw.slice(0,4)}-${raw.slice(4,8)}-${raw.slice(8)}`);
+                        } else if (/^IU\d{2}-\d{4}-\d{4}$/.test(raw)) {
+                          handleMemberChange(index, 'odoo_id', raw);
+                        }
+                      }}
+                      placeholder="e.g., IU02-0322-0288" 
+                      required 
+                    />
                   </div>
                 </div>
               </div>
             ))}
-            {formData.members.length < 3 && (<button type="button" className="btn-add" onClick={addMember}>+ Add Member ({formData.members.length}/3)</button>)}
+            {formData.members.length < 4 && (<button type="button" className="btn-add" onClick={addMember}>+ Add Member ({formData.members.length}/4)</button>)}
           </div>
           <div className="form-actions">
             <button type="submit" className="btn-submit" disabled={loading}>
@@ -895,6 +982,43 @@ const renderProjectProgress = () => {
         source: 'Supervisor',
         title: 'Current Task',
         text: myMeetingsData.current_task,
+      });
+    }
+
+    if (sessionalEvalData?.comments) {
+      remarks.push({
+        id: 'sessional-eval',
+        type: 'supervisor',
+        source: 'Supervisor',
+        title: 'Sessional Evaluation Comments',
+        text: sessionalEvalData.comments,
+      });
+    }
+    if (meetingLogEvalData?.comments) {
+      remarks.push({
+        id: 'meetinglog-eval',
+        type: 'supervisor',
+        source: 'Supervisor',
+        title: 'Meeting Log Evaluation Comments',
+        text: meetingLogEvalData.comments,
+      });
+    }
+    if (reportEvalData?.comments) {
+      remarks.push({
+        id: 'report-eval',
+        type: 'admin',
+        source: 'Committee',
+        title: 'Report Evaluation Comments',
+        text: reportEvalData.comments,
+      });
+    }
+    if (presentationEvalData?.comments) {
+      remarks.push({
+        id: 'presentation-eval',
+        type: 'admin',
+        source: 'Committee',
+        title: 'Presentation Evaluation Comments',
+        text: presentationEvalData.comments,
       });
     }
 
@@ -1170,7 +1294,11 @@ const renderProjectProgress = () => {
       'rejected': '#ef4444'
     };
 
-    const canUpload = ['draft', 'submitted', 'revision_needed'].includes(proposalData.status) && proposalData.submission_count < 3;
+    const canUpload = proposalData.can_upload ?? (
+      ['draft', 'submitted', 'revision_needed', 'rejected'].includes(proposalData.status) &&
+      proposalData.submission_count < (proposalData.max_submission_attempts ?? 3)
+    );
+    const maxAttempts = proposalData.max_submission_attempts ?? 3;
 
     return (
       <div className="content-area">
@@ -1186,12 +1314,29 @@ const renderProjectProgress = () => {
               {proposalData.status_display}
             </span>
           </div>
+
+          {proposalDeadline && (
+            <div style={{ background: new Date(proposalDeadline.deadline_date) < new Date() ? '#fef2f2' : '#f0f9ff', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: `3px solid ${new Date(proposalDeadline.deadline_date) < new Date() ? '#ef4444' : '#3b82f6'}` }}>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e293b' }}>
+                <strong>Submission Deadline:</strong> {new Date(proposalDeadline.deadline_date).toLocaleString()}
+                {new Date(proposalDeadline.deadline_date) < new Date() && <span style={{ color: '#ef4444', fontWeight: '600' }}> (Passed)</span>}
+              </p>
+            </div>
+          )}
+
+          {proposalData.is_late && (
+            <div style={{ background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
+              <p style={{ color: '#92400e', margin: 0, fontWeight: '600' }}>
+                 Late Submission - This proposal was submitted after the deadline
+              </p>
+            </div>
+          )}
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
               <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Submission Attempts</p>
               <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '1.25rem' }}>
-                {proposalData.submission_count} / 3
+                {proposalData.submission_count} / {maxAttempts}
               </p>
             </div>
             <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
@@ -1254,9 +1399,12 @@ const renderProjectProgress = () => {
           ) : (
             <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
               <p style={{ color: '#9a3412', margin: 0, fontWeight: '500' }}>
-                {proposalData.status === 'approved' ? 'Proposal has been finally approved. No further uploads allowed.' :
-                 proposalData.status === 'rejected' ? 'Proposal has been rejected. Contact admin.' :
-                 'Maximum 3 submission attempts reached. Contact admin to reset.'}
+                {proposalData.can_upload_reason ||
+                  (proposalData.status === 'approved'
+                    ? 'Proposal has been finally approved. No further uploads allowed.'
+                    : proposalData.status === 'approved_by_supervisor'
+                    ? 'Proposal is pending admin review. Please wait.'
+                    : `Maximum ${maxAttempts} submission attempts reached. Contact admin to request more attempts.`)}
               </p>
             </div>
           )}
@@ -1303,7 +1451,11 @@ const renderProjectProgress = () => {
       'rejected': '#ef4444'
     };
 
-    const canUpload = ['draft', 'submitted', 'revision_needed'].includes(reportData.status) && reportData.submission_count < 3;
+    const canUpload = reportData.can_upload ?? (
+      ['draft', 'submitted', 'revision_needed', 'rejected'].includes(reportData.status) &&
+      reportData.submission_count < (reportData.max_submission_attempts ?? 3)
+    );
+    const maxAttempts = reportData.max_submission_attempts ?? 3;
 
     return (
       <div className="content-area">
@@ -1316,9 +1468,23 @@ const renderProjectProgress = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0 }}>Report Status</h3>
            <span className="status-badge" style={{ background: reportData.status === 'approved' ? '#dcfce7' : statusColors[reportData.status], color: reportData.status === 'approved' ? '#166534' : 'white', border: reportData.status === 'approved' ? '1px solid #bbf7d0' : 'none' }}>
-              {reportData.status_display}
+            {reportData.status === 'revision_needed' 
+              ? 'Revision Needed'  // Clear message
+              : reportData.status_display
+            }
             </span>
           </div>
+
+          {reportDeadline && (
+            <div style={{ background: new Date(reportDeadline.deadline_date) < new Date() ? '#fef2f2' : '#f0f9ff', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: `3px solid ${new Date(reportDeadline.deadline_date) < new Date() ? '#ef4444' : '#3b82f6'}` }}>
+              <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e293b' }}>
+                <strong>Submission Deadline:</strong> {new Date(reportDeadline.deadline_date).toLocaleString()}
+                {new Date(reportDeadline.deadline_date) < new Date() && <span style={{ color: '#ef4444', fontWeight: '600' }}> (Passed)</span>}
+              </p>
+            </div>
+          )}
+
+
           
           {/* Late Submission Warning */}
           {reportData.is_late && (
@@ -1333,19 +1499,13 @@ const renderProjectProgress = () => {
             <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
               <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Submission Attempts</p>
               <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '1.25rem' }}>
-                {reportData.submission_count} / 3
+                {reportData.submission_count} / {maxAttempts}
               </p>
             </div>
             <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
               <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Last Submitted</p>
               <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>
                 {reportData.submitted_at ? new Date(reportData.submitted_at).toLocaleDateString() : 'Not submitted yet'}
-              </p>
-            </div>
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Plagiarism Score</p>
-              <p style={{ fontWeight: '700', color: reportData.internal_similarity_score > 30 ? '#ef4444' : '#10b981', margin: 0, fontSize: '1.25rem' }}>
-                {reportData.internal_similarity_score}%
               </p>
             </div>
             <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
@@ -1388,7 +1548,10 @@ const renderProjectProgress = () => {
             <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
               <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>Upload Report File</h4>
               <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
-                Upload your final project report (PDF/DOCX only, Max 20MB)
+                {reportData.status === 'revision_needed' 
+                  ? 'Admin ne revisions suggest ki hain. Apni report update karke dobara submit karein.' 
+                  : 'Upload your final project report (PDF/DOCX only, Max 20MB)'
+                }
               </p>
               <input 
                 type="file" 
@@ -1406,11 +1569,14 @@ const renderProjectProgress = () => {
               </button>
             </div>
           ) : (
-           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
+            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
               <p style={{ color: '#9a3412', margin: 0, fontWeight: '500' }}>
-                {reportData.status === 'approved' ? ' Report has been finally approved. No further uploads allowed.' :
-                reportData.status === 'rejected' ? ' Report has been rejected. Contact admin.' :
-                ' Maximum 3 submission attempts reached. Contact admin to reset.'}
+                {reportData.status === 'approved' 
+                  ? 'Report has been finally approved. No further uploads allowed.' 
+                  : reportData.status === 'rejected'
+                  ? 'Report has been rejected. Contact admin.'
+                  : `Maximum ${reportData.max_submission_attempts || 3} submission attempts reached. Contact admin to request more attempts.`
+                }
               </p>
             </div>
           )}

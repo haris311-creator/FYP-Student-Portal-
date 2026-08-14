@@ -172,24 +172,7 @@ class GroupMember(models.Model):
     odoo_id = models.CharField(max_length=50, blank=True, null=True, help_text="University/Odoo ID (e.g., IU02-0322-0288)")
     
     join_date = models.DateTimeField(auto_now_add=True)
-    
-    # Eligibility fields (soft validation)
-    cgpa = models.DecimalField(max_digits=4, decimal_places=2)
-    earned_credit_hours = models.PositiveIntegerField()
-    prerequisites_completed = models.BooleanField(default=True)
-    
-    # Special permission
-    has_special_permission = models.BooleanField(default=False)
-    permission_level = models.CharField(
-        max_length=10,
-        choices=[('hod', 'HOD Approved'), ('dean', 'Dean Approved')],
-        blank=True,
-        null=True
-    )
-    permission_document = models.FileField(
-        upload_to='approvals/permission_letters/',
-        blank=True
-    )
+   
     contribution_percentage = models.PositiveIntegerField(default=33)
     
     class Meta:
@@ -199,57 +182,7 @@ class GroupMember(models.Model):
     def __str__(self):
         return f"{self.full_name or self.student.email} in Group {self.group.group_number}"
     
-    def get_eligibility_warnings(self):
-        """Return warnings for UI display"""
-        warnings = []
-        
-        if self.cgpa < 2.0:
-            warnings.append({
-                'field': 'cgpa',
-                'message': f'CGPA {self.cgpa} < 2.0 (Policy 10.b)',
-                'severity': 'warning',
-                'requires_permission': True
-            })
-        
-        if self.earned_credit_hours < 94:
-            warnings.append({
-                'field': 'credit_hours',
-                'message': f'Credit Hours {self.earned_credit_hours} < 94 minimum',
-                'severity': 'error',
-                'requires_permission': False
-            })
-        elif self.earned_credit_hours < 97:
-            warnings.append({
-                'field': 'credit_hours',
-                'message': f'2-course deficiency (Dean approval needed)',
-                'severity': 'warning',
-                'requires_permission': True,
-                'permission_level': 'dean'
-            })
-        elif self.earned_credit_hours < 100:
-            warnings.append({
-                'field': 'credit_hours',
-                'message': f'1-course deficiency (HOD approval needed)',
-                'severity': 'warning',
-                'requires_permission': True,
-                'permission_level': 'hod'
-            })
-        
-        if not self.prerequisites_completed:
-            warnings.append({
-                'field': 'prerequisites',
-                'message': 'Prerequisites not completed',
-                'severity': 'warning',
-                'requires_permission': True
-            })
-        
-        return warnings
     
-    def can_register_with_warnings(self):
-        """Check if student can register"""
-        if self.earned_credit_hours < 94:
-            return False, "Credit hours below absolute minimum (94)"
-        return True, None
 
 
 # =============================================================================
@@ -297,8 +230,12 @@ class FYDPProposal(models.Model):
         help_text="Upload filled proposal form (PDF/DOCX only, Max 10MB)"
     )
     
-    #  Track submission attempts (Max 3)
+    #  Track submission attempts (default max 3, admin can increase)
     submission_count = models.PositiveIntegerField(default=0)
+    max_submission_attempts = models.PositiveIntegerField(default=3)
+
+    # Deadline tracking
+    is_late = models.BooleanField(default=False)
     
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
     submitted_at = models.DateTimeField(null=True, blank=True)
@@ -347,19 +284,22 @@ class FYDPProposal(models.Model):
         """
         if self.status == 'approved':
             return False, "Proposal already approved. Cannot modify."
-        
-        if self.status == 'rejected':
-            return False, "Proposal rejected. Contact admin."
-        
-        if self.submission_count >= 3:
-            return False, "Maximum 3 submission attempts reached."
-        
-        return True, "Upload allowed"
+
+        if self.status == 'approved_by_supervisor':
+            return False, "Proposal is pending admin review. Please wait."
+
+        if self.submission_count >= self.max_submission_attempts:
+            return False, f"Maximum {self.max_submission_attempts} submission attempts reached. Contact admin."
+
+        if self.status in ('draft', 'submitted', 'revision_needed', 'rejected'):
+            return True, "Upload allowed"
+
+        return False, "Cannot upload in current status."
     
     def increment_submission_count(self):
         """Increment submission count and check limit"""
-        if self.submission_count >= 3:
-            return False, "Maximum submission attempts (3) reached"
+        if self.submission_count >= self.max_submission_attempts:
+            return False, f"Maximum submission attempts ({self.max_submission_attempts}) reached"
         
         self.submission_count += 1
         self.save()
@@ -413,7 +353,8 @@ class FYDPProposal(models.Model):
             self.admin_reviewed_at = timezone.now()
             self.project_serial_no = self._generate_serial_number()
         elif action == 'reject':
-            self.status = 'rejected'
+            # Allow student to revise and resubmit (same as supervisor revision flow)
+            self.status = 'revision_needed'
             self.admin_remarks = remarks
             self.finally_approved_by = admin_user
             self.admin_reviewed_at = timezone.now()
@@ -422,6 +363,23 @@ class FYDPProposal(models.Model):
         
         self.save()
         return True, f"Proposal finally {action}d by admin"
+
+    def increase_attempt_limit(self, extra_attempts=1):
+        """Admin grants additional submission attempts."""
+        self.max_submission_attempts += extra_attempts
+        self.save()
+        return True, f"Attempt limit increased to {self.max_submission_attempts}"
+
+    def check_deadline_and_mark_late(self, deadline):
+        """
+        Check if submission is late and mark accordingly.
+        deadline: datetime object
+        """
+        if deadline and timezone.now() > deadline:
+            self.is_late = True
+            self.save()
+            return True, "Submission marked as LATE"
+        return False, "Submission on time"
     
     def _generate_serial_number(self):
         """Generate project serial number"""
@@ -593,7 +551,7 @@ class AttendanceLog(models.Model):
         
     
     def __str__(self):
-        return f"{self.student.full_name} - {self.status}"
+        return f"{self.student.get_full_name() or self.student.email} - {self.status}"
 
 
 
@@ -685,6 +643,7 @@ class ProjectReportSubmission(models.Model):
     # Submission tracking
     submission_count = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='draft')
+    max_submission_attempts = models.PositiveIntegerField(default=3)
     submitted_at = models.DateTimeField(null=True, blank=True)
     
     # Deadline tracking
@@ -716,18 +675,7 @@ class ProjectReportSubmission(models.Model):
     )
     admin_reviewed_at = models.DateTimeField(null=True, blank=True)
     
-    # Plagiarism check fields
-    internal_similarity_score = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        default=0.00,
-        help_text="Internal plagiarism check score (0-100%)"
-    )
-    internal_similarity_report = models.JSONField(
-        default=dict, 
-        blank=True,
-        help_text="Detailed similarity report with matched groups"
-    )
+    
     turnitin_similarity_score = models.DecimalField(
         max_digits=5, 
         decimal_places=2, 
@@ -736,7 +684,6 @@ class ProjectReportSubmission(models.Model):
         null=True,
         help_text="Manual Turnitin similarity score (admin enters)"
     )
-    plagiarism_check_completed = models.BooleanField(default=False)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -758,18 +705,19 @@ class ProjectReportSubmission(models.Model):
         if self.status == 'approved':
             return False, "Report already approved. Cannot modify."
         
-        if self.status == 'rejected':
-            return False, "Report rejected. Contact admin."
         
-        if self.submission_count >= 3:
-            return False, "Maximum 3 submission attempts reached."
+        if self.submission_count >= self.max_submission_attempts:
+            return False, f"Maximum {self.max_submission_attempts} submission attempts reached."
+
+        if self.status in ['draft', 'submitted', 'revision_needed', 'rejected']:
+            return True, "Upload allowed"
         
-        return True, "Upload allowed"
+        return False, "Cannot upload in current status."
     
     def increment_submission_count(self):
         """Increment submission count and check limit"""
-        if self.submission_count >= 3:
-            return False, "Maximum submission attempts (3) reached"
+        if self.submission_count >= self.max_submission_attempts:
+            return False, f"Maximum {self.max_submission_attempts} submission attempts reached"
         
         self.submission_count += 1
         self.save()
@@ -823,7 +771,7 @@ class ProjectReportSubmission(models.Model):
             self.finally_approved_by = admin_user
             self.admin_reviewed_at = timezone.now()
         elif action == 'reject':
-            self.status = 'rejected'
+            self.status = 'revision_needed'
             self.admin_remarks = remarks
             self.finally_approved_by = admin_user
             self.admin_reviewed_at = timezone.now()
@@ -833,15 +781,30 @@ class ProjectReportSubmission(models.Model):
         self.save()
         return True, f"Report finally {action}d by admin"
 
+    def increase_attempt_limit(self, extra_attempts=1):
+        """Admin grants additional submission attempts."""
+        self.max_submission_attempts += extra_attempts
+        self.save()
+        return True, f"Attempt limit increased to {self.max_submission_attempts}"
+
 
 # =============================================================================
 # REPORT DEADLINE MODEL (Optional - Global Deadline Management)
 # =============================================================================
 class ReportDeadline(models.Model):
     """
-    Global deadline for project report submissions.
-    Admin can set/manage deadlines.
+    Global deadline for proposal/report submissions.
+    Admin can set/manage deadlines per phase (FYDP-I / FYDP-II).
     """
+    DEADLINE_TYPE_CHOICES = [
+        ('proposal', 'Proposal'),
+        ('report', 'Report'),
+    ]
+    deadline_type = models.CharField(
+        max_length=20,
+        choices=DEADLINE_TYPE_CHOICES,
+        default='report'
+    )
     semester = models.CharField(max_length=20, help_text="e.g., 'Fall 2024'")
     fydp_phase = models.CharField(
         max_length=20,
@@ -857,13 +820,13 @@ class ReportDeadline(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        unique_together = ['semester', 'fydp_phase']
+        unique_together = ['semester', 'fydp_phase', 'deadline_type']
         ordering = ['-deadline_date']
-        verbose_name = 'Report Deadline'
-        verbose_name_plural = 'Report Deadlines'
+        verbose_name = 'Submission Deadline'
+        verbose_name_plural = 'Submission Deadlines'
     
     def __str__(self):
-        return f"{self.semester} - {self.get_fydp_phase_display()} Deadline: {self.deadline_date}"
+        return f"{self.get_deadline_type_display()} - {self.semester} - {self.get_fydp_phase_display()}: {self.deadline_date}"
     
     def is_active(self):
         """Check if deadline is still active"""

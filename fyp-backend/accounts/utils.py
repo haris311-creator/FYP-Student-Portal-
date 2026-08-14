@@ -17,7 +17,7 @@ def send_approval_email(student, user):
             'student_name': f"{user.first_name} {user.last_name}",
             'student_email': user.email,
             'student_id': user.student_id or 'N/A',
-            'login_url': 'http://localhost:5173/login',
+            'login_url': f'{settings.FRONTEND_URL}/login',
         }
         
         try:

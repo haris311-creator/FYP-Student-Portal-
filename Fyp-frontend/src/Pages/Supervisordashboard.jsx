@@ -555,11 +555,6 @@ const handleReportReviewSubmit = async () => {
                       </p>
                     )}
                   </div>
-                  <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: '#f0fdf4', borderRadius: '6px' }}>
-                    <p style={{ fontSize: '0.75rem', color: '#065f46', fontWeight: '600', margin: 0 }}>
-                      Plagiarism: {report.internal_similarity_score}%
-                    </p>
-                  </div>
                 </div>
                 <div style={{ marginTop: '1rem', textAlign: 'right' }}>
                   <button className="view-details-btn">Review &rarr;</button>
@@ -590,20 +585,17 @@ const handleReportReviewSubmit = async () => {
 
               {selectedReport.is_late && (
                 <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '1rem', color: '#92400e' }}>
-                   Warning: This is a late submission.
+                   This is a late submission.
                 </div>
               )}
 
-              <div style={{ padding: '0.75rem', background: '#f0fdf4', borderRadius: '6px', marginBottom: '1rem' }}>
-                <p style={{ fontSize: '0.875rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>
-                  Internal Plagiarism Check: {selectedReport.internal_similarity_score}%
-                </p>
-                {selectedReport.turnitin_similarity_score > 0 && (
+              {selectedReport.turnitin_similarity_score > 0 && (
+                <div style={{ padding: '0.75rem', background: '#f0fdf4', borderRadius: '6px', marginBottom: '1rem' }}>
                   <p style={{ fontSize: '0.875rem', color: '#065f46', margin: 0 }}>
-                    Turnitin Score: {selectedReport.turnitin_similarity_score}%
+                    Turnitin Score: {selectedReport.turnitin_similarity_score}% 
                   </p>
-                )}
-              </div>
+                </div>
+              )}
 
               {selectedReport.report_file ? (
                 <button

@@ -85,23 +85,6 @@ class OTPRequestSerializer(serializers.Serializer):
         if not email.endswith('@iqra.edu.pk'):
             raise serializers.ValidationError("Only @iqra.edu.pk email addresses are allowed.")
         
-        # Check EnrolledStudent (pending/approved users)
-        enrolled_record = EnrolledStudent.objects.filter(email=email).first()
-        if enrolled_record:
-            if enrolled_record.approval_status == 'pending':
-                raise serializers.ValidationError({
-                    "email": "This email is pending approval. Please wait for admin approval."
-                })
-            elif enrolled_record.approval_status == 'approved':
-                raise serializers.ValidationError({
-                    "email": "This email is already registered. Please login."
-                })
-        
-        # Check CustomUser (registered users)
-        if CustomUser.objects.filter(email=email).exists():
-            raise serializers.ValidationError({
-                "email": "This email is already registered. Please login."
-            })
             
         return email
 
@@ -126,83 +109,70 @@ class OTPRequestSerializer(serializers.Serializer):
         first_name = data['first_name']
         last_name = data['last_name']
         full_name = f"{first_name} {last_name}".strip().title()
-        
-        # Check if this email or ID exists in pre-approved list
+
+        # STEP 1: Pending approvals ko sabse pehle check karo
+        # (yeh students ka CustomUser already bana hua hota hai, is_active=False ke sath)
+        pending_record = EnrolledStudent.objects.filter(
+            Q(email=email) | Q(roll_number=student_id),
+            approval_status='pending'
+        ).first()
+
+        if pending_record:
+            if pending_record.email == email:
+                raise serializers.ValidationError({
+                    "email": "This email's registration is pending approval. Please wait for admin approval."
+                })
+            else:
+                raise serializers.ValidationError({
+                    "student_id": "This Odoo ID's registration is pending approval. Please wait for admin approval."
+                })
+
+        # STEP 2: Ab check karo already active/registered users
+        if CustomUser.objects.filter(email=email, is_active=True).exists():
+            raise serializers.ValidationError({
+                "email": "This email is already registered. Please login."
+            })
+
+        if CustomUser.objects.filter(student_id=student_id, is_active=True).exists():
+            raise serializers.ValidationError({
+                "student_id": "This Odoo ID is already registered. Please login."
+            })
+
+        # STEP 3: Then check the pre-approved list
         pre_approved_record = EnrolledStudent.objects.filter(
             Q(roll_number=student_id) | Q(email=email),
             approval_status='pre_approved'
         ).first()
-        
+
         if pre_approved_record:
-            # Pre-approved record mila hai - ab strict check karein
             sheet_email = pre_approved_record.email.lower().strip()
             sheet_id = pre_approved_record.roll_number
             sheet_name = pre_approved_record.full_name.strip().title()
-            
+
             email_matches = (email == sheet_email)
             id_matches = (student_id == sheet_id)
             name_matches = (full_name == sheet_name)
-            
-            #  TRIPLE VALIDATION: Email + ID + Name
+
             if email_matches and id_matches and name_matches:
-                # Perfect match - allow OTP
-                pass
+                pass  # Perfect match - allow OTP
             elif email_matches and not id_matches:
-                # Email match hai lekin ID galat hai
                 raise serializers.ValidationError({
                     "student_id": f"This email is pre-approved. Please use the correct Odoo ID."
                 })
             elif not email_matches and id_matches:
-                # ID match hai lekin email galat hai
                 raise serializers.ValidationError({
                     "email": f"This Odoo ID is pre-approved. Please use the correct email."
                 })
             elif email_matches and id_matches and not name_matches:
-                #  Email aur ID match hain lekin NAME galat hai
                 raise serializers.ValidationError({
                     "non_field_errors": f"Name does not match university records. "
                     f"Please use exact name."
                 })
             else:
-                # Dono galat hain - yeh possible nahi hona chahiye lekin just in case
                 raise serializers.ValidationError({
                     "non_field_errors": "The provided email and Odoo ID do not match our records. Please use exact details from the Excel sheet."
                 })
-        
-        # Check for already registered users
-        if CustomUser.objects.filter(email=email).exists():
-            raise serializers.ValidationError({
-                "email": "This email is already registered. Please login."
-            })
-        
-        if CustomUser.objects.filter(student_id=student_id).exists():
-            raise serializers.ValidationError({
-                "student_id": "This Odoo ID is already registered. Please login."
-            })
-        
-        # Check for pending approvals
-        pending_record = EnrolledStudent.objects.filter(
-            Q(email=email) | Q(roll_number=student_id),
-            approval_status='pending'
-        ).first()
-        
-        if pending_record:
-            if pending_record.email == email:
-                raise serializers.ValidationError({
-                    "email": "This email is pending approval. Please wait for admin approval."
-                })
-            else:
-                raise serializers.ValidationError({
-                    "student_id": "This Odoo ID is pending approval. Please wait for admin approval."
-                })
-        
-        # Check for spam (OTP already sent)
-        active_otp = OTPVerification.objects.filter(email=email, is_verified=False).first()
-        if active_otp and not active_otp.is_expired():
-            raise serializers.ValidationError({
-                "email": "An OTP has already been sent to this email. Please check your inbox or wait for it to expire."
-            })
-            
+
         return data
 
     def create(self, validated_data):
@@ -211,10 +181,13 @@ class OTPRequestSerializer(serializers.Serializer):
         first_name = validated_data['first_name'].strip().title()
         last_name = validated_data['last_name'].strip().title()
         
+        # Purana koi unverified OTP ho to hatao, taake naya turant bhej sakein
+        OTPVerification.objects.filter(email=email, is_verified=False).delete()
+        
         otp_code = generate_otp()
         expires_at = timezone.now() + timezone.timedelta(minutes=10)
         
-        # Create or update OTP record
+        # Create new OTP record
         OTPVerification.objects.create(
             email=email,
             student_id=student_id,
@@ -366,6 +339,14 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     token = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, min_length=8)
     confirm_password = serializers.CharField(required=True, min_length=8)
+
+    def validate_new_password(self, value):
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$"
+        if not re.match(pattern, value):
+            raise serializers.ValidationError(
+                "Password must include at least one uppercase letter, one lowercase letter, one number, and one symbol."
+            )
+        return value
     
     def validate(self, data):
         if data['new_password'] != data['confirm_password']:
@@ -378,6 +359,11 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         
         if not default_token_generator.check_token(user, data['token']):
             raise serializers.ValidationError({"token": "Invalid or expired token."})
+
+        if user.check_password(data['new_password']):
+            raise serializers.ValidationError({
+                "new_password": "New password must be different from your current password."
+            })
         
         data['user'] = user
         return data

@@ -1,7 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
 import './Login.css';
+
+
+// DRF errors ko smartly parse karne ke liye helper function
+const extractErrorMessage = (errorData) => {
+  if (!errorData) return 'An unknown error occurred.';
+  if (typeof errorData === 'string') return errorData;
+  if (errorData.detail) return errorData.detail;
+  if (errorData.message) return errorData.message;
+  if (errorData.error) return errorData.error;
+
+  // Check common DRF field errors
+  const fields = ['email', 'student_id', 'otp_code', 'password', 'confirm_password', 'non_field_errors'];
+  
+  for (const field of fields) {
+    if (errorData[field]) {
+      const fieldError = errorData[field];
+      
+      // 1. Agar array hai (e.g., ["Error message"])
+      if (Array.isArray(fieldError)) {
+        return fieldError[0];
+      }
+      
+      // 2. Agar direct string hai
+      if (typeof fieldError === 'string') {
+        return fieldError;
+      }
+      
+      // 3. Agar nested object hai (DRF quirk: {"email": {"email": "message"}})
+      if (typeof fieldError === 'object') {
+        if (fieldError[field]) return fieldError[field]; // Nested same name
+        if (fieldError.non_field_errors) return Array.isArray(fieldError.non_field_errors) ? fieldError.non_field_errors[0] : fieldError.non_field_errors;
+        
+        // Fallback: object ka pehla value return karo
+        const firstKey = Object.keys(fieldError)[0];
+        const firstValue = fieldError[firstKey];
+        if (Array.isArray(firstValue)) return firstValue[0];
+        if (typeof firstValue === 'string') return firstValue;
+        return JSON.stringify(fieldError);
+      }
+    }
+  }
+
+  return JSON.stringify(errorData);
+};
 
 function StudentRegistration() {
   const navigate = useNavigate();
@@ -23,6 +67,16 @@ function StudentRegistration() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+  if (resendCooldown <= 0) return;
+  const timer = setInterval(() => {
+    setResendCooldown(prev => prev - 1);
+  }, 1000);
+  return () => clearInterval(timer);
+}, [resendCooldown]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -69,59 +123,44 @@ function StudentRegistration() {
         setError(response.data?.message || 'Registration request failed');
         setLoading(false);
       }
-    } catch (error) {
-        console.error('OTP Request Error:', error);
-        console.log('Error Data:', error.response?.data);
-        
-        if (error.response && error.response.data) {
-          const backendData = error.response.data;
-          let errorMessage = 'Registration request failed. Please try again.';
-          
-          // Check for field-specific errors (email, student_id, etc.)
-          if (backendData.email) {
-            errorMessage = Array.isArray(backendData.email) 
-              ? backendData.email[0] 
-              : backendData.email;
-          } else if (backendData.student_id) {
-            errorMessage = Array.isArray(backendData.student_id) 
-              ? backendData.student_id[0] 
-              : backendData.student_id;
-          } else if (backendData.non_field_errors) {
-            errorMessage = Array.isArray(backendData.non_field_errors) 
-              ? backendData.non_field_errors[0] 
-              : backendData.non_field_errors;
-          } else if (backendData.errors) {
-            // Handle DRF nested errors structure
-            const errors = backendData.errors;
-            const messages = [];
-            
-            if (errors.email) {
-              messages.push(Array.isArray(errors.email) ? errors.email[0] : errors.email);
-            }
-            if (errors.student_id) {
-              messages.push(Array.isArray(errors.student_id) ? errors.student_id[0] : errors.student_id);
-            }
-            if (errors.non_field_errors) {
-              messages.push(Array.isArray(errors.non_field_errors) ? errors.non_field_errors[0] : errors.non_field_errors);
-            }
-            
-            if (messages.length > 0) {
-              errorMessage = messages.join('. ');
-            }
-          } else if (backendData.message) {
-            errorMessage = backendData.message;
-          } else if (backendData.error) {
-            errorMessage = backendData.error;
-          }
-          
-          setError(errorMessage);
-        } else {
-          setError('Network error. Please check your connection.');
-        }
-        
-        setLoading(false);
-      }
+      } catch (error) {
+      console.error('OTP Request Error:', error);
+      const errorData = error.response?.data;
+      
+      // Smart extractor
+      const errorMessage = extractErrorMessage(errorData) || 'Network error. Please check your connection.';
+      
+      setError(errorMessage);
+      setLoading(false);
+    }
   };
+
+  const handleResendOTP = async () => {
+  if (resendCooldown > 0) return;
+  setResending(true);
+  setError('');
+  setSuccessMessage('');
+
+  try {
+    const response = await api.post('/auth/register/request-otp/', {
+      ...formData,
+      email: formData.email.toLowerCase(),
+      student_id: formData.student_id.trim()
+    });
+
+    if (response.data && response.data.success) {
+      setSuccessMessage('New OTP sent successfully. Valid for 10 minutes.');
+      setResendCooldown(30);
+    } else {
+      setError(response.data?.message || 'Failed to resend OTP');
+    }
+  } catch (error) {
+    const backendData = error.response?.data;
+    setError(backendData?.message || backendData?.error || 'Failed to resend OTP. Please try again.');
+  } finally {
+    setResending(false);
+  }
+};
 
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
@@ -157,73 +196,18 @@ function StudentRegistration() {
         }, 5000);
       } else {
         setError(response.data?.message || 'Verification failed');
-        setLoading(false); // ✅ Yeh line add karein
-      }
-    }catch (error) {
-      console.error('OTP Verification Error:', error);
-      console.log('Error Data:', error.response?.data);
-      
-      if (error.response && error.response.data) {
-        const backendData = error.response.data;
-        let errorMessage = 'Verification failed. Please try again.';
+        setLoading(false); //  Yeh line add karein
+      }      
+      } catch (error) {
+        console.error('OTP Verification Error:', error);
+        const errorData = error.response?.data;
         
-        // Check for field-specific errors first
-        if (backendData.otp_code) {
-          errorMessage = Array.isArray(backendData.otp_code) 
-            ? backendData.otp_code[0] 
-            : backendData.otp_code;
-        } else if (backendData.password) {
-          errorMessage = Array.isArray(backendData.password) 
-            ? backendData.password[0] 
-            : backendData.password;
-        } else if (backendData.confirm_password) {
-          errorMessage = Array.isArray(backendData.confirm_password) 
-            ? backendData.confirm_password[0] 
-            : backendData.confirm_password;
-        } else if (backendData.email) {
-          errorMessage = Array.isArray(backendData.email) 
-            ? backendData.email[0] 
-            : backendData.email;
-        } else if (backendData.non_field_errors) {
-          errorMessage = Array.isArray(backendData.non_field_errors) 
-            ? backendData.non_field_errors[0] 
-            : backendData.non_field_errors;
-        } else if (backendData.errors) {
-          // Handle DRF nested errors structure
-          const errors = backendData.errors;
-          const messages = [];
-          
-          if (errors.otp_code) {
-            messages.push(Array.isArray(errors.otp_code) ? errors.otp_code[0] : errors.otp_code);
-          }
-          if (errors.password) {
-            messages.push(Array.isArray(errors.password) ? errors.password[0] : errors.password);
-          }
-          if (errors.confirm_password) {
-            messages.push(Array.isArray(errors.confirm_password) ? errors.confirm_password[0] : errors.confirm_password);
-          }
-          if (errors.non_field_errors) {
-            messages.push(Array.isArray(errors.non_field_errors) ? errors.non_field_errors[0] : errors.non_field_errors);
-          }
-          
-          if (messages.length > 0) {
-            errorMessage = messages.join('. ');
-          }
-        } else if (backendData.message) {
-          errorMessage = backendData.message;
-        } else if (backendData.detail) {
-          errorMessage = backendData.detail;
-        } else if (backendData.error) {
-          errorMessage = backendData.error;
-        }
+        // Smart extractor use karein
+        const errorMessage = extractErrorMessage(errorData) || 'Network error. Please check your connection.';
         
         setError(errorMessage);
-      } else {
-        setError('Network error. Please check your connection.');
+        setLoading(false);
       }
-      
-      setLoading(false);
-    }
   };
 
   return (
@@ -333,6 +317,24 @@ function StudentRegistration() {
                   </p>
                   <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
                     Valid for 10 minutes. Check spam folder if not received.
+                  </p>
+                  <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.8rem' }}>
+                    {resendCooldown > 0 ? (
+                      <span style={{ color: '#94a3b8' }}>Resend available in {resendCooldown}s</span>
+                    ) : (
+                      <span
+                        onClick={resending ? undefined : handleResendOTP}
+                        style={{
+                          color: '#1e3a8a',
+                          fontWeight: '600',
+                          textDecoration: 'underline',
+                          cursor: resending ? 'default' : 'pointer',
+                          opacity: resending ? 0.6 : 1
+                        }}
+                      >
+                        {resending ? 'Sending...' : 'Resend OTP'}
+                      </span>
+                    )}
                   </p>
                 </div>
 

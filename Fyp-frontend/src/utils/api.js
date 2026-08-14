@@ -123,20 +123,7 @@ export const groupAPI = {
   addMember: (groupId, memberData) => 
     api.post(`/projects/groups/${groupId}/members/`, memberData),
   
-  checkEligibility: (cgpa, creditHours, prerequisites) =>
-    api.post('/projects/check-eligibility/', {
-      cgpa,
-      earned_credit_hours: creditHours,
-      prerequisites_completed: prerequisites
-    }),
   
-  submitPermission: (memberId, file) => {
-    const formData = new FormData();
-    formData.append('permission_document', file);
-    return api.patch(`/projects/groups/members/${memberId}/`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
-  }
 };
 
 // =============================================================================
@@ -166,6 +153,13 @@ export const proposalAPI = {
   // Admin: Final approve or reject
   adminReview: (proposalId, data) => 
     api.post(`/projects/proposals/${proposalId}/admin-review/`, data),
+
+  // Admin: Get proposals that exhausted submission attempts
+  getAttemptLimitReached: () => api.get('/projects/proposals/attempt-limit-reached/'),
+
+  // Admin: Grant extra submission attempts
+  increaseAttempts: (proposalId, extraAttempts = 1) =>
+    api.post(`/projects/proposals/${proposalId}/increase-attempts/`, { extra_attempts: extraAttempts }),
 
   // Legacy/Other methods (keeping just in case)
   uploadSchedule: (proposalId, file) => {
@@ -266,16 +260,23 @@ export const reportAPI = {
     api.post(`/projects/reports/${reportId}/update-turnitin-score/`, {
       turnitin_similarity_score: score
     }),
+
+  // Admin: Grant extra submission attempts
+  increaseAttempts: (reportId, extraAttempts = 1) =>
+    api.post(`/projects/reports/${reportId}/increase-attempts/`, { extra_attempts: extraAttempts }),
 };
 
 // =============================================================================
 // REPORT DEADLINE ENDPOINTS
 // =============================================================================
 export const deadlineAPI = {
-  getCurrent: (semester, phase) => 
-    api.get(`/projects/deadlines/current/?semester=${semester}&fydp_phase=${phase}`),
+  getAll: () => api.get('/projects/deadlines/'),
+  create: (data) => api.post('/projects/deadlines/', data),
+  update: (id, data) => api.put(`/projects/deadlines/${id}/`, data),
+  delete: (id) => api.delete(`/projects/deadlines/${id}/`),
+  getCurrent: (semester, phase, deadlineType = 'report') => 
+    api.get(`/projects/deadlines/current/?semester=${semester}&fydp_phase=${phase}&deadline_type=${deadlineType}`),
 };
-
 
 
 // =============================================================================

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { adminAPI } from "../api/admin"; 
-import api, { proposalAPI, reportAPI  } from '../utils/api';
+import api, { proposalAPI, reportAPI, deadlineAPI  } from '../utils/api';
 import { toast } from 'react-toastify';
 import './Admindashboard.css';
 import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
@@ -34,6 +34,23 @@ function AdminDashboard() {
   const [rejectReason, setRejectReason] = useState('');
   const [submittingReject, setSubmittingReject] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
+  const [attemptLimitModal, setAttemptLimitModal] = useState(null);
+  const [extraAttempts, setExtraAttempts] = useState(1);
+  const [managingAttempts, setManagingAttempts] = useState(false);
+  const [reportAttemptModal, setReportAttemptModal] = useState(null);
+  const [reportExtraAttempts, setReportExtraAttempts] = useState(1);
+  const [managingReportAttempts, setManagingReportAttempts] = useState(false);
+  const [deadlines, setDeadlines] = useState([]);
+  const [loadingDeadlines, setLoadingDeadlines] = useState(false);
+  const [deadlineForm, setDeadlineForm] = useState({
+    deadline_type: 'proposal',
+    semester: '',
+    fydp_phase: 'fydp1',
+    deadline_date: '',
+    late_submission_allowed: true
+  });
+  const [savingDeadline, setSavingDeadline] = useState(false);
+  const [editingDeadlineId, setEditingDeadlineId] = useState(null);
   
   // Local states
   const [announcement, setAnnouncement] = useState('');
@@ -52,6 +69,9 @@ function AdminDashboard() {
   const [selectedFinalProposal, setSelectedFinalProposal] = useState(null);
   const [finalReviewForm, setFinalReviewForm] = useState({ action: 'approve', remarks: '' });
   const [submittingFinalReview, setSubmittingFinalReview] = useState(false);
+  const [attemptLimitProposals, setAttemptLimitProposals] = useState([]);
+  const [loadingAttemptLimits, setLoadingAttemptLimits] = useState(false);
+  const [grantingAttemptsId, setGrantingAttemptsId] = useState(null);
 
   const [selectedGroupForEval, setSelectedGroupForEval] = useState(null);
   const [evalLinks, setEvalLinks] = useState({});
@@ -84,6 +104,7 @@ function AdminDashboard() {
     fetchFinalProposals();
     fetchFinalReports();
     fetchAnnouncements();
+    fetchDeadlines();
   }
 }, []);  
 
@@ -249,6 +270,20 @@ const fetchAnnouncements = async () => {
     console.error(' Error fetching announcements:', error);
     console.error('Response:', error.response?.data);
     toast.error('Failed to load announcements');
+  }
+};
+
+const fetchDeadlines = async () => {
+  try {
+    setLoadingDeadlines(true);
+    const res = await deadlineAPI.getAll();
+    const list = Array.isArray(res.data) ? res.data : (res.data?.results || []);
+    setDeadlines(list);
+  } catch (err) {
+    console.error('Error fetching deadlines:', err);
+    toast.error('Failed to load deadlines');
+  } finally {
+    setLoadingDeadlines(false);
   }
 };
 
@@ -648,7 +683,9 @@ const handleAnnouncementSubmit = (e) => {
                   <th>Group ID</th>
                   <th>Supervisor</th>
                   <th>Attempts</th>
+                  <th>Late?</th>
                   <th>Action</th>
+                  <th>Manage Attempts</th>
                 </tr>
               </thead>
               <tbody>
@@ -659,9 +696,29 @@ const handleAnnouncementSubmit = (e) => {
                     <td>{p.approved_by_supervisor_name || 'N/A'}</td>
                     <td>{p.submission_count}/3</td>
                     <td>
+                      {p.is_late ? (
+                        <span style={{ color: '#f59e0b', fontWeight: '600' }}> Yes</span>
+                      ) : (
+                        <span style={{ color: '#10b981' }}>No</span>
+                      )}
+                    </td>
+                    <td>
                       <div className="action-btns">
                         <button className="approve-btn" onClick={() => setSelectedFinalProposal(p)}>Review</button>
                       </div>
+                    </td>
+                    <td>
+                      <button
+                        className="submit-btn"
+                        style={{ 
+                          background: '#f59e0b',
+                          fontSize: '0.75rem',
+                          padding: '0.4rem 0.8rem'
+                        }}
+                        onClick={() => handleManageAttempts(p)}
+                      >
+                        Manage Attempts
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -689,7 +746,15 @@ const handleAnnouncementSubmit = (e) => {
             <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
               Submitted on: {selectedFinalProposal.submitted_at ? new Date(selectedFinalProposal.submitted_at).toLocaleString() : 'N/A'}
             </p>
-            
+
+            {selectedFinalProposal.is_late && (
+              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
+                <p style={{ fontSize: '0.875rem', color: '#92400e', margin: 0, fontWeight: '600' }}>
+                   Late Submission
+                </p>
+              </div>
+            )}
+
             {selectedFinalProposal.supervisor_remarks && (
               <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
                 <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
@@ -770,6 +835,117 @@ const handleAnnouncementSubmit = (e) => {
     );
   };
 
+  // proposal Attempt Limit Management Handler
+const handleManageAttempts = (proposal) => {
+  setAttemptLimitModal(proposal);
+  setExtraAttempts(1);
+};
+
+const handleAttemptLimitSubmit = async () => {
+  if (!attemptLimitModal) return;
+  
+  setManagingAttempts(true);
+  try {
+    await proposalAPI.increaseAttempts(
+      attemptLimitModal.id,
+      parseInt(extraAttempts)
+    );
+    
+    toast.success(`Attempt limit increased by ${extraAttempts}! Student can now submit again.`);
+    
+    setAttemptLimitModal(null);
+    fetchFinalProposals(); // Refresh list
+  } catch (err) {
+    console.error("Attempt limit update failed:", err);
+    toast.error(err.response?.data?.error || "Failed to update attempt limit");
+  } finally {
+    setManagingAttempts(false);
+  }
+};
+
+// Report Attempt Limit Management Handlers
+const handleManageReportAttempts = (report) => {
+  setReportAttemptModal(report);
+  setReportExtraAttempts(1);
+};
+
+const handleReportAttemptSubmit = async () => {
+  if (!reportAttemptModal) return;
+  
+  setManagingReportAttempts(true);
+  try {
+    await reportAPI.increaseAttempts(
+      reportAttemptModal.id,
+      parseInt(reportExtraAttempts)
+    );
+    
+    toast.success(`Report attempt limit increased by ${reportExtraAttempts}! Student can now resubmit.`);
+    
+    setReportAttemptModal(null);
+    fetchFinalReports(); // Refresh the list
+  } catch (err) {
+    console.error("Report attempt limit update failed:", err);
+    toast.error(err.response?.data?.error || "Failed to update attempt limit");
+  } finally {
+    setManagingReportAttempts(false);
+  }
+};
+
+const handleDeadlineSubmit = async (e) => {
+  e.preventDefault();
+  if (!deadlineForm.semester.trim() || !deadlineForm.deadline_date) {
+    toast.error('Semester aur deadline date required hain.');
+    return;
+  }
+  setSavingDeadline(true);
+  try {
+    if (editingDeadlineId) {
+      await deadlineAPI.update(editingDeadlineId, deadlineForm);
+      toast.success('Deadline updated successfully!');
+    } else {
+      await deadlineAPI.create(deadlineForm);
+      toast.success('Deadline created successfully!');
+    }
+    setDeadlineForm({ deadline_type: 'proposal', semester: '', fydp_phase: 'fydp1', deadline_date: '', late_submission_allowed: true });
+    setEditingDeadlineId(null);
+    fetchDeadlines();
+  } catch (err) {
+    console.error('Error saving deadline:', err);
+    toast.error(err.response?.data?.non_field_errors?.[0] || 'Failed to save deadline. Ensure no duplicate exists.');
+  } finally {
+    setSavingDeadline(false);
+  }
+};
+
+const handleEditDeadline = (d) => {
+  setEditingDeadlineId(d.id);
+  setDeadlineForm({
+    deadline_type: d.deadline_type,
+    semester: d.semester,
+    fydp_phase: d.fydp_phase,
+    deadline_date: d.deadline_date?.slice(0, 16),
+    late_submission_allowed: d.late_submission_allowed
+  });
+};
+
+const handleDeleteDeadline = (id) => {
+  setConfirmState({
+    title: 'Delete Deadline',
+    message: 'Are you sure you want to delete this deadline?',
+    confirmText: 'Delete',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await deadlineAPI.delete(id);
+        toast.success('Deadline deleted.');
+        fetchDeadlines();
+      } catch (err) {
+        toast.error('Failed to delete deadline.');
+      }
+    }
+  });
+};
+
 
   // renderFinalReports function
   const renderFinalReports = () => {
@@ -808,6 +984,7 @@ const handleAnnouncementSubmit = (e) => {
                   <th>Plagiarism</th>
                   <th>Late?</th>
                   <th>Action</th>
+                  <th>Manage Attempts</th>
                 </tr>
               </thead>
               <tbody>
@@ -818,15 +995,15 @@ const handleAnnouncementSubmit = (e) => {
                     <td>{r.approved_by_supervisor_name || 'N/A'}</td>
                     <td>
                       <span style={{ 
-                        color: r.internal_similarity_score > 30 ? '#ef4444' : '#10b981',
+                        color: r.turnitin_similarity_score > 30 ? '#ef4444' : '#10b981',
                         fontWeight: '600'
                       }}>
-                        {r.internal_similarity_score}%
+                        {r.turnitin_similarity_score || 0}%
                       </span>
                     </td>
                     <td>
                       {r.is_late ? (
-                        <span style={{ color: '#f59e0b', fontWeight: '600' }}>⚠️ Yes</span>
+                        <span style={{ color: '#f59e0b', fontWeight: '600' }}> Yes</span>
                       ) : (
                         <span style={{ color: '#10b981' }}>No</span>
                       )}
@@ -835,6 +1012,19 @@ const handleAnnouncementSubmit = (e) => {
                       <div className="action-btns">
                         <button className="approve-btn" onClick={() => setSelectedFinalReport(r)}>Review</button>
                       </div>
+                    </td>
+                    <td>
+                      <button
+                        className="submit-btn"
+                        style={{ 
+                          background: '#f59e0b',
+                          fontSize: '0.75rem',
+                          padding: '0.4rem 0.8rem'
+                        }}
+                        onClick={() => handleManageReportAttempts(r)}
+                      >
+                        Manage Attempts
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -866,18 +1056,12 @@ const handleAnnouncementSubmit = (e) => {
             {selectedFinalReport.is_late && (
               <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
                 <p style={{ fontSize: '0.875rem', color: '#92400e', margin: 0, fontWeight: '600' }}>
-                  ⚠️ Late Submission
+                 Late Submission
                 </p>
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div style={{ padding: '0.75rem', background: '#f0fdf4', borderRadius: '6px' }}>
-                <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Internal Plagiarism</p>
-                <p style={{ fontSize: '1.25rem', fontWeight: '700', color: selectedFinalReport.internal_similarity_score > 30 ? '#ef4444' : '#10b981', margin: 0 }}>
-                  {selectedFinalReport.internal_similarity_score}%
-                </p>
-              </div>
+            <div style={{ marginBottom: '1rem' }}>
               <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px' }}>
                 <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Turnitin Score</p>
                 <p style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e3a8a', margin: 0 }}>
@@ -1211,6 +1395,118 @@ const handleAnnouncementSubmit = (e) => {
     </div>
   );
 
+  const renderDeadlines = () => (
+  <div>
+    {renderPageHeader('Manage Submission Deadlines')}
+
+    <div className="announce-form-box">
+      <h3 className="sub-title" style={{ marginTop: 0 }}>
+        {editingDeadlineId ? 'Edit Deadline' : 'Set New Deadline'}
+      </h3>
+      <form onSubmit={handleDeadlineSubmit} className="announce-form">
+        <select
+          className="form-input"
+          value={deadlineForm.deadline_type}
+          onChange={(e) => setDeadlineForm({ ...deadlineForm, deadline_type: e.target.value })}
+        >
+          <option value="proposal">Proposal</option>
+          <option value="report">Report</option>
+        </select>
+
+        <select
+          className="form-input"
+          value={deadlineForm.fydp_phase}
+          onChange={(e) => setDeadlineForm({ ...deadlineForm, fydp_phase: e.target.value })}
+        >
+          <option value="fydp1">FYDP-I</option>
+          <option value="fydp2">FYDP-II</option>
+        </select>
+
+        <input
+          type="text"
+          className="form-input"
+          placeholder="Semester e.g. Fall 2026"
+          value={deadlineForm.semester}
+          onChange={(e) => setDeadlineForm({ ...deadlineForm, semester: e.target.value })}
+          required
+        />
+
+        <input
+          type="datetime-local"
+          className="form-input"
+          value={deadlineForm.deadline_date}
+          onChange={(e) => setDeadlineForm({ ...deadlineForm, deadline_date: e.target.value })}
+          required
+        />
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+          <input
+            type="checkbox"
+            checked={deadlineForm.late_submission_allowed}
+            onChange={(e) => setDeadlineForm({ ...deadlineForm, late_submission_allowed: e.target.checked })}
+          />
+          Allow late submission (marked as late)
+        </label>
+
+        <button type="submit" className="submit-btn" disabled={savingDeadline}>
+          {savingDeadline ? 'Saving...' : editingDeadlineId ? 'Update Deadline' : 'Create Deadline'}
+        </button>
+        {editingDeadlineId && (
+          <button
+            type="button"
+            className="back-btn"
+            onClick={() => {
+              setEditingDeadlineId(null);
+              setDeadlineForm({ deadline_type: 'proposal', semester: '', fydp_phase: 'fydp1', deadline_date: '', late_submission_allowed: true });
+            }}
+          >
+            Cancel Edit
+          </button>
+        )}
+      </form>
+    </div>
+
+    <h3 className="sub-title">Existing Deadlines</h3>
+    {loadingDeadlines ? (
+      <p>Loading...</p>
+    ) : deadlines.length === 0 ? (
+      <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>No deadlines set yet.</p>
+    ) : (
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Semester</th>
+              <th>Phase</th>
+              <th>Deadline</th>
+              <th>Late Allowed</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deadlines.map(d => (
+              <tr key={d.id}>
+                <td style={{ textTransform: 'capitalize' }}>{d.deadline_type}</td>
+                <td>{d.semester}</td>
+                <td>{d.fydp_phase_display || d.fydp_phase}</td>
+                <td>{new Date(d.deadline_date).toLocaleString()}</td>
+                <td>{d.late_submission_allowed ? 'Yes' : 'No'}</td>
+                <td>
+                  <div className="action-btns">
+                    <button className="approve-btn" onClick={() => handleEditDeadline(d)}>Edit</button>
+                    <button className="reject-btn" onClick={() => handleDeleteDeadline(d.id)}>Delete</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+);
+
   return (
     <div className="dashboard-page">
       <div className={`dashboard-sidebar ${menuOpen ? 'open' : ''}`}>
@@ -1305,6 +1601,14 @@ const handleAnnouncementSubmit = (e) => {
           Announcements
         </button>
       )}
+      {!isCommittee && (  
+        <button
+          className={`sidebar-btn ${activeTab === 'deadlines' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('deadlines'); setMenuOpen(false); }}
+        >
+          Deadlines
+        </button>
+      )}
         <button
     className={`sidebar-btn ${activeTab === 'marks' ? 'active' : ''}`}
     onClick={() => { setActiveTab('marks'); setSelectedGroupForMarks(null); setMenuOpen(false); }}
@@ -1334,6 +1638,7 @@ const handleAnnouncementSubmit = (e) => {
         {selectedFinalReport && renderFinalReportModal()}
         {activeTab === 'groups' && !isCommittee && renderGroups()}
         {activeTab === 'announcements' && !isCommittee && renderAnnouncements()}
+        {activeTab === 'deadlines' && !isCommittee && renderDeadlines()}
         {activeTab === 'marks' && renderMarksEvaluation()}
         {activeTab === 'enrollment' && !isCommittee && <EnrollmentManagement />}
         {selectedFinalProposal && renderFinalProposalModal()}
@@ -1390,6 +1695,185 @@ const handleAnnouncementSubmit = (e) => {
         }}
         onCancel={() => setConfirmState(null)}
       />
+
+      {/* proposal Attempt Limit Management Modal */}
+      {attemptLimitModal && (
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.5)', display: 'flex', 
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000 
+        }} onClick={() => setAttemptLimitModal(null)}>
+          <div style={{ 
+            background: 'white', borderRadius: '12px', padding: '2rem', 
+            maxWidth: '500px', width: '90%', boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: '#1e293b' }}>Add Submission Attempts</h3>
+              <button 
+                onClick={() => setAttemptLimitModal(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{attemptLimitModal.project_title}</h4>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
+                Group: {attemptLimitModal.group_number}
+              </p>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0.25rem 0 0 0' }}>
+                Current Attempts: <strong style={{ color: attemptLimitModal.submission_count >= 3 ? '#ef4444' : '#10b981' }}>
+                  {attemptLimitModal.submission_count}/{attemptLimitModal.max_submission_attempts || 3}
+                </strong>
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#1e293b' }}>
+                Extra Attempts to Add:
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={extraAttempts}
+                onChange={(e) => setExtraAttempts(e.target.value)}
+                style={{ 
+                  width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', 
+                  borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box'
+                }}
+              />
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
+                New total attempts: {(attemptLimitModal.max_submission_attempts || 3) + parseInt(extraAttempts || 0)}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setAttemptLimitModal(null)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAttemptLimitSubmit}
+                disabled={managingAttempts}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: '#f59e0b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: managingAttempts ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  opacity: managingAttempts ? 0.5 : 1
+                }}
+              >
+                {managingAttempts ? 'Updating...' : 'Add Attempts'}
+              </button>
+            </div>
+          </div>
+        </div>     
+      )}
+            {/* Report Attempt Limit Management Modal */}
+      {reportAttemptModal && (
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.5)', display: 'flex', 
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000 
+        }} onClick={() => setReportAttemptModal(null)}>
+          <div style={{ 
+            background: 'white', borderRadius: '12px', padding: '2rem', 
+            maxWidth: '500px', width: '90%', boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+          }} onClick={(e) => e.stopPropagation()}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: '#1e293b' }}>Add Report Submission Attempts</h3>
+              <button 
+                onClick={() => setReportAttemptModal(null)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{reportAttemptModal.project_title}</h4>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
+                Group: {reportAttemptModal.group_number}
+              </p>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0.25rem 0 0 0' }}>
+                Current Attempts: <strong style={{ color: reportAttemptModal.submission_count >= 3 ? '#ef4444' : '#10b981' }}>
+                  {reportAttemptModal.submission_count}/{reportAttemptModal.max_submission_attempts || 3}
+                </strong>
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#1e293b' }}>
+                Extra Attempts to Add:
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={reportExtraAttempts}
+                onChange={(e) => setReportExtraAttempts(e.target.value)}
+                style={{ 
+                  width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', 
+                  borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box'
+                }}
+              />
+              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem' }}>
+                New total attempts: {(reportAttemptModal.max_submission_attempts || 3) + parseInt(reportExtraAttempts || 0)}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setReportAttemptModal(null)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReportAttemptSubmit}
+                disabled={managingReportAttempts}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: '#f59e0b',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: managingReportAttempts ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  opacity: managingReportAttempts ? 0.5 : 1
+                }}
+              >
+                {managingReportAttempts ? 'Updating...' : 'Add Attempts'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

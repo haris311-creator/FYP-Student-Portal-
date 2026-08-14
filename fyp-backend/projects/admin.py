@@ -20,8 +20,8 @@ class ProjectGroupAdmin(admin.ModelAdmin):
 
 @admin.register(GroupMember)
 class GroupMemberAdmin(admin.ModelAdmin):
-    list_display = ['student', 'group', 'role', 'cgpa', 'earned_credit_hours', 'has_special_permission']
-    list_filter = ['role', 'has_special_permission', 'group']
+    list_display = ['student', 'group', 'role']
+    list_filter = ['role', 'group']
     search_fields = ['student__email', 'student__full_name']
     readonly_fields = ['join_date']
 
@@ -52,15 +52,13 @@ from .models import (
 class ProjectReportSubmissionAdmin(admin.ModelAdmin):
     list_display = [
         'group', 'submission_count', 'status', 'is_late',
-        'internal_similarity_score', 'turnitin_similarity_score',
-        'submitted_at', 'plagiarism_check_completed'
+        'turnitin_similarity_score', 'submitted_at', 
     ]
-    list_filter = ['status', 'is_late', 'plagiarism_check_completed', 'submitted_at']
+    list_filter = ['status', 'is_late', 'submitted_at']
     search_fields = ['group__group_number', 'group__project_title']
     readonly_fields = [
         'submission_count', 'submitted_at', 'is_late',
-        'internal_similarity_score', 'internal_similarity_report',
-        'plagiarism_check_completed', 'created_at', 'updated_at'
+        'created_at', 'updated_at'
     ]
     
     fieldsets = (
@@ -79,10 +77,7 @@ class ProjectReportSubmissionAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Plagiarism Check', {
-            'fields': (
-                'internal_similarity_score', 'internal_similarity_report',
-                'turnitin_similarity_score', 'plagiarism_check_completed'
-            ),
+            'fields': ('turnitin_similarity_score',),
             'classes': ('collapse',)
         }),
         ('Timestamps', {

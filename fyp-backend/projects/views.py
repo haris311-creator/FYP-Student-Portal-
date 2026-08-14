@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied
 from accounts.models import CustomUser 
 from django.db import models
 from .models import ProjectGroup, Faculty
+import re
 from .serializers import ProjectGroupSerializer
 from .models import MeetingMinute, AttendanceLog, ProjectReportSubmission, ReportDeadline
 
@@ -36,7 +37,6 @@ from .serializers import (
     ProjectReportReviewSerializer,
     ReportDeadlineSerializer,    
 )
-from .utils import check_internal_plagiarism
 from .permissions import IsStudent, IsGroupMemberOrReadOnly, IsAdminUser
 
 
@@ -50,58 +50,6 @@ class FacultyViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.
     permission_classes = [IsAuthenticated]
 
 
-# =============================================================================
-# 2. ELIGIBILITY CHECK - Real-time warning preview
-# =============================================================================
-class EligibilityCheckView(viewsets.ViewSet):
-    """
-    POST /api/projects/check-eligibility/
-    Body: { "cgpa": 1.8, "earned_credit_hours": 95, "prerequisites_completed": true }
-    Returns warnings but does NOT save anything.
-    """
-    permission_classes = [IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        members_data = request.data.pop('members', [])
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        self.perform_create(serializer)
-        group = serializer.instance
-        
-        member_errors = []
-        for idx, member_data in enumerate(members_data):
-            user_odoo_id = member_data.get('odoo_id')
-            user = CustomUser.objects.filter(student_id=user_odoo_id).first()
-            
-            if not user:
-                member_errors.append({
-                    "index": idx,
-                    "error": f"User with ID {user_odoo_id} not found in database."
-                })
-                continue
-            
-            try:
-                GroupMember.objects.create(
-                    group=group,
-                    student=user,
-                    role=member_data.get('role', 'member'),
-                    full_name=member_data.get('full_name'),
-                    odoo_id=member_data.get('odoo_id'),
-                    cgpa=member_data.get('cgpa'),
-                    earned_credit_hours=member_data.get('earned_credit_hours'),
-                    prerequisites_completed=member_data.get('prerequisites_completed', True),
-                    has_special_permission=member_data.get('has_special_permission', False)
-                )
-            except Exception as e:
-                member_errors.append({"index": idx, "error": str(e)})
-
-        if member_errors:
-            group.delete()
-            return Response({"member_errors": member_errors}, status=status.HTTP_400_BAD_REQUEST)
-
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 # =============================================================================
@@ -176,26 +124,57 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
         #  Create members
         member_errors = []
         for idx, member_data in enumerate(members_data):
-            user_input_id = member_data.get('odoo_id')
-            user = CustomUser.objects.filter(student_id=user_input_id).first()
-            
+            raw_id = (member_data.get('odoo_id') or '').strip().upper().replace(" ", "")
+
+            pattern_with_dashes = r"^IU\d{2}-\d{4}-\d{4}$"
+            pattern_without_dashes = r"^IU\d{10}$"
+
+            if re.match(pattern_with_dashes, raw_id):
+                clean_id = raw_id
+            elif re.match(pattern_without_dashes, raw_id):
+                clean_id = f"{raw_id[:4]}-{raw_id[4:8]}-{raw_id[8:]}"
+            else:
+                member_errors.append({
+                    "index": idx,
+                    "error": "Invalid Odoo ID format. Use pattern: IU02-0122-0289"
+                })
+                continue
+
+            user = CustomUser.objects.filter(student_id=clean_id).first()
             if not user:
                 member_errors.append({
                     "index": idx,
-                    "error": f"User '{user_input_id}' not found."
+                    "error": f"Odoo ID '{clean_id}' does not exist. Please enter the ID you registered with."
                 })
                 continue
-            
+
+            entered_name = (member_data.get('full_name') or '').strip().lower()
+            registered_name = f"{user.first_name} {user.last_name}".strip().lower()
+            if entered_name != registered_name:
+                member_errors.append({
+                    "index": idx,
+                    "error": f"Name does not match our records. Please enter your registered name: {user.first_name} {user.last_name}"
+                })
+                continue
+
+            existing_membership = GroupMember.objects.filter(
+                student=user
+            ).exclude(
+                group__status='rejected'
+            ).first()
+            if existing_membership:
+                member_errors.append({
+                    "index": idx,
+                    "error": f"{user.first_name} {user.last_name} is already part of another group (Group {existing_membership.group.group_number or existing_membership.group.group_id})."
+                })
+                continue
+
             GroupMember.objects.create(
                 group=group,
                 student=user,
                 role=member_data.get('role', 'member'),
                 full_name=member_data.get('full_name'),
-                odoo_id=member_data.get('odoo_id'),
-                cgpa=member_data.get('cgpa'),
-                earned_credit_hours=member_data.get('earned_credit_hours'),
-                prerequisites_completed=member_data.get('prerequisites_completed', True),
-                has_special_permission=member_data.get('has_special_permission', False)
+                odoo_id=clean_id
             )
             
             print(f" Member {idx+1} added: {user.email}")
@@ -381,6 +360,15 @@ class FYDPProposalViewSet(viewsets.ModelViewSet):
         proposal.supervisor_remarks = ''
         proposal.admin_remarks = ''
         
+        # Check deadline and mark late if needed
+        deadline_obj = ReportDeadline.objects.filter(
+            semester=proposal.group.semester,
+            fydp_phase=proposal.group.fydp_phase,
+            deadline_type='proposal'
+        ).first()
+        if deadline_obj:
+            proposal.check_deadline_and_mark_late(deadline_obj.deadline_date)
+
         # Increment submission count
         success, msg = proposal.increment_submission_count()
         if not success:
@@ -476,10 +464,55 @@ class FYDPProposalViewSet(viewsets.ModelViewSet):
             msg += " | Report submission initialized for students."
         
         elif action == 'reject':
-            # Agar reject ho toh status wapas idea_pitch kar dein
-            group.status = 'idea_pitch'
+            # Keep group in proposal flow so student can resubmit
+            group.status = 'proposal_pending'
             group.save()
             
+        return Response({
+            'message': msg,
+            'data': FYDPProposalSerializer(proposal).data
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='attempt-limit-reached')
+    def attempt_limit_reached(self, request):
+        """
+        GET /api/projects/proposals/attempt-limit-reached/
+        Proposals where students have used all submission attempts.
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        proposals = FYDPProposal.objects.filter(
+            submission_count__gte=models.F('max_submission_attempts')
+        ).exclude(status='approved')
+
+        serializer = FYDPProposalSerializer(proposals, many=True)
+        return Response({'count': proposals.count(), 'results': serializer.data})
+
+    @action(detail=True, methods=['post'], url_path='increase-attempts')
+    def increase_attempts(self, request, pk=None):
+        """
+        POST /api/projects/proposals/{id}/increase-attempts/
+        Admin grants extra submission attempts to a student group.
+        Body: { "extra_attempts": 1 }
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        proposal = self.get_object()
+        extra_attempts = request.data.get('extra_attempts', 1)
+
+        try:
+            extra_attempts = int(extra_attempts)
+            if extra_attempts < 1:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'extra_attempts must be a positive integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        success, msg = proposal.increase_attempt_limit(extra_attempts)
         return Response({
             'message': msg,
             'data': FYDPProposalSerializer(proposal).data
@@ -766,8 +799,6 @@ class SupervisorGroupViewSet(viewsets.GenericViewSet):
                 'email': member.student.email,
                 'student_id': member.student.student_id,
                 'role': member.role,
-                'cgpa': float(member.cgpa),
-                'credit_hours': member.earned_credit_hours,
                 'contribution': member.contribution_percentage
             })
         
@@ -1303,7 +1334,8 @@ class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
         # Check deadline and mark late if needed
         deadline_obj = ReportDeadline.objects.filter(
             semester=report.group.semester,
-            fydp_phase=report.group.fydp_phase
+            fydp_phase=report.group.fydp_phase,
+            deadline_type='report'
         ).first()
         
         if deadline_obj:
@@ -1320,21 +1352,10 @@ class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
             group.status = 'in_progress'
             group.save()
         
-        # Run internal plagiarism check
-        try:
-            similarity_score, similarity_report = check_internal_plagiarism(report)
-            report.internal_similarity_score = similarity_score
-            report.internal_similarity_report = similarity_report
-            report.plagiarism_check_completed = True
-            report.save()
-        except Exception as e:
-            print(f"️ Plagiarism check failed: {str(e)}")
-            report.save()
             
         return Response({
             'message': 'Report uploaded successfully',
             'is_late': report.is_late,
-            'internal_similarity_score': float(report.internal_similarity_score),
             'data': ProjectReportSubmissionSerializer(report).data
         }, status=status.HTTP_200_OK)
 
@@ -1405,9 +1426,12 @@ class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
             msg += " | Report approved. Project is in progress."
         
         elif action == 'reject':
-            # Agar reject ho toh status wapas proposal_approved kar dein
-            group.status = 'proposal_approved'
+            report.status = 'revision_needed'
+            report.save()
+            # Group status ko 'in_progress' rakhein
+            group.status = 'in_progress'
             group.save()
+            msg += " | Report rejected. Student can resubmit after revisions."
             
         return Response({
             'message': msg,
@@ -1482,6 +1506,53 @@ class ProjectReportSubmissionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+
+    @action(detail=False, methods=['get'], url_path='attempt-limit-reached')
+    def attempt_limit_reached(self, request):
+        """
+        GET /api/projects/reports/attempt-limit-reached/
+        Reports where students have used all submission attempts.
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        reports = ProjectReportSubmission.objects.filter(
+            submission_count__gte=models.F('max_submission_attempts')
+        ).exclude(status='approved')
+
+        serializer = ProjectReportSubmissionSerializer(reports, many=True)
+        return Response({'count': reports.count(), 'results': serializer.data})
+
+    @action(detail=True, methods=['post'], url_path='increase-attempts')
+    def increase_attempts(self, request, pk=None):
+        """
+        POST /api/projects/reports/{id}/increase-attempts/
+        Admin grants extra submission attempts to a student group.
+        Body: { "extra_attempts": 1 }
+        """
+        if request.user.user_type != 'admin':
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        report = self.get_object()
+        extra_attempts = request.data.get('extra_attempts', 1)
+
+        try:
+            extra_attempts = int(extra_attempts)
+            if extra_attempts < 1:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'extra_attempts must be a positive integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        success, msg = report.increase_attempt_limit(extra_attempts)
+        
+        return Response({
+            'message': msg,
+            'data': ProjectReportSubmissionSerializer(report).data
+        }, status=status.HTTP_200_OK)
+
 # =============================================================================
 # REPORT DEADLINE VIEWSET (Admin Only)
 # =============================================================================
@@ -1512,8 +1583,9 @@ class ReportDeadlineViewSet(viewsets.ModelViewSet):
         """
         semester = request.query_params.get('semester')
         fydp_phase = request.query_params.get('fydp_phase', 'fydp2')
+        deadline_type = request.query_params.get('deadline_type', 'report')
         
-        queryset = ReportDeadline.objects.filter(fydp_phase=fydp_phase)
+        queryset = ReportDeadline.objects.filter(fydp_phase=fydp_phase, deadline_type=deadline_type)
         
         if semester:
             queryset = queryset.filter(semester=semester)

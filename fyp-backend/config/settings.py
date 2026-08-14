@@ -28,7 +28,7 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
 
 #ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.100.7']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -128,7 +128,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Karachi'
 
 USE_I18N = True
 
@@ -168,6 +168,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5174",  
     "http://127.0.0.1:5174",  
     "http://192.168.100.7:5173", 
+    #"https://yourdomain.com",
 ]
 CORS_ALLOW_CREDENTIALS = True
 

@@ -33,8 +33,9 @@ function ResetPassword() {
       return;
     }
 
-    if (formData.new_password.length < 8) {
-      setError('Password must be at least 8 characters');
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!passwordRegex.test(formData.new_password)) {
+      setError('Password must be at least 8 characters and include uppercase, lowercase, number, and symbol');
       setLoading(false);
       return;
     }
@@ -119,6 +120,25 @@ function ResetPassword() {
                 required
                 disabled={success}
               />
+              {formData.new_password && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#64748b', lineHeight: '1.6' }}>
+                  <div style={{ color: formData.new_password.length >= 8 ? '#10b981' : '#ef4444' }}>
+                    {formData.new_password.length >= 8 ? '✓' : '✗'} At least 8 characters
+                  </div>
+                  <div style={{ color: /[A-Z]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
+                    {/[A-Z]/.test(formData.new_password) ? '✓' : '✗'} One uppercase letter
+                  </div>
+                  <div style={{ color: /[a-z]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
+                    {/[a-z]/.test(formData.new_password) ? '✓' : '✗'} One lowercase letter
+                  </div>
+                  <div style={{ color: /[0-9]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
+                    {/[0-9]/.test(formData.new_password) ? '✓' : '✗'} One number
+                  </div>
+                  <div style={{ color: /[^A-Za-z0-9]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
+                    {/[^A-Za-z0-9]/.test(formData.new_password) ? '✓' : '✗'} One symbol (@, #, $, etc.)
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="form-group">

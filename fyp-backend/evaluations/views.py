@@ -99,6 +99,11 @@ class SessionalEvaluationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Auto-set evaluator"""
         serializer.save(evaluator=self.request.user)
+
+    def get_permissions(self):
+        if self.action == 'by_group':
+            return [IsAuthenticated()]
+        return [permission() for permission in self.permission_classes]
     
     @action(detail=False, methods=['get'])
     def by_group(self, request):
@@ -109,8 +114,16 @@ class SessionalEvaluationViewSet(viewsets.ModelViewSet):
                 {'error': 'group_id is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        evaluations = self.get_queryset().filter(group_id=group_id)
+
+        user = request.user
+        if user.user_type == 'student':
+            from projects.models import GroupMember
+            if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
+                return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
+            evaluations = SessionalEvaluation.objects.filter(group_id=group_id)
+        else:
+            evaluations = self.get_queryset().filter(group_id=group_id)
+
         serializer = self.get_serializer(evaluations, many=True)
         return Response(serializer.data)
 
@@ -156,6 +169,11 @@ class MeetingLogEvaluationViewSet(viewsets.ModelViewSet):
     
     def perform_update(self, serializer):
         serializer.save(evaluator=self.request.user)
+
+    def get_permissions(self):
+        if self.action == 'by_group':
+            return [IsAuthenticated()]
+        return [permission() for permission in self.permission_classes]
     
     @action(detail=False, methods=['get'])
     def by_group(self, request):
@@ -166,8 +184,16 @@ class MeetingLogEvaluationViewSet(viewsets.ModelViewSet):
                 {'error': 'group_id is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        evaluations = self.get_queryset().filter(group_id=group_id)
+
+        user = request.user
+        if user.user_type == 'student':
+            from projects.models import GroupMember
+            if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
+                return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
+            evaluations = MeetingLogEvaluation.objects.filter(group_id=group_id)
+        else:
+            evaluations = self.get_queryset().filter(group_id=group_id)
+
         serializer = self.get_serializer(evaluations, many=True)
         return Response(serializer.data)
 
@@ -235,6 +261,11 @@ class ReportEvaluationViewSet(viewsets.ModelViewSet):
     
     def perform_update(self, serializer):
         serializer.save(evaluator=self.request.user)
+
+    def get_permissions(self):
+        if self.action == 'by_group':
+            return [IsAuthenticated()]
+        return [permission() for permission in self.permission_classes]
     
     @action(detail=False, methods=['get'])
     def by_group(self, request):
@@ -245,8 +276,16 @@ class ReportEvaluationViewSet(viewsets.ModelViewSet):
                 {'error': 'group_id is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        evaluations = self.get_queryset().filter(group_id=group_id)
+
+        user = request.user
+        if user.user_type == 'student':
+            from projects.models import GroupMember
+            if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
+                return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
+            evaluations = ReportEvaluation.objects.filter(group_id=group_id)
+        else:
+            evaluations = self.get_queryset().filter(group_id=group_id)
+
         serializer = self.get_serializer(evaluations, many=True)
         return Response(serializer.data)
     
@@ -311,7 +350,11 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
             )
         else:
             serializer.save(evaluator_type='external')
-    
+
+    def get_permissions(self):
+        if self.action == 'by_group':
+            return [IsAuthenticated()]
+        return [permission() for permission in self.permission_classes]
 
     @action(detail=False, methods=['get'])
     def by_group(self, request):
@@ -323,10 +366,22 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        evaluations = self.get_queryset().filter(
-            group_id=group_id,
-            is_submitted=True
-        ).select_related('group')
+        user = request.user
+        if user.user_type == 'student':
+            from projects.models import GroupMember
+            if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
+                return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
+        
+        if user.user_type == 'student':
+            evaluations = PresentationEvaluation.objects.filter(
+                group_id=group_id,
+                is_submitted=True
+            ).select_related('group')
+        else:
+            evaluations = self.get_queryset().filter(
+                group_id=group_id,
+                is_submitted=True
+            ).select_related('group')
         
         serializer = self.get_serializer(evaluations, many=True)
         

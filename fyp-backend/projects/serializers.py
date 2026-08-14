@@ -37,51 +37,15 @@ class GroupMemberSerializer(serializers.ModelSerializer):
     student_id = serializers.CharField(source='student.student_id', read_only=True)  
     student_first_name = serializers.CharField(source='student.first_name', read_only=True)  
     student_last_name = serializers.CharField(source='student.last_name', read_only=True)    
-    eligibility_warnings = serializers.SerializerMethodField()
-    registration_status = serializers.SerializerMethodField()
     
     class Meta:
         model = GroupMember
         fields = [
             'id', 'group', 'student', 'student_email', 'student_name', 'student_id',
-            'student_first_name', 'student_last_name', 'full_name', 'odoo_id', 'role', 'cgpa', 'earned_credit_hours', 
-            'prerequisites_completed', 'has_special_permission', 'permission_level', 
-            'permission_document', 'contribution_percentage', 'eligibility_warnings', 
-            'registration_status'
+            'student_first_name', 'student_last_name', 'full_name', 'odoo_id', 'role', 
+            'contribution_percentage'
         ]
-        read_only_fields = ['eligibility_warnings', 'registration_status']
     
-    def get_eligibility_warnings(self, obj):
-        return obj.get_eligibility_warnings()
-    
-    def get_registration_status(self, obj):
-        can_reg, msg = obj.can_register_with_warnings()
-        return {
-            'allowed': can_reg,
-            'message': msg or "Eligible to register",
-            'requires_permission': any(w.get('requires_permission') for w in obj.get_eligibility_warnings())
-        }
-    
-    def validate(self, data):
-        cgpa = data.get('cgpa')
-        credit_hours = data.get('earned_credit_hours')
-        has_permission = data.get('has_special_permission', False)
-        
-        if credit_hours < 94:
-            raise serializers.ValidationError({
-                'earned_credit_hours': 'Credit hours cannot be below 94 (absolute minimum per Policy 10.b)'
-            })
-        
-        warnings = []
-        if cgpa and cgpa < 2.0 and not has_permission:
-            warnings.append("CGPA < 2.0: Ensure you have HOD/Dean approval")
-        if credit_hours and credit_hours < 100 and not has_permission:
-            warnings.append("Credit deficiency: Ensure you have required approval")
-        
-        if warnings:
-            self.context['warnings'] = warnings
-        
-        return data
 
 
 # =============================================================================
@@ -137,8 +101,6 @@ class ProjectGroupSerializer(serializers.ModelSerializer):
                 'odoo_id': m.odoo_id or m.student.student_id or '-',
                 'student_id': m.student.student_id or '-',
                 'role': m.role,
-                'cgpa': float(m.cgpa) if m.cgpa else None,
-                'credit_hours': m.earned_credit_hours,
             } for m in members
         ]
     
@@ -177,9 +139,9 @@ class GroupCreateSerializer(serializers.Serializer):
     members = serializers.ListField(
         child=serializers.DictField(),
         min_length=2,
-        max_length=3,
+        max_length=4,
         error_messages={'min_length': 'Group must have at least 2 members',
-                       'max_length': 'Group cannot have more than 3 members'}
+                       'max_length': 'Group cannot have more than 4 members'}
     )
     
     def validate_members(self, members):
@@ -190,11 +152,6 @@ class GroupCreateSerializer(serializers.Serializer):
         if len(student_ids) != len(set(student_ids)):
             raise serializers.ValidationError("Duplicate students in group")
         
-        for i, member in enumerate(members):
-            if 'cgpa' not in member or 'earned_credit_hours' not in member:
-                raise serializers.ValidationError(f"Member {i+1}: CGPA and credit hours required")
-            if member['earned_credit_hours'] < 94:
-                raise serializers.ValidationError(f"Member {i+1}: Credit hours cannot be below 94")
         
         return members
     
@@ -230,6 +187,10 @@ class FYDPProposalSerializer(serializers.ModelSerializer):
     finally_approved_by_name = serializers.CharField(
         source='finally_approved_by.full_name', read_only=True, default=None
     )
+    can_upload = serializers.SerializerMethodField()
+    can_upload_reason = serializers.SerializerMethodField()
+    max_submission_attempts = serializers.IntegerField(read_only=True)
+    is_late = serializers.BooleanField(read_only=True)
     
     class Meta:
         model = FYDPProposal
@@ -239,18 +200,27 @@ class FYDPProposalSerializer(serializers.ModelSerializer):
             'scope_included', 'scope_excluded', 'methodology', 'resources_involved',
             'final_deliverables', 'learning_outcomes', 'industrial_support', 
             'industry_partner_name', 'sdg_mapping', 'ccp_mapping', 'acm_mapping',
-            'project_schedule', 'proposal_file', 'submission_count',
+            'project_schedule', 'proposal_file', 'submission_count', 'max_submission_attempts', 'is_late',
             'status', 'status_display', 'submitted_at',
             'supervisor_remarks', 'approved_by_supervisor_name', 'supervisor_reviewed_at',
             'admin_remarks', 'finally_approved_by_name', 'admin_reviewed_at',
-            'committee_remarks', 'project_serial_no', 'created_at', 'updated_at'
+            'committee_remarks', 'project_serial_no', 'created_at', 'updated_at',
+            'can_upload', 'can_upload_reason'
         ]
         read_only_fields = [
             'status', 'submitted_at', 'committee_remarks', 'project_serial_no',
-            'submission_count', 'supervisor_remarks', 'admin_remarks',
+            'submission_count', 'max_submission_attempts', 'is_late', 'supervisor_remarks', 'admin_remarks',
             'approved_by_supervisor_name', 'finally_approved_by_name',
-            'supervisor_reviewed_at', 'admin_reviewed_at'
+            'supervisor_reviewed_at', 'admin_reviewed_at', 'can_upload', 'can_upload_reason'
         ]
+    
+    def get_can_upload(self, obj):
+        allowed, _ = obj.can_upload()
+        return allowed
+
+    def get_can_upload_reason(self, obj):
+        _, reason = obj.can_upload()
+        return reason
     
     def validate(self, data):
         required_fields = ['problem_statement', 'proposed_solution', 'methodology']
@@ -346,39 +316,6 @@ class ChangeRequestSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-# =============================================================================
-# UTILITY SERIALIZERS
-# =============================================================================
-class EligibilityCheckSerializer(serializers.Serializer):
-    cgpa = serializers.DecimalField(max_digits=4, decimal_places=2)
-    earned_credit_hours = serializers.IntegerField()
-    prerequisites_completed = serializers.BooleanField(default=True)
-    
-    def to_representation(self, instance):
-        warnings = []
-        if instance['cgpa'] < 2.0:
-            warnings.append({
-                'field': 'cgpa', 'message': f"CGPA {instance['cgpa']} < 2.0 (Policy 10.b)",
-                'severity': 'warning', 'requires_permission': True
-            })
-        if instance['earned_credit_hours'] < 94:
-            raise serializers.ValidationError("Credit hours cannot be below 94 (absolute minimum)")
-        elif instance['earned_credit_hours'] < 97:
-            warnings.append({
-                'field': 'credit_hours', 'message': "2-course deficiency (Dean approval needed)",
-                'severity': 'warning', 'requires_permission': True, 'permission_level': 'dean'
-            })
-        elif instance['earned_credit_hours'] < 100:
-            warnings.append({
-                'field': 'credit_hours', 'message': "1-course deficiency (HOD approval needed)",
-                'severity': 'warning', 'requires_permission': True, 'permission_level': 'hod'
-            })
-        if not instance['prerequisites_completed']:
-            warnings.append({
-                'field': 'prerequisites', 'message': 'Prerequisites not completed',
-                'severity': 'warning', 'requires_permission': True
-            })
-        return {'warnings': warnings, 'can_register': instance['earned_credit_hours'] >= 94}
 
 
 # =============================================================================
@@ -407,8 +344,6 @@ class AdminProjectGroupSerializer(serializers.ModelSerializer):
                 'odoo_id': m.odoo_id or m.student.student_id or '-',
                 'student_id': m.student.student_id or '-', 
                 'role': m.role,
-                'cgpa': float(m.cgpa) if m.cgpa else None,
-                'credit_hours': m.earned_credit_hours,
             } for m in members
         ]
     
@@ -650,18 +585,24 @@ class ProjectReportSubmissionSerializer(serializers.ModelSerializer):
         source='finally_approved_by.full_name', read_only=True, default=None
     )
     
-    # Plagiarism fields
-    internal_similarity_score = serializers.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        read_only=True
-    )
+
     turnitin_similarity_score = serializers.DecimalField(
         max_digits=5, 
         decimal_places=2, 
         read_only=True
     )
-    plagiarism_check_completed = serializers.BooleanField(read_only=True)
+
+    max_submission_attempts = serializers.IntegerField(read_only=True)
+    can_upload = serializers.SerializerMethodField()
+    can_upload_reason = serializers.SerializerMethodField()
+
+    def get_can_upload(self, obj):
+        allowed, _ = obj.can_upload()
+        return allowed
+
+    def get_can_upload_reason(self, obj):
+        _, reason = obj.can_upload()
+        return reason
     
     class Meta:
         model = ProjectReportSubmission
@@ -670,18 +611,16 @@ class ProjectReportSubmissionSerializer(serializers.ModelSerializer):
             'report_file', 'submission_count', 'status', 'status_display',
             'submitted_at', 'is_late', 'late_reason',
             'supervisor_remarks', 'approved_by_supervisor_name', 'supervisor_reviewed_at',
-            'admin_remarks', 'finally_approved_by_name', 'admin_reviewed_at',
-            'internal_similarity_score', 'internal_similarity_report',
-            'turnitin_similarity_score', 'plagiarism_check_completed',
-            'created_at', 'updated_at'
+            'admin_remarks', 'finally_approved_by_name', 'admin_reviewed_at', 'max_submission_attempts',
+            'turnitin_similarity_score', 
+            'created_at', 'updated_at', 'can_upload', 'can_upload_reason'
         ]
         read_only_fields = [
             'status', 'submitted_at', 'submission_count', 'is_late',
             'supervisor_remarks', 'admin_remarks',
             'approved_by_supervisor_name', 'finally_approved_by_name',
-            'supervisor_reviewed_at', 'admin_reviewed_at',
-            'internal_similarity_score', 'internal_similarity_report',
-            'turnitin_similarity_score', 'plagiarism_check_completed'
+            'supervisor_reviewed_at', 'admin_reviewed_at', 'max_submission_attempts',
+            'turnitin_similarity_score', 'can_upload', 'can_upload_reason'
         ]
 
 
@@ -741,16 +680,17 @@ class ProjectReportReviewSerializer(serializers.Serializer):
 
 class ReportDeadlineSerializer(serializers.ModelSerializer):
     """
-    Serializer for Report Deadline management (Admin only).
+    Serializer for Submission Deadline management (Admin only).
     """
     is_active = serializers.BooleanField(read_only=True)
     is_expired = serializers.BooleanField(read_only=True)
     fydp_phase_display = serializers.CharField(source='get_fydp_phase_display', read_only=True)
+    deadline_type_display = serializers.CharField(source='get_deadline_type_display', read_only=True)
     
     class Meta:
         model = ReportDeadline
         fields = [
-            'id', 'semester', 'fydp_phase', 'fydp_phase_display',
+            'id', 'deadline_type', 'deadline_type_display', 'semester', 'fydp_phase', 'fydp_phase_display',
             'deadline_date', 'late_submission_allowed',
             'is_active', 'is_expired', 'created_at', 'updated_at'
         ]
