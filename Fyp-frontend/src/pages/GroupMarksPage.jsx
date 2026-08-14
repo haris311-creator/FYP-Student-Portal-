@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
-import PresentationPrint from '../Components/PresentationPrint';
-import ProjectReportEvaluationForm from '../Components/ProjectReportEvaluationForm';
-import MeetingLogMarksForm from '../Components/MeetingLogMarksForm';
-import AwardListTemplate from '../Components/AwardListTemplate';
+import PresentationEvaluationForm from '../features/PresentationEvaluationForm';
+import PresentationPrint from '../prints/PresentationPrint';
+import ProjectReportEvaluationForm from '../features/ProjectReportEvaluationForm';
+import MeetingLogMarksForm from '../features/MeetingLogMarksForm';
+import TitleDefenseEvaluationForm from '../features/TitleDefenseEvaluationForm';
+import AwardListTemplate from '../prints/AwardListTemplate';
+import TitleDefenseAwardList from '../prints/TitleDefenseAwardList';
 import { evaluationAPI } from '../utils/api';
 import { toast } from 'react-toastify';
 import './GroupMarksPage.css';
@@ -217,6 +219,22 @@ const GroupMarksPage = ({ group, onBack }) => {
     );
   }
 
+  if (view === 'titleDefense') {
+    return (
+      <div className="gmp-container">
+        <button className="gmp-back-btn" onClick={() => setView('main')}>
+          &larr; Back to Group
+        </button>
+        <div style={{ margin: '-24px' }}>
+          <TitleDefenseEvaluationForm
+            group={group}
+            onClose={() => setView('main')}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="gmp-container">
       <div className="gmp-header">
@@ -255,6 +273,19 @@ const GroupMarksPage = ({ group, onBack }) => {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Title Defense */}
+        <div className="gmp-card">
+          <div className="gmp-card-header">
+            <div>
+              <h3>Title Defense</h3>
+              <p className="gmp-card-sub">Weightage: 10 marks &middot; Committee Evaluation</p>
+            </div>
+            <button className="gmp-evaluate-btn" onClick={() => setView('titleDefense')}>
+              Evaluate
+            </button>
           </div>
         </div>
 
@@ -312,6 +343,7 @@ const GroupMarksPage = ({ group, onBack }) => {
 
       {/* Award List */}
       <div className="gmp-award-section">
+        <TitleDefenseAwardList group={group} />
         <AwardListTemplate group={group} />
       </div>
 

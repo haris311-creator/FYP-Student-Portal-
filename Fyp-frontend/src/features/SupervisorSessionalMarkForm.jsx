@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { evaluationAPI } from '../utils/api';
-import { sessionalCriteria as rubricData } from './sessionalRubricData';
-import SupervisorSessionalPrint from './SupervisorSessionalPrint';
+import { sessionalCriteria as rubricData } from '../data/sessionalRubricData';
+import SupervisorSessionalPrint from '../prints/SupervisorSessionalPrint';
 import './SupervisorSessionalMarkForm.css';
 
 /**

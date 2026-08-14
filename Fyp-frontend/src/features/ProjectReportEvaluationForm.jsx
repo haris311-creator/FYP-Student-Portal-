@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { reportAPI, evaluationAPI } from '../utils/api';
-import { reportCriteria } from './reportRubricData';
-import ProjectReportRubricsPrint from './ProjectReportRubricsPrint';
+import { reportCriteria } from '../data/reportRubricData';
+import ProjectReportRubricsPrint from '../prints/ProjectReportRubricsPrint';
 import './ProjectReportEvaluationForm.css';
 
 const ProjectReportEvaluationForm = ({ group, onClose }) => {

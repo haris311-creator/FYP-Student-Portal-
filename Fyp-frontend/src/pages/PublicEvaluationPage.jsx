@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { evaluationAPI } from '../utils/api';
-import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
+import PresentationEvaluationForm from '../features/PresentationEvaluationForm';
 
 const PublicEvaluationPage = () => {
   const { token } = useParams();

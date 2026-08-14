@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import Navbar from '../Components/Navbar';
-import Footer from '../Components/Footer';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import { Link } from 'react-router-dom';
 import * as THREE from 'three';
-import { committeeMembers, activities } from '../Data/Ddata';
-import AnnouncementTicker from '../Components/AnnouncementTicker';
+import { committeeMembers, activities } from '../data/Ddata';
+import AnnouncementTicker from '../components/AnnouncementTicker';
 import './Homepage.css';
 
 function HomePage() {

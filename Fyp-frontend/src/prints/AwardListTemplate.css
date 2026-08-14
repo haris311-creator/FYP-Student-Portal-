@@ -80,11 +80,8 @@
 .alt-batch-line {
   font-size: 14px;
   margin: 6px 0 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .alt-fixed-fill {
@@ -122,6 +119,9 @@
 .alt-header-input {
   border: none;
   outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   font-family: inherit;
   font-size: 11px;
   width: 88px;

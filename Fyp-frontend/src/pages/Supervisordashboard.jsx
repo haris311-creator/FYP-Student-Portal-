@@ -1,7 +1,7 @@
 
-import SupervisorSessionalMarkForm from '../Components/SupervisorSessionalMarkForm';
-import SupervisorMeetingPrint from '../Components/SupervisorMeetingPrint';
-import SupervisorAttendancePrint from '../Components/SupervisorAttendancePrint';
+import SupervisorSessionalMarkForm from '../features/SupervisorSessionalMarkForm';
+import SupervisorMeetingPrint from '../prints/SupervisorMeetingPrint';
+import SupervisorAttendancePrint from '../prints/SupervisorAttendancePrint';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI, reportAPI, evaluationAPI } from '../utils/api';

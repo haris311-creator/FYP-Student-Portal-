@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import './AllGroupsPrint.css';
-import { downloadNodeAsPdf } from './printUtils';
+import { downloadNodeAsPdf } from '../utils/printUtils';
 
 const AllGroupsPrint = ({ groups = [] }) => {
   const [batch, setBatch] = useState('');

@@ -6,20 +6,20 @@ import 'react-toastify/dist/ReactToastify.css';
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import HomePage from './pages/HomePage';
+import HomePage from './pages/Homepage';
 import Login from './pages/Login';
-import StudentDashboard from './pages/StudentDashboard';
-import SupervisorDashboard from './pages/SupervisorDashboard';
-import AdminDashboard from "./Pages/Admindashboard";
-import GroupApprovals from './Pages/Admin/GroupApprovals';
-import PublicEvaluationPage from './Pages/PublicEvaluationPage';
-import StudentRegistration from './Pages/StudentRegistration';
-import ForgotPassword from './Pages/ForgotPassword';
-import ResetPassword from './Pages/ResetPassword';
+import StudentDashboard from './pages/Studentdashboard';
+import SupervisorDashboard from './pages/Supervisordashboard';
+import AdminDashboard from './pages/Admin/Admindashboard';
+import GroupApprovals from './pages/Admin/GroupApprovals';
+import PublicEvaluationPage from './pages/PublicEvaluationPage';
+import StudentRegistration from './pages/StudentRegistration';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Route Guards
-import ProtectedRoute from './components/ProtectedRoute';
-import AdminRoute from './components/AdminRoute';
+import ProtectedRoute from './guards/ProtectedRoute';
+import AdminRoute from './guards/AdminRoute';
 
 
 function App() {

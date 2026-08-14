@@ -245,8 +245,8 @@ const AwardListTemplate = ({ group }) => {
               Department of <span className="alt-fixed-fill">Computer Science</span>
             </p>
             <p className="alt-batch-line">
-              Batch: <input type="text" className="alt-header-input alt-header-input-short" defaultValue="" onChange={(e) => e.target.setAttribute('value', e.target.value)} />
-              &nbsp;&nbsp;&nbsp;Date of Conduct: <input type="date" className="alt-header-input" onChange={(e) => e.target.setAttribute('value', e.target.value)} />
+              <span>Batch: </span><input type="text" className="alt-header-input alt-header-input-short" defaultValue="" onChange={(e) => e.target.setAttribute('value', e.target.value)} />
+              &nbsp;&nbsp;&nbsp;<span>Date of Conduct: </span><input type="date" className="alt-header-input" onChange={(e) => e.target.setAttribute('value', e.target.value)} />
             </p>
             <h2 className="alt-doc-title">Award List of FYDP-1</h2>
           </div>

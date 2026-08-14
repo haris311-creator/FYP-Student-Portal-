@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { adminAPI } from "../api/admin"; 
-import api, { proposalAPI, reportAPI, deadlineAPI  } from '../utils/api';
+import { adminAPI } from "../../api/admin"; 
+import api, { proposalAPI, reportAPI, deadlineAPI  } from '../../utils/api';
 import { toast } from 'react-toastify';
-import './Admindashboard.css';
-import PresentationEvaluationForm from '../Components/PresentationEvaluationForm';
-import GroupMarksPage from './GroupMarksPage';
-import AllGroupsPrint from '../Components/AllGroupsPrint';
-import ConfirmModal from '../Components/ConfirmModal';
+import './AdminDashboard.css';
+import PresentationEvaluationForm from '../../features/PresentationEvaluationForm';
+import GroupMarksPage from '../GroupMarksPage';
+import AllGroupsPrint from '../../prints/AllGroupsPrint';
+import ConfirmModal from '../../components/ConfirmModal';
 import EnrollmentManagement from './EnrollmentManagement';
 
 function AdminDashboard() {

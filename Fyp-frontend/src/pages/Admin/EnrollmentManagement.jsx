@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api, { enrollmentAPI } from '../utils/api';
+import api, { enrollmentAPI } from '../../utils/api';
 import { toast } from 'react-toastify';
-import ConfirmModal from '../Components/ConfirmModal';
+import ConfirmModal from '../../components/ConfirmModal';
 import './EnrollmentManagement.css';
 
 function EnrollmentManagement() {

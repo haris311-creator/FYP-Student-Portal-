@@ -314,6 +314,20 @@ export const evaluationAPI = {
   
   submitPublicEvaluation: (token, data) => 
     axios.post(`${API_BASE_URL}/evaluations/public/presentation/${token}/`, data),
+
+  // Title Defense - Evaluation Committee (public link)
+  createTitleDefenseSession: (groupId) => 
+    axios.post(`http://localhost:8000/api/evaluations/title-defense/session/`, { group_id: groupId }),
+
+  getTitleDefenseStatus: (groupId) => 
+    axios.get(`http://localhost:8000/api/evaluations/title-defense/status/${groupId}/`),
+
+  getPublicTitleDefense: (token) => 
+    axios.get(`http://localhost:8000/api/evaluations/public/title-defense/${token}/`),
+
+  submitPublicTitleDefense: (token, data) => 
+    axios.post(`http://localhost:8000/api/evaluations/public/title-defense/${token}/`, data),
+
   
   // Final Results
   calculateFinalMarks: (groupId) => api.post('/evaluations/final-results/calculate/', { group_id: groupId }),
