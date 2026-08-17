@@ -13,6 +13,7 @@ import SupervisorDashboard from './pages/Supervisordashboard';
 import AdminDashboard from './pages/Admin/Admindashboard';
 import GroupApprovals from './pages/Admin/GroupApprovals';
 import PublicEvaluationPage from './pages/PublicEvaluationPage';
+import PublicTitleDefensePage from './pages/PublicTitleDefensePage';
 import StudentRegistration from './pages/StudentRegistration';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -41,6 +42,7 @@ function App() {
         <Route path="/register" element={<StudentRegistration />} />
 
         {/* Public Evaluation Route */}
+        <Route path="/evaluate/td/:token" element={<PublicTitleDefensePage />} />
         <Route path="/evaluate/:token" element={<PublicEvaluationPage />} />
 
         {/*  Admin Group Approvals Route - FIXED */}

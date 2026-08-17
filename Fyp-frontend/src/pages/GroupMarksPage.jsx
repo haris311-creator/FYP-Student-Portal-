@@ -4,9 +4,11 @@ import PresentationPrint from '../prints/PresentationPrint';
 import ProjectReportEvaluationForm from '../features/ProjectReportEvaluationForm';
 import MeetingLogMarksForm from '../features/MeetingLogMarksForm';
 import TitleDefenseEvaluationForm from '../features/TitleDefenseEvaluationForm';
+import TitleDefenseRubricsPrint from '../prints/TitleDefenseRubricsPrint';
 import AwardListTemplate from '../prints/AwardListTemplate';
 import TitleDefenseAwardList from '../prints/TitleDefenseAwardList';
 import { evaluationAPI } from '../utils/api';
+import { titleDefenseCriteria } from '../data/titleDefenseRubricData';
 import { toast } from 'react-toastify';
 import './GroupMarksPage.css';
 
@@ -23,6 +25,10 @@ const GroupMarksPage = ({ group, onBack }) => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showPrintable, setShowPrintable] = useState(false);
   const [selectedEvalIdx, setSelectedEvalIdx] = useState(0);
+  const [tdData, setTdData] = useState(null);
+  const [showTDDetails, setShowTDDetails] = useState(false);
+  const [selectedTDEvalIdx, setSelectedTDEvalIdx] = useState(0);
+  const [showTDPrint, setShowTDPrint] = useState(false);
 
   if (!group) return null;
 
@@ -98,6 +104,17 @@ const GroupMarksPage = ({ group, onBack }) => {
     };
 
     fetchMeetingLogMarks();
+  }, [group?.id]);
+
+  useEffect(() => {
+    const fetchTDData = async () => {
+      if (!group?.id) return;
+      try {
+        const res = await evaluationAPI.getTitleDefenseStatus(group.id);
+        setTdData(res?.data || null);
+      } catch { setTdData(null); }
+    };
+    fetchTDData();
   }, [group?.id]);
 
   const generateEvalLink = async () => {
@@ -281,11 +298,18 @@ const GroupMarksPage = ({ group, onBack }) => {
           <div className="gmp-card-header">
             <div>
               <h3>Title Defense</h3>
-              <p className="gmp-card-sub">Weightage: 10 marks &middot; Committee Evaluation</p>
+              <p className="gmp-card-sub">Weightage: 10 marks &middot; Project Committee (5%) + Evaluation Committee (5%)</p>
             </div>
-            <button className="gmp-evaluate-btn" onClick={() => setView('titleDefense')}>
-              Evaluate
-            </button>
+            <div className="gmp-header-actions" style={{ display: 'flex', gap: '10px' }}>
+              {tdData?.evaluations?.length > 0 && (
+                <button className="gmp-evaluate-btn" onClick={() => setShowTDDetails(true)} style={{ background: '#059669' }}>
+                  View Details
+                </button>
+              )}
+              <button className="gmp-evaluate-btn" onClick={() => setView('titleDefense')}>
+                Evaluate
+              </button>
+            </div>
           </div>
         </div>
 
@@ -491,6 +515,60 @@ const GroupMarksPage = ({ group, onBack }) => {
         })()}
         comments={presentationData?.results?.[selectedEvalIdx]?.comments || ''}
         evaluatorName={presentationData?.results?.[selectedEvalIdx]?.evaluator_name || ''}
+      />
+
+      {showTDDetails && tdData?.evaluations?.length > 0 && (
+        <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}>
+          <div style={{ background:'white', borderRadius:'12px', padding:'24px', maxWidth:'900px', width:'90%', maxHeight:'90vh', overflow:'auto' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
+              <h2 style={{ margin:0, color:'#1e3a8a' }}>Title Defense Evaluation Details</h2>
+              <button onClick={() => setShowTDDetails(false)} style={{ background:'none', border:'none', fontSize:'24px', cursor:'pointer', color:'#64748b' }}>&times;</button>
+            </div>
+
+            {tdData.evaluations.map((ev, idx) => (
+              <div key={idx} style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:'8px', padding:'16px', marginBottom:'16px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+                  <h4 style={{ margin:0, color:'#1e3a8a' }}>
+                    {ev.evaluator_name || `Evaluator ${idx + 1}`} — <span style={{ fontSize:'12px', color:'#64748b' }}>{ev.role === 'projectCommittee' ? 'Project Committee' : 'Evaluation Committee'}</span>
+                  </h4>
+                  <button
+                    onClick={() => { setSelectedTDEvalIdx(idx); setShowTDPrint(true); }}
+                    style={{ background:'#fff', color:'#1e3a8a', border:'2px solid #1e3a8a', borderRadius:'6px', padding:'6px 14px', fontSize:'13px', fontWeight:600, cursor:'pointer' }}
+                  >
+                    Print
+                  </button>
+                </div>
+                <div style={{ fontSize:'13px', color:'#1e293b', marginBottom:'8px' }}>
+                  Raw: <strong>{ev.raw_total}/40</strong> &rarr; Converted: <strong style={{ color:'#059669' }}>{ev.converted_marks}/5</strong>
+                </div>
+                {ev.comments && <div style={{ fontSize:'12px', color:'#64748b', fontStyle:'italic' }}>{ev.comments}</div>}
+              </div>
+            ))}
+
+            {tdData.grand_total !== undefined && (
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#dcfce7', border:'1px solid #bbf7d0', borderRadius:'8px', padding:'14px 20px', marginTop:'20px', fontSize:'15px', color:'#14532d', fontWeight:600 }}>
+                <span>Grand Total</span>
+                <strong style={{ fontSize:'20px', color:'#16a34a' }}>{tdData.grand_total}/10</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <TitleDefenseRubricsPrint
+        open={showTDPrint}
+        onClose={() => setShowTDPrint(false)}
+        group={group}
+        criteria={titleDefenseCriteria}
+        evaluators={[{ key: tdData?.evaluations?.[selectedTDEvalIdx]?.role || 'projectCommittee', label: tdData?.evaluations?.[selectedTDEvalIdx]?.evaluator_name || 'Evaluator', percent: '5%' }]}
+        evaluatorData={{
+          [tdData?.evaluations?.[selectedTDEvalIdx]?.role || 'projectCommittee']: {
+            evaluatorName: tdData?.evaluations?.[selectedTDEvalIdx]?.evaluator_name || '',
+            selections: tdData?.evaluations?.[selectedTDEvalIdx]?.selections || {},
+            marks: tdData?.evaluations?.[selectedTDEvalIdx]?.criteria_marks || {},
+            comments: tdData?.evaluations?.[selectedTDEvalIdx]?.comments || ''
+          }
+        }}
       />
     </div>
   );

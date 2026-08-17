@@ -344,12 +344,55 @@
   margin: 0;
 }
 
+/* Generate Link button (matches Presentation style) */
+.gmp-evaluate-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.gmp-evaluate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.gmp-evaluate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .tdf-container { padding: 16px; }
   .tdf-header { flex-direction: column; gap: 12px; }
   .tdf-rubric-btn { margin-left: 0; width: 100%; }
-  .tdf-info-label { width: 120px; }
+  .tdf-info-table table,
+  .tdf-info-table tbody,
+  .tdf-info-table tr,
+  .tdf-info-table td {
+    display: block;
+    width: 100%;
+    border-right: none;
+  }
+  .tdf-info-label {
+    width: 100%;
+    white-space: normal;
+    border-bottom: none;
+    padding-bottom: 2px;
+  }
+  .tdf-info-value {
+    padding-top: 2px;
+    padding-bottom: 12px;
+  }
   .tdf-actions { flex-direction: column; }
   .tdf-submit-btn, .tdf-cancel-btn { width: 100%; }
 }

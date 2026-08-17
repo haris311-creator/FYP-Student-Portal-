@@ -20,7 +20,7 @@ const MeetingPage = ({ meeting, selectedGroup, supervisorName }) => {
   const projectTitle = cleanText(selectedGroup?.project || selectedGroup?.title);
   const meetingDate = cleanText(meeting.date || '[day - month - year]');
   const members = selectedGroup?.members || [];
-  const signatureRows = Math.max(4, members.length || 0);
+  const signatureRows = members.length || 0;
 
   return (
     <div className="sp-page sp-meeting-page">
@@ -101,7 +101,12 @@ const SupervisorMeetingPrint = ({
       });
     }
 
-    const meetingNumber = activeMeetingNumber || formData?.meeting_number || 1;
+    const latestMeetingNumber = meetingsList
+      .map((m) => m.meeting_number)
+      .filter((n) => typeof n === 'number')
+      .sort((a, b) => b - a)[0];
+
+    const meetingNumber = activeMeetingNumber || formData?.meeting_number || latestMeetingNumber || 1;
     const existing = meetingsList.find((m) => m.meeting_number === meetingNumber);
 
     if (existing) return [existing];

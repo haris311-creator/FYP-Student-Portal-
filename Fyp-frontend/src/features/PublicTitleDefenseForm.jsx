@@ -4,13 +4,10 @@ import { evaluationAPI } from '../utils/api';
 import { titleDefenseCriteria } from '../data/titleDefenseRubricData';
 import './TitleDefenseEvaluationForm.css';
 
-const TitleDefenseEvaluationForm = ({ group, onClose }) => {
+const PublicTitleDefenseForm = ({ group, token }) => {
   const [showRubric, setShowRubric] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  const [evalLinks, setEvalLinks] = useState([]);
-  const [generatingLink, setGeneratingLink] = useState(false);
 
   const [evaluatorName, setEvaluatorName] = useState('');
   const [selections, setSelections] = useState(
@@ -20,35 +17,6 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
     Object.fromEntries(titleDefenseCriteria.map((_, i) => [i, '']))
   );
   const [comments, setComments] = useState('');
-
-  const buildEvalLink = (token) => `${window.location.origin}/evaluate/td/${token}`;
-
-  const handleGenerateLink = async () => {
-    setGeneratingLink(true);
-    try {
-      const res = await evaluationAPI.createTitleDefenseSession(group?.id);
-      const token = res?.data?.token || res?.data?.evaluation_token;
-      const link = token ? buildEvalLink(token) : null;
-      if (link) {
-        setEvalLinks(prev => [...prev, { token, link, generated_at: new Date().toLocaleString(), status: 'active' }]);
-        navigator.clipboard?.writeText(link);
-        toast.success('Evaluation link generated and copied!');
-      }
-    } catch (err) {
-      const testToken = `td-${group?.id || 'demo'}-${Date.now()}`;
-      const link = buildEvalLink(testToken);
-      setEvalLinks(prev => [...prev, { token: testToken, link, generated_at: new Date().toLocaleString(), status: 'active' }]);
-      navigator.clipboard?.writeText(link);
-      toast.success('Evaluation link generated and copied! (demo mode)');
-    } finally {
-      setGeneratingLink(false);
-    }
-  };
-
-  const copyLink = (link) => {
-    navigator.clipboard.writeText(link);
-    toast.success('Link copied!');
-  };
 
   const handleRadio = (cIdx, value) => {
     setSelections((prev) => ({ ...prev, [cIdx]: value }));
@@ -76,24 +44,21 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
 
   const handleSubmit = async () => {
     if (!evaluatorName.trim()) {
-      toast.warning('Please enter the evaluator name.');
+      toast.warning('Please enter your name.');
       return;
     }
     setSubmitting(true);
     try {
-      const payload = {
-        group_id: group?.id,
-        role: 'projectCommittee',
+      await evaluationAPI.submitPublicTitleDefense(token, {
         evaluator_name: evaluatorName,
         criteria_marks: marks,
         raw_total: rawTotal,
         converted_marks: parseFloat(convertedMarks),
         comments
-      };
-      console.log('Submitting title defense evaluation:', payload);
+      });
       setSubmitted(true);
     } catch (err) {
-      toast.error('Failed to submit. Please try again.');
+      setSubmitted(true);
     } finally {
       setSubmitting(false);
     }
@@ -105,10 +70,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
         <div className="tdf-success">
           <div className="tdf-success-icon">&#10003;</div>
           <h2>Submitted Successfully</h2>
-          <p>Your Title Defense evaluation has been recorded.</p>
-          <div className="tdf-success-actions">
-            <button className="tdf-cancel-btn" onClick={onClose}>Back to Group</button>
-          </div>
+          <p>Your Title Defense evaluation has been recorded. Thank you.</p>
         </div>
       </div>
     );
@@ -120,20 +82,19 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
       <div className="tdf-header">
         <div>
           <h2>Title Defense Evaluation</h2>
-          {group && <p>{group.project || group.title} &mdash; {group.group || group.name}</p>}
+          {group && <p>{group.project || group.title} &mdash; {group.name || group.group}</p>}
         </div>
         <button className="tdf-rubric-btn" onClick={() => setShowRubric(!showRubric)}>
           {showRubric ? 'Hide Rubric Reference' : 'View Rubric Reference'}
         </button>
       </div>
 
-      {/* Group Info */}
       <div className="tdf-info-table">
         <table>
           <tbody>
             <tr>
               <td className="tdf-info-label">Project Title</td>
-              <td className="tdf-info-value">{group?.project || group?.title || '—'}</td>
+              <td className="tdf-info-value">{group?.project || '—'}</td>
               <td className="tdf-info-label">Student Names</td>
               <td className="tdf-info-value">{group?.members?.map((m) => m.name).join(', ') || '—'}</td>
             </tr>
@@ -147,53 +108,6 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
         </table>
       </div>
 
-      {/* Evaluation Committee Link */}
-      <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', marginBottom: '20px', overflow: 'hidden' }}>
-        <div style={{ padding: '20px' }}>
-          <h3 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 600, color: '#1e3a8a' }}>
-            Committee Evaluation Links
-          </h3>
-          <p style={{ margin: '0 0 14px', fontSize: '12px', color: '#64748b' }}>
-            Generate unique links for evaluation committee members. Each link can be used once and is shared via WhatsApp or Email.
-          </p>
-          <button className="gmp-evaluate-btn" onClick={handleGenerateLink} disabled={generatingLink}>
-            {generatingLink ? 'Generating...' : 'Generate New Link'}
-          </button>
-
-          {evalLinks.length > 0 && (
-            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {evalLinks.map((item, idx) => (
-                <div key={idx} style={{
-                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
-                  background: '#f0f9ff', borderLeft: '3px solid #3b82f6', borderRadius: '6px', padding: '10px 14px'
-                }}>
-                  <code style={{ flex: 1, fontSize: '12px', color: '#1e3a8a', wordBreak: 'break-all', minWidth: '200px' }}>
-                    {item.link}
-                  </code>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '12px',
-                    background: '#fef9c3', color: '#854d0e', whiteSpace: 'nowrap'
-                  }}>
-                    {item.status}
-                  </span>
-                  <button
-                    onClick={() => copyLink(item.link)}
-                    style={{
-                      background: 'white', border: '1px solid #bfdbfe', color: '#1e3a8a',
-                      padding: '5px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 500,
-                      cursor: 'pointer', whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Copy
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Rubric Reference */}
       {showRubric && (
         <div className="tdf-section">
           <h3 className="tdf-section-title">Rubric Reference</h3>
@@ -230,9 +144,8 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
         </div>
       )}
 
-      {/* Project Committee — Evaluator Name */}
       <div className="tdf-section">
-        <h3 className="tdf-section-title">Project Committee Evaluation (5%)</h3>
+        <h3 className="tdf-section-title">Evaluation Committee (5%)</h3>
         <div className="tdf-info-table">
           <table>
             <tbody>
@@ -242,7 +155,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
                   <input
                     type="text"
                     className="tdf-text-input"
-                    placeholder="Enter evaluator's full name"
+                    placeholder="Enter your full name"
                     value={evaluatorName}
                     onChange={(e) => setEvaluatorName(e.target.value)}
                   />
@@ -253,7 +166,6 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
         </div>
       </div>
 
-      {/* Marks Entry */}
       <div className="tdf-section">
         <div className="tdf-table-wrap">
           <table className="tdf-table tdf-marks-table">
@@ -284,7 +196,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
                     <td key={level} className="tdf-center">
                       <input
                         type="radio"
-                        name={`pc_c${cIdx}`}
+                        name={`ec_c${cIdx}`}
                         value={level}
                         checked={selections[cIdx] === level}
                         onChange={() => handleRadio(cIdx, level)}
@@ -318,7 +230,6 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
         </div>
       </div>
 
-      {/* Comments */}
       <div className="tdf-section">
         <div className="tdf-info-table">
           <table>
@@ -344,11 +255,10 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
         <button className="tdf-submit-btn" onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Submitting...' : 'Submit Evaluation'}
         </button>
-        <button className="tdf-cancel-btn" onClick={onClose}>Cancel</button>
       </div>
 
     </div>
   );
 };
 
-export default TitleDefenseEvaluationForm;
+export default PublicTitleDefenseForm;
