@@ -326,6 +326,21 @@
   color: #64748b;
 }
 
+.stat-skeleton {
+  width: 40px;
+  height: 28px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .refresh-btn {
   margin-top: 1rem;
   background: #e5e7eb;
