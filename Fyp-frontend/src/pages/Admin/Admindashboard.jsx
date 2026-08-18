@@ -758,13 +758,6 @@ const handleAnnouncementSubmit = (e) => {
               </div>
             )}
 
-            {selectedFinalProposal.supervisor_remarks && (
-              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
-                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
-                <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{selectedFinalProposal.supervisor_remarks}</p>
-              </div>
-            )}
-            
             {selectedFinalProposal.proposal_file ? (
               <button 
                 onClick={() => handleFileDownload(selectedFinalProposal.proposal_file)}
@@ -1073,13 +1066,6 @@ const handleDeleteDeadline = (id) => {
               </div>
             </div>
 
-            {selectedFinalReport.supervisor_remarks && (
-              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
-                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
-                <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{selectedFinalReport.supervisor_remarks}</p>
-              </div>
-            )}
-            
             {selectedFinalReport.report_file ? (
               <button 
                 onClick={() => handleFileDownload(selectedFinalReport.report_file)}

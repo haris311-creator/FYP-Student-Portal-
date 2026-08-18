@@ -506,8 +506,8 @@ const handleReportReviewSubmit = async () => {
                     </p>
                   </div>
                 </div>
-                <div style={{ marginTop: '1rem', textAlign: 'right' }}>
-                  <button className="view-details-btn">Review &rarr;</button>
+<div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                  <button className="review-btn-primary" style={{ marginTop: '1rem' }}>Review</button>
                 </div>
               </div>
             ))}
@@ -517,7 +517,6 @@ const handleReportReviewSubmit = async () => {
     );
   };
 
- 
   const renderReportReviews = () => {
     if (loadingReports) return <div className="overview-content"><div className="loading-spinner">Loading reports...</div></div>;
 
@@ -557,7 +556,7 @@ const handleReportReviewSubmit = async () => {
                   </div>
                 </div>
                 <div style={{ marginTop: '1rem', textAlign: 'right' }}>
-                  <button className="view-details-btn">Review &rarr;</button>
+                  <button className="review-btn-primary" style={{ marginTop: '1rem' }}>Review</button>
                 </div>
               </div>
             ))}
@@ -578,7 +577,7 @@ const handleReportReviewSubmit = async () => {
 
           <div style={{ padding: '1rem 0' }}>
             <div style={{ marginBottom: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedReport.project_title}</h4>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>{selectedReport.project_title}</h4>
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
                 Group: {selectedReport.group_number} | Submitted: {selectedReport.submitted_at ? new Date(selectedReport.submitted_at).toLocaleString() : 'N/A'}
               </p>
@@ -612,20 +611,20 @@ const handleReportReviewSubmit = async () => {
               )}
             </div>
 
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 1rem 0' }}>Your Decision</h4>
+<div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Your Decision</h4>
 
-              <div className="mform-group" style={{ marginBottom: '1rem' }}>
-                <label className="mform-label">Action</label>
-                <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
-                  <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="radio"
-                      name="reportReviewAction"
-                      value="approve"
-                      checked={reportReviewForm.action === 'approve'}
-                      onChange={e => setReportReviewForm({ ...reportReviewForm, action: e.target.value })}
-                    /> Approve (Send to Admin)
+            <div className="mform-group" style={{ marginBottom: '1rem' }}>
+              <label className="mform-label">Action</label>
+              <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="radio"
+                    name="reportReviewAction"
+                    value="approve"
+                    checked={reportReviewForm.action === 'approve'}
+                    onChange={e => setReportReviewForm({ ...reportReviewForm, action: e.target.value })}
+                /> Approve (Send to Admin)
                   </label>
                   <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
@@ -656,13 +655,13 @@ const handleReportReviewSubmit = async () => {
 
           <div className="mform-actions">
             <button
-              className="submit-btn"
+              className="review-btn-primary"
               onClick={handleReportReviewSubmit}
               disabled={submittingReportReview}
             >
               {submittingReportReview ? 'Submitting...' : 'Submit Review'}
             </button>
-            <button className="back-btn" onClick={() => setSelectedReport(null)}>
+            <button className="review-btn-secondary" onClick={() => setSelectedReport(null)}>
               Cancel
             </button>
           </div>
@@ -683,7 +682,7 @@ const handleReportReviewSubmit = async () => {
 
           <div style={{ padding: '1rem 0' }}>
             <div style={{ marginBottom: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedProposal.project_title}</h4>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>{selectedProposal.project_title}</h4>
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
                 Submitted on: {selectedProposal.submitted_at ? new Date(selectedProposal.submitted_at).toLocaleString() : 'N/A'}
               </p>
@@ -703,20 +702,20 @@ const handleReportReviewSubmit = async () => {
               )}
             </div>
 
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 1rem 0' }}>Your Decision</h4>
+<div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Your Decision</h4>
 
-              <div className="mform-group" style={{ marginBottom: '1rem' }}>
-                <label className="mform-label">Action</label>
-                <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
-                  <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="radio"
-                      name="reviewAction"
-                      value="approve"
-                      checked={reviewForm.action === 'approve'}
-                      onChange={e => setReviewForm({ ...reviewForm, action: e.target.value })}
-                    /> Approve (Send to Admin)
+            <div className="mform-group" style={{ marginBottom: '1rem' }}>
+              <label className="mform-label">Action</label>
+              <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="radio"
+                    name="reviewAction"
+                    value="approve"
+                    checked={reviewForm.action === 'approve'}
+                    onChange={e => setReviewForm({ ...reviewForm, action: e.target.value })}
+                /> Approve (Send to Admin)
                   </label>
                   <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
@@ -747,13 +746,13 @@ const handleReportReviewSubmit = async () => {
 
           <div className="mform-actions">
             <button
-              className="submit-btn"
+              className="review-btn-primary"
               onClick={handleReviewSubmit}
               disabled={submittingReview}
             >
               {submittingReview ? 'Submitting...' : 'Submit Review'}
             </button>
-            <button className="back-btn" onClick={() => setSelectedProposal(null)}>
+            <button className="review-btn-secondary" onClick={() => setSelectedProposal(null)}>
               Cancel
             </button>
           </div>
@@ -1182,8 +1181,8 @@ const handleReportReviewSubmit = async () => {
           {activeTab === 'groupDetail' && selectedGroup && (
             <div className="group-detail-view">
               <div className="detail-header">
-                <button className="back-btn" onClick={() => { setActiveTab('overview'); setSelectedGroup(null); }}>
-                  ← Back to Overview
+                <button className="supervisor-back-btn" onClick={() => { setActiveTab('overview'); setSelectedGroup(null); }}>
+                  Back
                 </button>
                 <h1 className="detail-title">{selectedGroup.name}</h1>
                 <p className="detail-subtitle">{selectedGroup.project}</p>

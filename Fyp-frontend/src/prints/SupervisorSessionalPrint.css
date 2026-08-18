@@ -243,7 +243,7 @@
 
 .ssp-bottom-info {
   display: grid;
-  grid-template-columns: 1.4fr 0.8fr;
+  grid-template-columns: minmax(0, 1fr) 280px;
   gap: 12px;
   margin-top: 14px;
 }
@@ -252,6 +252,8 @@
 .ssp-sign-box {
   border: 1px solid #000;
   min-height: 100px;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .ssp-box-title {
@@ -267,6 +269,8 @@
   font-size: 12px;
   line-height: 1.4;
   min-height: 22px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .ssp-signature-name {

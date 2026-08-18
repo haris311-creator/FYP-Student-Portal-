@@ -27,7 +27,7 @@ const toPdfPage = (pdf, canvas, startNewPage) => {
 export const downloadNodeAsPdf = async (node, filename, options = {}) => {
   if (!node) return;
 
-  const opts = { scale: 2, useCORS: true, backgroundColor: '#ffffff', ...options };
+  const opts = { scale: 4, useCORS: true, backgroundColor: '#ffffff', ...options };
   const pageNodes = Array.from(node.querySelectorAll('.sp-page, .pp-page'));
   const nodes = pageNodes.length ? pageNodes : [node];
 

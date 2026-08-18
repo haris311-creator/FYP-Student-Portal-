@@ -115,7 +115,7 @@ const AwardListTemplate = ({ group }) => {
     setGenerating(true);
     try {
       const canvas = await html2canvas(printRef.current, {
-        scale: 2,
+        scale: 4,
         useCORS: true,
         backgroundColor: '#ffffff',
         onclone: (clonedDoc, clonedElement) => {
