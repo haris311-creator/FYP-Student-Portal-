@@ -28,9 +28,10 @@
 }
 
 .sidebar-title {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1e3a8a;
+  color: #0f172a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .sidebar-close {
@@ -82,6 +83,7 @@
   font-weight: 700;
   color: #0f172a;
   margin-bottom: 1.75rem;
+  font-family: 'Manrope', sans-serif;
 }
 
 .sub-title {
@@ -89,6 +91,7 @@
   font-weight: 600;
   color: #1e3a8a;
   margin: 2rem 0 1rem;
+  font-family: 'Manrope', sans-serif;
 }
 
 .stats-grid {
@@ -130,6 +133,7 @@
   font-weight: 700;
   color: #0f172a;
   line-height: 1;
+  font-family: 'Manrope', sans-serif;
 }
 
 .stat-label {
@@ -279,9 +283,9 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 12px 16px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
@@ -299,9 +303,9 @@
   background: #dc2626;
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 7px 16px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
@@ -411,7 +415,13 @@
 
 .submit-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.deadline-submit-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+  margin-left: auto;
 }
 
 .announce-note {
@@ -512,9 +522,7 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .action-btns {
-    flex-direction: column;
-  }
+ 
 
   .announce-form {
     flex-direction: column;
@@ -540,6 +548,32 @@
   }
 }
 
+
+.admin-back-btn {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-back-btn:hover {
+  background: #1e40af;
+}
+
+.admin-back-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
 
 /* Back Button for Mobile View */
 @media (max-width: 768px) {
@@ -582,6 +616,7 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  font-family: 'Manrope', sans-serif;
 }
 
 .reject-modal-close {
@@ -658,13 +693,39 @@
   background: #dc2626;
   color: #fff;
   border: none;
-  padding: 12px 32px;
+  padding: 8px 14px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: all 0.2s;
+}
+
+.back-btn {
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.back-btn:hover {
+  background: #cbd5e1;
+}
+
+.back-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .reject-btn-confirm:hover {
@@ -680,9 +741,14 @@
 
 @media (max-width: 480px) {
   .reject-modal-footer {
-    flex-direction: column-reverse;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0 1rem 1rem 1rem;
   }
-  .reject-btn-cancel, .reject-btn-confirm {
-    width: 100%;
+  .reject-btn-cancel,
+  .reject-btn-confirm {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 12px;
   }
 }

@@ -341,7 +341,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
       <div className="pef-container">
         <div className="pef-success">
           <div className="pef-success-icon">&#10003;</div>
-          <h2>Submitted Successfully</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Submitted Successfully</h2>
           <p>Your evaluation has been recorded. This link is now inactive.</p>
         </div>
       </div>
@@ -353,7 +353,7 @@ const PresentationEvaluationForm = ({ group, onClose, isPublicLink = false, toke
 
       <div className="pef-header">
         <div>
-          <h2>Rubrics for Evaluation of FYDP-1 Presentation</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Rubrics for Evaluation of FYDP-1 Presentation</h2>
           {group && <p>{group.project} — {group.name}</p>}
         </div>
         {!isPublicLink && (

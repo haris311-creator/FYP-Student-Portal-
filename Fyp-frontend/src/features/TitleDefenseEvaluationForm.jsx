@@ -104,7 +104,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
       <div className="tdf-container">
         <div className="tdf-success">
           <div className="tdf-success-icon">&#10003;</div>
-          <h2>Submitted Successfully</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Submitted Successfully</h2>
           <p>Your Title Defense evaluation has been recorded.</p>
           <div className="tdf-success-actions">
             <button className="tdf-cancel-btn" onClick={onClose}>Back to Group</button>
@@ -119,7 +119,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
 
       <div className="tdf-header">
         <div>
-          <h2>Title Defense Evaluation</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Title Defense Evaluation</h2>
           {group && <p>{group.project || group.title} &mdash; {group.group || group.name}</p>}
         </div>
         <button className="tdf-rubric-btn" onClick={() => setShowRubric(!showRubric)}>
@@ -150,9 +150,9 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
       {/* Evaluation Committee Link */}
       <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', marginBottom: '20px', overflow: 'hidden' }}>
         <div style={{ padding: '20px' }}>
-          <h3 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 600, color: '#1e3a8a' }}>
-            Committee Evaluation Links
-          </h3>
+<h3 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 600, color: '#1e3a8a', fontFamily: "'Manrope', sans-serif" }}>
+  Committee Evaluation Links
+</h3>
           <p style={{ margin: '0 0 14px', fontSize: '12px', color: '#64748b' }}>
             Generate unique links for evaluation committee members. Each link can be used once and is shared via WhatsApp or Email.
           </p>

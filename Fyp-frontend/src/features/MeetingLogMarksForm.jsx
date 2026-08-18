@@ -144,7 +144,7 @@ const MeetingLogMarksForm = ({ group, onClose }) => {
       <div className="mlm-container">
         <div className="mlm-success">
           <div className="mlm-success-icon">&#10003;</div>
-          <h2>Already Submitted</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Already Submitted</h2>
           <p style={{ marginBottom: '20px' }}>Meeting log marks have been recorded for this group.</p>
           
           <div style={{ 
@@ -205,7 +205,7 @@ const MeetingLogMarksForm = ({ group, onClose }) => {
 
       <div className="mlm-header">
         <div>
-          <h2>Meeting Log Evaluation</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Meeting Log Evaluation</h2>
           {group && <p>{group.project || group.title} &mdash; {group.group || group.name}</p>}
         </div>
       </div>

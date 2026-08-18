@@ -239,4 +239,15 @@
   .tal-table {
     font-size: 10px;
   }
+  .tal-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+  }
+  .tal-download-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
 }

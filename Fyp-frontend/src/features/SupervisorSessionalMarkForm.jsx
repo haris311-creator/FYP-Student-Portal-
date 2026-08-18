@@ -378,7 +378,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
       <div className="ssm-container">
         <div className="ssm-success">
           <div className="ssm-success-icon">&#10003;</div>
-          <h2>Already Submitted</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Already Submitted</h2>
           <p style={{ marginBottom: '20px' }}>Sessional marks have been recorded for all students in this group.</p>
           
           
@@ -405,7 +405,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
       {/* Header section with title and rubric toggle button */}
       <div className="ssm-header">
         <div>
-          <h2>Sessional Marks</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Sessional Marks</h2>
           <p>{group?.project || 'Project'} - {group?.name || 'Group'}</p>
         </div>
         <button className="ssm-rubric-btn" onClick={() => setShowRubric(!showRubric)}>
@@ -416,7 +416,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
       {/* Rubric Reference Table - Shows detailed descriptions for each performance level */}
       {showRubric && (
         <div className="ssm-rubric-section">
-          <h3>Rubric Reference (FYDP-1 Sessional)</h3>
+          <h3 style={{ fontFamily: "'Manrope', sans-serif" }}>Rubric Reference (FYDP-1 Sessional)</h3>
           <div className="ssm-table-wrapper">
             <table className="ssm-rubric-table">
               <thead>
@@ -478,7 +478,7 @@ const SupervisorSessionalMarkForm = ({ group, onClose }) => {
           <div className="ssm-student-info">
             <div className="ssm-avatar-lg">{member.name?.charAt(0).toUpperCase()}</div>
             <div>
-              <h3>{member.name}</h3>
+              <h3 style={{ fontFamily: "'Manrope', sans-serif" }}>{member.name}</h3>
               <p>ID: {member.odoo_id}</p>
               {submittedStatus[sIdx] && (
                 <p style={{ color: '#16a34a', fontWeight: '600', fontSize: '0.85rem', marginTop: '4px' }}>

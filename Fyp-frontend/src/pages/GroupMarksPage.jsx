@@ -147,7 +147,7 @@ const GroupMarksPage = ({ group, onBack }) => {
     return (
       <div className="gmp-container">
         <button className="gmp-back-btn" onClick={() => setView('main')}>
-          &larr; Back to Group
+          Back
         </button>
         <div style={{ margin: '-24px' }}>
           <ProjectReportEvaluationForm
@@ -163,7 +163,7 @@ const GroupMarksPage = ({ group, onBack }) => {
     return (
       <div className="gmp-container">
         <button className="gmp-back-btn" onClick={() => setView('main')}>
-          &larr; Back to Group
+          Back
         </button>
 
         <div className="gmp-card" style={{ marginBottom: '20px' }}>
@@ -224,7 +224,7 @@ const GroupMarksPage = ({ group, onBack }) => {
     return (
       <div className="gmp-container">
         <button className="gmp-back-btn" onClick={() => setView('main')}>
-          &larr; Back to Group
+          Back
         </button>
         <div style={{ margin: '-24px' }}>
           <MeetingLogMarksForm
@@ -240,7 +240,7 @@ const GroupMarksPage = ({ group, onBack }) => {
     return (
       <div className="gmp-container">
         <button className="gmp-back-btn" onClick={() => setView('main')}>
-          &larr; Back to Group
+          Back
         </button>
         <div style={{ margin: '-24px' }}>
           <TitleDefenseEvaluationForm
@@ -256,7 +256,7 @@ const GroupMarksPage = ({ group, onBack }) => {
     <div className="gmp-container">
       <div className="gmp-header">
         <button className="gmp-back-btn" onClick={onBack}>
-          &larr; Back to Groups
+          Back
         </button>
         <h1 className="gmp-title">{group.title || group.project}</h1>
         <p className="gmp-subtitle">{group.group} &middot; {group.supervisor}</p>
