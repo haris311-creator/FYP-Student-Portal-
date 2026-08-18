@@ -2,7 +2,7 @@
   padding: 24px;
   background: #f0f4f8;
   min-height: 100%;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .ssm-header {
@@ -20,6 +20,7 @@
   margin: 0;
   font-size: 22px;
   font-weight: 600;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-header p {
@@ -60,6 +61,7 @@
   font-size: 16px;
   margin: 0 0 16px;
   font-weight: 600;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* Table Wrapper */
@@ -79,8 +81,9 @@
   color: white;
   padding: 10px 8px;
   text-align: left;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-rubric-table td {
@@ -89,6 +92,7 @@
   vertical-align: top;
   color: #374151;
   line-height: 1.4;
+  font-family: 'Inter', sans-serif;
 }
 
 .ssm-rubric-table tr:hover td {
@@ -132,6 +136,7 @@
   color: #374151;
   transition: all 0.2s;
   position: relative;
+  font-family: 'Inter', sans-serif;
 }
 
 .ssm-student-tab:hover {
@@ -214,12 +219,14 @@
   font-size: 16px;
   color: #1e3a8a;
   font-weight: 600;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-student-info p {
   margin: 2px 0 0;
   font-size: 13px;
   color: #6b7280;
+  font-family: 'Inter', sans-serif;
 }
 
 .ssm-total-box {
@@ -236,18 +243,21 @@
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'Inter', sans-serif;
 }
 
 .ssm-total-value {
   font-size: 18px;
   font-weight: 700;
   color: #1e3a8a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-final-value {
   font-size: 18px;
   font-weight: 700;
   color: #16a34a;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* Marks Table */
@@ -266,8 +276,9 @@
   color: white;
   padding: 10px 10px;
   text-align: left;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-marks-table th.center {
@@ -327,12 +338,14 @@
   background: #f0f4f8 !important;
   font-size: 14px;
   color: #1e3a8a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-final-row td {
   background: #dcfce7 !important;
   font-size: 14px;
   color: #16a34a;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* Comments */
@@ -352,6 +365,7 @@
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  font-family: 'Inter', sans-serif;
 }
 
 .ssm-comments textarea {

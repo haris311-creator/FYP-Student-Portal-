@@ -10,21 +10,24 @@
 }
 
 .gmp-back-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
-  color: #374151;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Manrope', sans-serif;
   cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 12px;
-  transition: all 0.2s;
 }
 
 .gmp-back-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  background: #1e40af;
 }
 
 .gmp-title {
@@ -32,6 +35,7 @@
   font-size: 22px;
   font-weight: 700;
   color: #0f172a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .gmp-subtitle {
@@ -68,6 +72,7 @@
   font-size: 15px;
   font-weight: 600;
   color: #1e3a8a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .gmp-card-sub {

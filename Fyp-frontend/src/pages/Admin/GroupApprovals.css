@@ -1,0 +1,367 @@
+.ga-container {
+  padding: 1.5rem;
+  max-width: 80rem;
+  margin: 0 auto;
+}
+
+.ga-header {
+  margin-bottom: 1.5rem;
+}
+
+.ga-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.ga-subtitle {
+  color: #475569;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.875rem;
+}
+
+.ga-empty {
+  text-align: center;
+  padding: 3rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.ga-empty h3 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+  margin: 0.5rem 0 0 0;
+}
+
+.ga-empty p {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+.ga-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ga-group-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.ga-group-card:hover {
+  box-shadow: 0 4px 16px rgba(30, 58, 138, 0.08);
+  border-color: #bfdbfe;
+}
+
+.ga-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.ga-group-main {
+  flex: 1;
+}
+
+.ga-group-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.ga-group-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.ga-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.ga-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ga-status-idea {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ga-status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ga-status-default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.ga-group-domain {
+  color: #475569;
+  font-size: 0.875rem;
+  margin: 0 0 1rem 0;
+}
+
+.ga-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.ga-info-label {
+  color: #64748b;
+  margin: 0 0 0.25rem 0;
+}
+
+.ga-info-value {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.ga-members-section {
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ga-members-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374155;
+  margin: 0 0 0.5rem 0;
+}
+
+.ga-members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ga-member-chip {
+  background: #f1f5f9;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.ga-member-name {
+  font-weight: 500;
+}
+
+.ga-member-lead {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.ga-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-left: 1.5rem;
+  flex-shrink: 0;
+}
+
+.ga-btn-approve,
+.ga-btn-reject {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ga-btn-approve {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.ga-btn-approve:hover {
+  background: #15803d;
+}
+
+.ga-btn-reject {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.ga-btn-reject:hover {
+  background: #b91c1c;
+}
+
+.ga-btn-approve:disabled,
+.ga-btn-reject:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.ga-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.ga-modal-box {
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 28rem;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.ga-modal-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 1rem 0;
+}
+
+.ga-modal-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.375rem;
+}
+
+.ga-modal-input,
+.ga-modal-textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ga-modal-input:focus,
+.ga-modal-textarea:focus {
+  border-color: #1e3a8a;
+  box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.15);
+}
+
+.ga-modal-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+.ga-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.ga-btn-cancel {
+  padding: 0.5rem 1.25rem;
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ga-btn-cancel:hover {
+  background: #f1f5f9;
+}
+
+.ga-btn-reject {
+  padding: 0.5rem 1.25rem;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ga-btn-reject:hover {
+  background: #b91c1c;
+}
+
+.ga-btn-approve {
+  padding: 0.5rem 1.25rem;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ga-btn-approve:hover {
+  background: #15803d;
+}
+
+.ga-btn-cancel:disabled,
+.ga-btn-reject:disabled,
+.ga-btn-approve:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .ga-group-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ga-actions {
+    margin-left: 0;
+    margin-top: 1rem;
+  }
+  .ga-info-grid {
+    grid-template-columns: 1fr;
+  }
+}

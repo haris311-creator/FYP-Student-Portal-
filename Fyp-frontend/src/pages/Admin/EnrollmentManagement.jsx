@@ -6,7 +6,7 @@ import './EnrollmentManagement.css';
 
 function EnrollmentManagement() {
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with true to show skeleton immediately
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [stats, setStats] = useState({
@@ -15,12 +15,14 @@ function EnrollmentManagement() {
     pending_registration: 0,
     rejected_students: 0
   });
+  const [statsLoading, setStatsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [rejectModal, setRejectModal] = useState({ show: false, studentId: null });
   const [confirmState, setConfirmState] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [processingId, setProcessingId] = useState(null); // Track which student is being processed
   
   const [pagination, setPagination] = useState({
     next: null,
@@ -29,6 +31,7 @@ function EnrollmentManagement() {
   });
   
   const fileInputRef = useRef(null);
+const isInitialMount = useRef(true);
 
   // 1. Initial Load (No debounce)
   useEffect(() => {
@@ -38,6 +41,12 @@ function EnrollmentManagement() {
 
   // 2. Debounced Search & Filter (Waits 500ms after user stops typing)
   useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
@@ -123,11 +132,14 @@ function EnrollmentManagement() {
   };
 
   const fetchStats = async () => {
+    setStatsLoading(true);
     try {
       const response = await api.get('/auth/registration-stats/');
       setStats(response.data.data);
     } catch (error) {
       console.error('Error loading stats:', error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -137,15 +149,18 @@ function EnrollmentManagement() {
       message: 'Are you sure you want to approve this student?',
       confirmText: 'Approve',
       onConfirm: async () => {
+        setProcessingId(id);
         try {
           await api.post(`/auth/enrolled-students/${id}/approve/`);
           setSuccessMessage('Student approved successfully');
           toast.success('Student approved successfully');
-          fetchStudents(); // Resets to page 1 with current filters
+          fetchStudents();
           fetchStats();
         } catch (error) {
           setError('Error approving student');
           toast.error('Error approving student');
+        } finally {
+          setProcessingId(null);
         }
       }
     });
@@ -156,17 +171,23 @@ function EnrollmentManagement() {
       toast.warning('Rejection reason is required');
       return;
     }
+    const currentId = rejectModal.studentId;
+    setProcessingId(currentId);
     try {
-      await api.post(`/auth/enrolled-students/${rejectModal.studentId}/reject/`, {
+      await api.post(`/auth/enrolled-students/${currentId}/reject/`, {
         reason: rejectReason
       });
       setSuccessMessage('Student rejected successfully');
       setRejectModal({ show: false, studentId: null });
       setRejectReason('');
-      fetchStudents(); // Resets to page 1 with current filters
+      fetchStudents();
       fetchStats();
+      toast.success('Student rejected successfully');
     } catch (error) {
       setError('Error rejecting student');
+      toast.error('Error rejecting student');
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -206,10 +227,10 @@ function EnrollmentManagement() {
 
         {/* Stats Grid */}
         <div className="stats-grid">
-          <div className="stat-card"><div><p className="stat-number">{stats.total_enrolled}</p><p className="stat-label">Total Requests</p></div></div>
-          <div className="stat-card"><div><p className="stat-number">{stats.registered_students}</p><p className="stat-label">Approved</p></div></div>
-          <div className="stat-card"><div><p className="stat-number">{stats.pending_registration}</p><p className="stat-label">Pending</p></div></div>
-          <div className="stat-card"><div><p className="stat-number">{stats.rejected_students}</p><p className="stat-label">Rejected</p></div></div>
+          <div className="stat-card"><div><p className="stat-number">{statsLoading ? <div className="stat-skeleton" /> : stats.total_enrolled}</p><p className="stat-label">Total Requests</p></div></div>
+          <div className="stat-card"><div><p className="stat-number">{statsLoading ? <div className="stat-skeleton" /> : stats.registered_students}</p><p className="stat-label">Approved</p></div></div>
+          <div className="stat-card"><div><p className="stat-number">{statsLoading ? <div className="stat-skeleton" /> : stats.pending_registration}</p><p className="stat-label">Pending</p></div></div>
+          <div className="stat-card"><div><p className="stat-number">{statsLoading ? <div className="stat-skeleton" /> : stats.rejected_students}</p><p className="stat-label">Rejected</p></div></div>
         </div>
 
         {/* Table Container */}
@@ -288,8 +309,20 @@ function EnrollmentManagement() {
                       <td>
                         {student.approval_status === 'pending' && (
                           <div className="action-btns">
-                            <button onClick={() => handleApprove(student.id)} className="approve-btn">Approve</button>
-                            <button onClick={() => setRejectModal({ show: true, studentId: student.id })} className="reject-btn">Reject</button>
+                            <button 
+                              onClick={() => handleApprove(student.id)} 
+                              className="approve-btn"
+                              disabled={processingId === student.id}
+                            >
+                              {processingId === student.id ? 'Processing...' : 'Approve'}
+                            </button>
+                            <button 
+                              onClick={() => setRejectModal({ show: true, studentId: student.id })} 
+                              className="reject-btn"
+                              disabled={processingId === student.id}
+                            >
+                              {processingId === student.id ? 'Processing...' : 'Reject'}
+                            </button>
                           </div>
                         )}
                         {student.approval_status === 'pre_approved' && (

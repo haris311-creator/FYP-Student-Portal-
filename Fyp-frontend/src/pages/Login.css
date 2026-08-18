@@ -27,10 +27,12 @@
 }
 
 .login-logo h2 {
+  font-family: 'Manrope', sans-serif;
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #1e3a8a;
   margin-bottom: 0.25rem;
+  letter-spacing: 0.5px;
 }
 
 .login-logo p {
@@ -113,6 +115,7 @@
 .login-error {
   background: #fef2f2;
   border: 1px solid #fecaca;
+  margin-bottom: 5px;
   color: #dc2626;
   padding: 0.75rem 1rem;
   border-radius: 8px;

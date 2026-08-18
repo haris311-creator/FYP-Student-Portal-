@@ -108,9 +108,7 @@
 }
 
 @media (max-width: 480px) {
-  .cm-footer {
-    flex-direction: column-reverse;
-  }
+ 
   .cm-btn {
     width: 100%;
   }

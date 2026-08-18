@@ -96,6 +96,7 @@
   font-weight: 700;
   color: #1f2937;
   margin: 0;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* Mobile View - Sidebar ko slide karna hai */
@@ -267,6 +268,7 @@
   font-weight: 700;
   color: #1f2937;
   margin: 0 0 1.5rem 0;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* =========================================
@@ -311,12 +313,14 @@
   color: #111827;
   margin-bottom: 0.15rem;
   line-height: 1.2;
+  font-family: 'Manrope', sans-serif;
 }
 
 .stat-label {
   font-size: 0.8rem;
   color: #64748b;
   margin-top: 0.25rem;
+  font-family: 'Inter', sans-serif;
 }
 
 /* =========================================
@@ -362,12 +366,12 @@
 .phase-badge {
   /* padding: 0.25rem 0.625rem; */
   border-radius: 20px;
-  font-size: 0.7rem;
+  font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
 }
 
-.phase-badge.fyp1 { background: #dbeafe; color: #1e40af; }
+
 .phase-badge.fyp2 { background: #fef3c7; color: #92400e; }
 
 .group-project {
@@ -462,6 +466,15 @@
 /* =========================================
    11. GROUP DETAIL VIEW
    ========================================= */
+
+.supervisor-back-btn {
+  padding: 9px 19px;
+  border-radius: 7px;
+  color: white;
+  border: 2px transparent;
+  background-color: #1e3a8a;
+}
+
 .group-detail-view {
   animation: fadeIn 0.3s ease;
 }

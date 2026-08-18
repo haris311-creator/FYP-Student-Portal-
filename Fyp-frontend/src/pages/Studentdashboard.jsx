@@ -491,36 +491,60 @@ useEffect(() => {
           <p>{myMeetingsData.current_task || "No task assigned yet."}</p>
         </div>
 
-        {/* Attendance Table */}
-        <div className="table-container">
-          <div className="attendance-title-card">
-            <h3>Attendance & Tasks</h3>
-          </div>
+        {/* Attendance Section */}
+        <div className="meeting-section-card">
+          <h3>Attendance & Tasks</h3>
           {myMeetingsData.attendance.length > 0 ? (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Meeting #</th>
-                  <th>Date</th>
-                  <th>Attendance</th>
-                  <th>Task / Agenda</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Desktop Table */}
+              <table className="data-table attendance-table-desktop">
+                <thead>
+                  <tr>
+                    <th>Meeting #</th>
+                    <th>Date</th>
+                    <th>Attendance</th>
+                    <th>Task / Agenda</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myMeetingsData.attendance.map((log, idx) => (
+                    <tr key={idx}>
+                      <td>{log.meeting_number}</td>
+                      <td>{log.date}</td>
+                      <td>
+                        <span className={`badge ${log.status.toLowerCase() === 'present' ? 'badge-approved' : 'badge-pending'}`}>
+                          {log.status.toLowerCase() === 'present' ? 'Present' : 'Absent'}
+                        </span>
+                      </td>
+                      <td>{log.task_assigned || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* Mobile Cards */}
+              <div className="attendance-cards-mobile">
                 {myMeetingsData.attendance.map((log, idx) => (
-                  <tr key={idx}>
-                    <td>{log.meeting_number}</td>
-                    <td>{log.date}</td>
-                    <td>
+                  <div key={idx} className="attendance-card-mobile">
+                    <div className="attendance-card-header">
+                      <span className="attendance-card-number">Meeting #{log.meeting_number}</span>
                       <span className={`badge ${log.status.toLowerCase() === 'present' ? 'badge-approved' : 'badge-pending'}`}>
                         {log.status.toLowerCase() === 'present' ? 'Present' : 'Absent'}
                       </span>
-                    </td>
-                    <td>{log.task_assigned || "N/A"}</td>
-                  </tr>
+                    </div>
+                    <div className="attendance-card-body">
+                      <div className="attendance-card-row">
+                        <span className="attendance-card-label">Date</span>
+                        <span className="attendance-card-value">{log.date}</span>
+                      </div>
+                      <div className="attendance-card-row">
+                        <span className="attendance-card-label">Task / Agenda</span>
+                        <span className="attendance-card-value">{log.task_assigned || "N/A"}</span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           ) : (
             <p className="text-muted">No meeting logs found yet.</p>
           )}
@@ -570,7 +594,7 @@ useEffect(() => {
                 </p>
               </div>
               <div style={{ background: '#fff', padding: '1rem', borderRadius: '6px', marginBottom: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.75rem 0', color: '#1e293b', fontSize: '0.9rem' }}>Group Details:</h4>
+                <h4 style={{ margin: '0 0 0.75rem 0', color: '#1e293b', fontSize: '0.9rem', fontFamily: "'Manrope', sans-serif", fontWeight: '700' }}>Group Details:</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.875rem' }}>
                   <div><strong>Project:</strong> {existingGroup.project_title}</div>
                   <div><strong>Domain:</strong> {getFullDomainName(existingGroup.domain)}</div>
@@ -603,7 +627,7 @@ useEffect(() => {
             <h2>Group & Idea Pitch</h2>
             <div className="status-card approved">
               <h3> Group Approved</h3>
-              <p style={{ color: '#64748b' }}>
+              <p style={{ color: '#64748b', margin: '0.5rem 0 1rem 0' }}>
                 {status === 'idea_pitch' ? 'Your idea has been approved. Proceed to submit proposal.' : 
                 status === 'proposal_pending' ? 'Proposal submitted. Waiting for supervisor review.' :
                 status === 'proposal_approved' ? 'Proposal approved! You can now submit your project report.' :
@@ -625,44 +649,44 @@ useEffect(() => {
                 status === 'completed' ? ' Completed' : 'Active'}
               </span>
               {existingGroup.group_number && (
-                <div style={{ marginTop: '1rem',  borderRadius: '8px' }}>
-                  <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Group Number</p>
-                  <p style={{ fontWeight: '700', color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>{existingGroup.group_number}</p>
+                <div style={{ marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0', fontWeight: '600', textTransform: 'uppercase' }}>Group Number</p>
+                  <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '700', color: '#1e293b', fontSize: '1.1rem', margin: 0 }}>{existingGroup.group_number}</p>
                 </div>
               )}
             </div>
             <div style={{ marginTop: '1.5rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Project Title</p>
-                  <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{existingGroup.project_title}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.35rem 0', fontWeight: '600', textTransform: 'uppercase' }}>Project Title</p>
+                  <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '600', color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>{existingGroup.project_title}</p>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Domain</p>
-                  <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{getFullDomainName(existingGroup.domain)}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.35rem 0', fontWeight: '600', textTransform: 'uppercase' }}>Domain</p>
+                  <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '600', color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>{getFullDomainName(existingGroup.domain)}</p>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Supervisor</p>
-                  <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{existingGroup.supervisor_name || 'Not Assigned'}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.35rem 0', fontWeight: '600', textTransform: 'uppercase' }}>Supervisor</p>
+                  <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '600', color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>{existingGroup.supervisor_name || 'Not Assigned'}</p>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Current Status</p>
-                  <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>{status.replace('_', ' ').toUpperCase()}</p>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.35rem 0', fontWeight: '600', textTransform: 'uppercase' }}>Current Status</p>
+                  <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '600', color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>{status.replace('_', ' ').toUpperCase()}</p>
                 </div>
               </div>
               <div>
-                <h4 style={{ marginBottom: '1rem', color: '#1e293b', fontSize: '1rem' }}>Group Members:</h4>
+                <h4 style={{ marginBottom: '1rem', color: '#1e293b', fontSize: '1rem', fontFamily: "'Manrope', sans-serif", fontWeight: '700' }}>Group Members</h4>
                 {existingGroup.members?.map((member, idx) => (
                   <div key={idx} style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', marginBottom: '0.75rem', borderLeft: '3px solid #1e3a8a' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ color: '#1e293b' }}>
+                      <span style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '600', color: '#1e293b', fontSize: '0.9rem' }}>
                         {member.student_name || member.full_name || member.student_email || 'Unknown'}
-                      </strong>
-                      <span style={{ background: member.role === 'lead' ? '#1e3a8a' : '#64748b', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '600' }}>
+                      </span>
+                      <span style={{ background: member.role === 'lead' ? '#1e3a8a' : '#64748b', color: 'white', padding: '0.25rem 0.75rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '600' }}>
                         {member.role === 'lead' ? ' Lead' : ' Member'}
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.4rem' }}>
                       <span>Odoo ID: {member.odoo_id || 'N/A'}</span>
                     </div>
                   </div>
@@ -745,7 +769,7 @@ useEffect(() => {
             {formData.members.map((member, index) => (
               <div key={index} className="member-card">
                 <div className="member-header">
-                  <span className="badge" style={{ background: index === 0 ? '#1e3a8a' : '#64748b' }}>
+                  <span className="badge" >
                     {index === 0 ? ' Group Lead' : ` Member ${index}`}
                   </span>
                   {index > 0 && (<button type="button" className="btn-remove" onClick={() => removeMember(index)}>✕</button>)}
@@ -816,7 +840,7 @@ const renderProjectProgress = () => {
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Current Phase
           </p>
-          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '700', color: '#0f172a', fontSize: '1.25rem', margin: 0 }}>
             {existingGroup?.fydp_phase === 'fydp2' ? 'FYDP-II' : 'FYDP-I'}
           </p>
         </div>
@@ -826,7 +850,7 @@ const renderProjectProgress = () => {
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Idea Pitch
           </p>
-          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '700', color: '#0f172a', fontSize: '1.25rem', margin: 0 }}>
             {ideaPitchStatus === 'approved' ? 'Approved' : ideaPitchStatus === 'pending' ? 'Pending' : 'Not Submitted'}
           </p>
         </div>
@@ -836,7 +860,7 @@ const renderProjectProgress = () => {
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Proposal
           </p>
-          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '700', color: '#0f172a', fontSize: '1.25rem', margin: 0 }}>
             {proposalData?.status_display || 'Not Submitted'}
           </p>
         </div>
@@ -846,7 +870,7 @@ const renderProjectProgress = () => {
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Report
           </p>
-          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '700', color: '#0f172a', fontSize: '1.25rem', margin: 0 }}>
             {reportData?.status_display || 'Not Submitted'}
           </p>
         </div>
@@ -856,7 +880,7 @@ const renderProjectProgress = () => {
           <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
             Meetings
           </p>
-          <p style={{ fontWeight: '700', color: '#000000', fontSize: '1.25rem', margin: 0 }}>
+          <p style={{ fontFamily: "'Manrope', sans-serif", fontWeight: '700', color: '#0f172a', fontSize: '1.25rem', margin: 0 }}>
             {myMeetingsData?.attendance?.length || 0}
           </p>
         </div>
@@ -1179,7 +1203,7 @@ const renderProjectProgress = () => {
 
     return (
       <div className="content-area">
-        <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#1e293b', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.5rem', fontFamily: "'Manrope', sans-serif" }}>
           Materials & Downloads
         </h2>
         <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>
@@ -1212,6 +1236,7 @@ const renderProjectProgress = () => {
                   <h4 style={{
                     margin: 0,
                     fontSize: '1rem',
+                    fontFamily: "'Manrope', sans-serif",
                     fontWeight: '700',
                     color: '#1e293b',
                     lineHeight: '1.3'
@@ -1315,15 +1340,6 @@ const renderProjectProgress = () => {
     }
 
     // 3. Proposal exists, show status and upload options
-    const statusColors = {
-      'draft': '#64748b',
-      'submitted': '#1e3a8a',
-      'approved_by_supervisor': '#8b5cf6',
-      'revision_needed': '#f59e0b',
-      'approved': '#15803d',
-      'rejected': '#ef4444'
-    };
-
     const canUpload = proposalData.can_upload ?? (
       ['draft', 'submitted', 'revision_needed', 'rejected'].includes(proposalData.status) &&
       proposalData.submission_count < (proposalData.max_submission_attempts ?? 3)
@@ -1337,41 +1353,37 @@ const renderProjectProgress = () => {
         {success && <div className="alert alert-success">{success}</div>}
         
         {/* Status Card */}
-        <div className="status-card" style={{ border: '1px solid #e2e8f0', borderLeft: `4px solid ${statusColors[proposalData.status] || '#64748b'}`, background: '#ffffff', borderRadius: '10px', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0 }}>Proposal Status</h3>
-           <span className="status-badge" style={{ background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' }}>
+        <div className="pr-status-card">
+          <div className="pr-header">
+            <h3>Proposal Status</h3>
+            <span className="pr-badge pr-badge-default">
               {proposalData.status_display}
             </span>
           </div>
 
           {proposalDeadline && (
-            <div style={{ background: new Date(proposalDeadline.deadline_date) < new Date() ? '#fef2f2' : '#f0f9ff', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: `3px solid ${new Date(proposalDeadline.deadline_date) < new Date() ? '#ef4444' : '#3b82f6'}` }}>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e293b' }}>
-                <strong>Submission Deadline:</strong> {new Date(proposalDeadline.deadline_date).toLocaleString()}
-                {new Date(proposalDeadline.deadline_date) < new Date() && <span style={{ color: '#ef4444', fontWeight: '600' }}> (Passed)</span>}
-              </p>
+            <div className={`pr-deadline ${new Date(proposalDeadline.deadline_date) < new Date() ? 'pr-deadline-passed' : ''}`}>
+              <span>Submission Deadline: {new Date(proposalDeadline.deadline_date).toLocaleString()}</span>
+              {new Date(proposalDeadline.deadline_date) < new Date() && <span className="pr-deadline-text"> (Passed)</span>}
             </div>
           )}
 
           {proposalData.is_late && (
-            <div style={{ background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
-              <p style={{ color: '#92400e', margin: 0, fontWeight: '600' }}>
-                 Late Submission - This proposal was submitted after the deadline
-              </p>
+            <div className="pr-late">
+              <p>Late Submission — This proposal was submitted after the deadline</p>
             </div>
           )}
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Submission Attempts</p>
-              <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '1.25rem' }}>
+          <div className="pr-info-grid">
+            <div className="pr-info-box">
+              <p className="pr-info-label">Submission Attempts</p>
+              <p className="pr-info-value pr-info-value-lg">
                 {proposalData.submission_count} / {maxAttempts}
               </p>
             </div>
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Last Submitted</p>
-              <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>
+            <div className="pr-info-box">
+              <p className="pr-info-label">Last Submitted</p>
+              <p className="pr-info-value">
                 {proposalData.submitted_at ? new Date(proposalData.submitted_at).toLocaleDateString() : 'Not submitted yet'}
               </p>
             </div>
@@ -1379,25 +1391,25 @@ const renderProjectProgress = () => {
 
           {/* Remarks Section */}
           {proposalData.supervisor_remarks && (
-            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #1e3a8a' }}>
-              <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
-              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{proposalData.supervisor_remarks}</p>
+            <div className="pr-remarks">
+              <p className="pr-remarks-label">Supervisor Remarks</p>
+              <p className="pr-remarks-text">{proposalData.supervisor_remarks}</p>
             </div>
           )}
           {proposalData.admin_remarks && (
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #1e40af', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.8rem', color: '#5b21b6', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Admin Remarks:</p>
-              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{proposalData.admin_remarks}</p>
+            <div className="pr-remarks">
+              <p className="pr-remarks-label">Admin Remarks</p>
+              <p className="pr-remarks-text">{proposalData.admin_remarks}</p>
             </div>
           )}
 
           {/* File Download */}
           {proposalData.proposal_file && (
-           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #15803d', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Uploaded File:</p>
+            <div className="pr-file">
+              <p className="pr-file-label">Uploaded File</p>
               <button 
                 onClick={() => handleFileDownload(proposalData.proposal_file)}
-                style={{ background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '1rem' }}
+                className="pr-file-link"
               >
                 View / Download Proposal File
               </button>
@@ -1406,10 +1418,10 @@ const renderProjectProgress = () => {
 
           {/* Upload Section */}
           {canUpload ? (
-            <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-              <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>Upload Proposal File</h4>
-              <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
-                Please download the template from the "Materials" section, fill it, and upload here. (PDF/DOCX only, Max 10MB)
+            <div className="pr-upload">
+              <h4>Upload Proposal File</h4>
+              <p className="pr-upload-desc">
+                Download the template from Materials, fill it, and upload here. (PDF/DOCX, Max 10MB)
               </p>
               <input 
                 type="file" 
@@ -1427,8 +1439,8 @@ const renderProjectProgress = () => {
               </button>
             </div>
           ) : (
-            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
-              <p style={{ color: '#9a3412', margin: 0, fontWeight: '500' }}>
+            <div className="pr-blocked">
+              <p>
                 {proposalData.can_upload_reason ||
                   (proposalData.status === 'approved'
                     ? 'Proposal has been finally approved. No further uploads allowed.'
@@ -1460,8 +1472,7 @@ const renderProjectProgress = () => {
 
     if (reportLoading) return <div className="content-area"><div className="loading-spinner">Loading report...</div></div>;
 
-    if (!reportData) {
-      return (
+    if (!reportData) {      return (
         <div className="content-area">
           <h2>Project Report</h2>
           <div className="status-card">
@@ -1471,15 +1482,6 @@ const renderProjectProgress = () => {
         </div>
       );
     }
-
-    const statusColors = {
-      'draft': '#64748b',
-      'submitted': '#1e3a8a',
-      'approved_by_supervisor': '#8b5cf6',
-      'revision_needed': '#f59e0b',
-      'approved': '#15803d',
-      'rejected': '#ef4444'
-    };
 
     const canUpload = reportData.can_upload ?? (
       ['draft', 'submitted', 'revision_needed', 'rejected'].includes(reportData.status) &&
@@ -1494,53 +1496,43 @@ const renderProjectProgress = () => {
         {success && <div className="alert alert-success">{success}</div>}
         
         {/* Status Card */}
-       <div className="status-card" style={{ border: '1px solid #e2e8f0', borderLeft: `4px solid ${statusColors[reportData.status] || '#64748b'}`, background: '#ffffff', borderRadius: '10px', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0 }}>Report Status</h3>
-           <span className="status-badge" style={{ background: reportData.status === 'approved' ? '#dcfce7' : statusColors[reportData.status], color: reportData.status === 'approved' ? '#166534' : 'white', border: reportData.status === 'approved' ? '1px solid #bbf7d0' : 'none' }}>
-            {reportData.status === 'revision_needed' 
-              ? 'Revision Needed'  // Clear message
-              : reportData.status_display
-            }
+       <div className="pr-status-card">
+          <div className="pr-header">
+            <h3>Report Status</h3>
+            <span className="pr-badge pr-badge-default">
+              {reportData.status === 'revision_needed' ? 'Revision Needed' : reportData.status_display}
             </span>
           </div>
 
           {reportDeadline && (
-            <div style={{ background: new Date(reportDeadline.deadline_date) < new Date() ? '#fef2f2' : '#f0f9ff', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: `3px solid ${new Date(reportDeadline.deadline_date) < new Date() ? '#ef4444' : '#3b82f6'}` }}>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: '#1e293b' }}>
-                <strong>Submission Deadline:</strong> {new Date(reportDeadline.deadline_date).toLocaleString()}
-                {new Date(reportDeadline.deadline_date) < new Date() && <span style={{ color: '#ef4444', fontWeight: '600' }}> (Passed)</span>}
-              </p>
+            <div className={`pr-deadline ${new Date(reportDeadline.deadline_date) < new Date() ? 'pr-deadline-passed' : ''}`}>
+              <span>Submission Deadline: {new Date(reportDeadline.deadline_date).toLocaleString()}</span>
+              {new Date(reportDeadline.deadline_date) < new Date() && <span className="pr-deadline-text"> (Passed)</span>}
             </div>
           )}
 
-
-          
-          {/* Late Submission Warning */}
           {reportData.is_late && (
-            <div style={{ background: '#fef3c7', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
-              <p style={{ color: '#92400e', margin: 0, fontWeight: '600' }}>
-                 Late Submission - This report was submitted after the deadline
-              </p>
+            <div className="pr-late">
+              <p>Late Submission — This report was submitted after the deadline</p>
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Submission Attempts</p>
-              <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '1.25rem' }}>
+          <div className="pr-info-grid pr-info-grid-3">
+            <div className="pr-info-box">
+              <p className="pr-info-label">Submission Attempts</p>
+              <p className="pr-info-value pr-info-value-lg">
                 {reportData.submission_count} / {maxAttempts}
               </p>
             </div>
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Last Submitted</p>
-              <p style={{ fontWeight: '600', color: '#1e293b', margin: 0 }}>
+            <div className="pr-info-box">
+              <p className="pr-info-label">Last Submitted</p>
+              <p className="pr-info-value">
                 {reportData.submitted_at ? new Date(reportData.submitted_at).toLocaleDateString() : 'Not submitted yet'}
               </p>
             </div>
-            <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.25rem 0' }}>Turnitin Score</p>
-              <p style={{ fontWeight: '700', color: reportData.turnitin_similarity_score > 30 ? '#ef4444' : '#10b981', margin: 0, fontSize: '1.25rem' }}>
+            <div className="pr-info-box">
+              <p className="pr-info-label">Turnitin Score</p>
+              <p className="pr-info-value pr-info-value-lg" style={{ color: reportData.turnitin_similarity_score > 30 ? '#ef4444' : '#1e3a8a' }}>
                 {reportData.turnitin_similarity_score || 0}%
               </p>
             </div>
@@ -1548,25 +1540,25 @@ const renderProjectProgress = () => {
 
           {/* Remarks Section */}
           {reportData.supervisor_remarks && (
-            <div style={{ background: '#eff6ff', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '3px solid #1e3a8a' }}>
-              <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
-              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{reportData.supervisor_remarks}</p>
+            <div className="pr-remarks">
+              <p className="pr-remarks-label">Supervisor Remarks</p>
+              <p className="pr-remarks-text">{reportData.supervisor_remarks}</p>
             </div>
           )}
           {reportData.admin_remarks && (
-           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #1e40af', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.8rem', color: '#5b21b6', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Admin Remarks:</p>
-              <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{reportData.admin_remarks}</p>
+            <div className="pr-remarks">
+              <p className="pr-remarks-label">Admin Remarks</p>
+              <p className="pr-remarks-text">{reportData.admin_remarks}</p>
             </div>
           )}
 
           {/* File Download */}
           {reportData.report_file && (
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderLeft: '4px solid #15803d', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <p style={{ fontSize: '0.8rem', color: '#065f46', margin: '0 0 0.5rem 0', fontWeight: '600' }}>Uploaded Report:</p>
+            <div className="pr-file">
+              <p className="pr-file-label">Uploaded Report</p>
               <button 
                 onClick={() => handleFileDownload(reportData.report_file)}
-                style={{ background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '1rem' }}
+                className="pr-file-link"
               >
                 View / Download Report File
               </button>
@@ -1575,12 +1567,12 @@ const renderProjectProgress = () => {
 
           {/* Upload Section */}
           {canUpload ? (
-            <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
-              <h4 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>Upload Report File</h4>
-              <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
+            <div className="pr-upload">
+              <h4>Upload Report File</h4>
+              <p className="pr-upload-desc">
                 {reportData.status === 'revision_needed' 
-                  ? 'Admin ne revisions suggest ki hain. Apni report update karke dobara submit karein.' 
-                  : 'Upload your final project report (PDF/DOCX only, Max 20MB)'
+                  ? 'Revisions have been requested. Please update your report and submit again.' 
+                  : 'Upload your final project report (PDF/DOCX, Max 20MB)'
                 }
               </p>
               <input 
@@ -1599,8 +1591,8 @@ const renderProjectProgress = () => {
               </button>
             </div>
           ) : (
-            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', padding: '1rem', borderRadius: '8px', marginTop: '1rem' }}>
-              <p style={{ color: '#9a3412', margin: 0, fontWeight: '500' }}>
+            <div className="pr-blocked">
+              <p>
                 {reportData.status === 'approved' 
                   ? 'Report has been finally approved. No further uploads allowed.' 
                   : reportData.status === 'rejected'
@@ -1631,7 +1623,7 @@ const renderProjectProgress = () => {
             {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : 'U'}
           </div>
           <div style={{ overflow: 'visible', flex: 1, minWidth: 0 }}>
-            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', color: 'white', whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2' }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600', color: 'white', whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2', fontFamily: "'Manrope', sans-serif" }}>
               {userInfo.name}
             </p>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)', textTransform: 'capitalize' }}>

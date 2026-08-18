@@ -188,7 +188,7 @@ if (submitted) {
     <div className="mlm-container">
       <div className="mlm-success">
         <div className="mlm-success-icon">&#10003;</div>
-        <h2>Already Submitted</h2>
+        <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Already Submitted</h2>
         <p style={{ marginBottom: '20px' }}>Project report marks have been recorded for this group.</p>
         
         <div style={{ 
@@ -251,7 +251,7 @@ if (submitted) {
 
       <div className="pref-header">
         <div>
-          <h2>Rubrics for Evaluation of FYDP-1 Report</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Rubrics for Evaluation of FYDP-1 Report</h2>
           {group && <p>{group.project || group.title} &mdash; {group.group || group.name}</p>}
         </div>
         <button className="pref-rubric-btn" onClick={() => setShowRubric(!showRubric)}>

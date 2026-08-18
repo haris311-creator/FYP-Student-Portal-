@@ -12,12 +12,15 @@ function HomePage() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    const parent = canvas.parentElement;
+    const w = parent.clientWidth;
+    const h = parent.clientHeight;
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
     camera.position.z = 80;
 
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setSize(w, h);
     renderer.setPixelRatio(window.devicePixelRatio);
 
     const count = 120;
@@ -67,8 +70,8 @@ function HomePage() {
     animate();
 
     const handleResize = () => {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
+      const w = parent.clientWidth;
+      const h = parent.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -126,8 +129,6 @@ function HomePage() {
         </div>
       </section>
 
-      <div className="section-divider" />
-
       <section className="home-section">
         <div className="section-header">
           <p className="section-tag">Gallery</p>
@@ -139,10 +140,10 @@ function HomePage() {
             <div key={activity.id} className="activity-card">
               <div className="activity-image-wrapper">
                 <img src={activity.image} alt={activity.title} className="activity-image" />
-              </div>
-              <div className="activity-content">
-                <h3 className="activity-title">{activity.title}</h3>
-                <p className="activity-desc">{activity.description}</p>
+                <div className="activity-content">
+                  <h3 className="activity-title">{activity.title}</h3>
+                  <p className="activity-desc">{activity.description}</p>
+                </div>
               </div>
             </div>
           ))}

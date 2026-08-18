@@ -520,11 +520,9 @@ const handleAnnouncementSubmit = (e) => {
           marginBottom: '1rem',
           transition: 'background 0.2s'
         }}
-        className="back-button"
-        onMouseOver={(e) => e.target.style.background = '#1e40af'}
-        onMouseOut={(e) => e.target.style.background = '#1e3a8a'}
+        className="admin-back-btn"
       >
-        ← Back to Overview
+        Back
       </button>
       <h2 className="content-title">{title}</h2>
     </div>
@@ -569,7 +567,7 @@ const handleAnnouncementSubmit = (e) => {
       </div>
 
       <h3 className="sub-title">Quick Actions</h3>
-      <div className="actions-grid">
+<div className="actions-grid">
         {!isCommittee && (  
           <>
         <button className="action-btn" onClick={() => setActiveTab('proposals')}>
@@ -590,13 +588,18 @@ const handleAnnouncementSubmit = (e) => {
           <span>Announcements</span>
         </button>
         )}
+        {!isCommittee && (
+          <button className="action-btn" onClick={() => setActiveTab('deadlines')}>
+            <span>Deadlines</span>
+          </button>
+        )}
         <button className="action-btn" onClick={() => setActiveTab('marks')}>
           <span>Marks & Evaluation</span>
         </button>
         {!isCommittee && (  
-          <button className="action-btn" onClick={() => setActiveTab('enrollment')}>
-            <span>Enrollment Management</span>
-          </button>
+        <button className="action-btn" onClick={() => setActiveTab('enrollment')}>
+          <span>Enrollment Management</span>
+        </button>
         )}       
       </div>
     </div>
@@ -737,12 +740,12 @@ const handleAnnouncementSubmit = (e) => {
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
         <div className="meeting-form-container" style={{ maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderRadius: '12px', padding: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0 }}>Final Proposal Review</h3>
+            <h3 style={{ margin: 0, fontFamily: "'Manrope', sans-serif" }}>Final Proposal Review</h3>
             <button className="close-form-btn" onClick={() => setSelectedFinalProposal(null)}>X</button>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedFinalProposal.project_title}</h4>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>{selectedFinalProposal.project_title}</h4>
             <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
               Submitted on: {selectedFinalProposal.submitted_at ? new Date(selectedFinalProposal.submitted_at).toLocaleString() : 'N/A'}
             </p>
@@ -755,13 +758,6 @@ const handleAnnouncementSubmit = (e) => {
               </div>
             )}
 
-            {selectedFinalProposal.supervisor_remarks && (
-              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
-                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
-                <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{selectedFinalProposal.supervisor_remarks}</p>
-              </div>
-            )}
-            
             {selectedFinalProposal.proposal_file ? (
               <button 
                 onClick={() => handleFileDownload(selectedFinalProposal.proposal_file)}
@@ -778,7 +774,7 @@ const handleAnnouncementSubmit = (e) => {
           </div>
 
           <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0' }}>Your Final Decision</h4>
+            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif" }}>Your Final Decision</h4>
             
             <div className="mform-group" style={{ marginBottom: '1rem' }}>
               <label className="mform-label">Action</label>
@@ -1043,12 +1039,12 @@ const handleDeleteDeadline = (id) => {
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
         <div className="meeting-form-container" style={{ maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderRadius: '12px', padding: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0 }}>Final Report Review</h3>
+            <h3 style={{ margin: 0, fontFamily: "'Manrope', sans-serif" }}>Final Report Review</h3>
             <button className="close-form-btn" onClick={() => { setSelectedFinalReport(null); setTurnitinScore(''); }}>X</button>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{selectedFinalReport.project_title}</h4>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>{selectedFinalReport.project_title}</h4>
             <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
               Group: {selectedFinalReport.group_number} | Submitted: {selectedFinalReport.submitted_at ? new Date(selectedFinalReport.submitted_at).toLocaleString() : 'N/A'}
             </p>
@@ -1070,13 +1066,6 @@ const handleDeleteDeadline = (id) => {
               </div>
             </div>
 
-            {selectedFinalReport.supervisor_remarks && (
-              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #3b82f6' }}>
-                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Supervisor Remarks:</p>
-                <p style={{ color: '#1e293b', margin: 0, fontStyle: 'italic' }}>{selectedFinalReport.supervisor_remarks}</p>
-              </div>
-            )}
-            
             {selectedFinalReport.report_file ? (
               <button 
                 onClick={() => handleFileDownload(selectedFinalReport.report_file)}
@@ -1094,7 +1083,7 @@ const handleDeleteDeadline = (id) => {
 
           {/* Turnitin Score Update Section */}
           <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0' }}>Update Turnitin Score (Optional)</h4>
+            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif" }}>Update Turnitin Score (Optional)</h4>
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <input
                 type="number"
@@ -1126,7 +1115,7 @@ const handleDeleteDeadline = (id) => {
           </div>
 
           <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0' }}>Your Final Decision</h4>
+            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif" }}>Your Final Decision</h4>
             
             <div className="mform-group" style={{ marginBottom: '1rem' }}>
               <label className="mform-label">Action</label>
@@ -1448,7 +1437,7 @@ const handleDeleteDeadline = (id) => {
           Allow late submission (marked as late)
         </label>
 
-        <button type="submit" className="submit-btn" disabled={savingDeadline}>
+        <button type="submit" className="submit-btn deadline-submit-btn" disabled={savingDeadline}>
           {savingDeadline ? 'Saving...' : editingDeadlineId ? 'Update Deadline' : 'Create Deadline'}
         </button>
         {editingDeadlineId && (
@@ -1709,7 +1698,7 @@ const handleDeleteDeadline = (id) => {
           }} onClick={(e) => e.stopPropagation()}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, color: '#1e293b' }}>Add Submission Attempts</h3>
+              <h3 style={{ margin: 0, color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>Add Submission Attempts</h3>
               <button 
                 onClick={() => setAttemptLimitModal(null)}
                 style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
@@ -1719,7 +1708,7 @@ const handleDeleteDeadline = (id) => {
             </div>
 
             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{attemptLimitModal.project_title}</h4>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>{attemptLimitModal.project_title}</h4>
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
                 Group: {attemptLimitModal.group_number}
               </p>
@@ -1798,7 +1787,7 @@ const handleDeleteDeadline = (id) => {
           }} onClick={(e) => e.stopPropagation()}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, color: '#1e293b' }}>Add Report Submission Attempts</h3>
+              <h3 style={{ margin: 0, color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>Add Report Submission Attempts</h3>
               <button 
                 onClick={() => setReportAttemptModal(null)}
                 style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}
@@ -1808,7 +1797,7 @@ const handleDeleteDeadline = (id) => {
             </div>
 
             <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b' }}>{reportAttemptModal.project_title}</h4>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>{reportAttemptModal.project_title}</h4>
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
                 Group: {reportAttemptModal.group_number}
               </p>

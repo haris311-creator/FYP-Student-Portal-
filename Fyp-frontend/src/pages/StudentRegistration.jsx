@@ -406,12 +406,12 @@ function StudentRegistration() {
                     type="button" 
                     onClick={() => setStep(1)} 
                     className="login-button"
-                    style={{ background: '#64748b', flex: 1 }}
+                    style={{ background: '#64748b', width: 'auto', padding: '12px 24px', flex: '0 0 auto' }}
                     disabled={loading}
                   >
                     Back
                   </button>
-                  <button type="submit" className="login-button" style={{ flex: 2 }} disabled={loading}>
+                  <button type="submit" className="login-button" style={{ width: 'auto', padding: '12px 24px', flex: '1 1 auto' }} disabled={loading}>
                     {loading ? 'Verifying...' : 'Complete Registration'}
                   </button>
                 </div>

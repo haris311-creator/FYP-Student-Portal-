@@ -68,7 +68,7 @@ const PublicTitleDefenseForm = ({ group, token }) => {
       <div className="tdf-container">
         <div className="tdf-success">
           <div className="tdf-success-icon">&#10003;</div>
-          <h2>Submitted Successfully</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Submitted Successfully</h2>
           <p>Your Title Defense evaluation has been recorded. Thank you.</p>
         </div>
       </div>
@@ -80,7 +80,7 @@ const PublicTitleDefenseForm = ({ group, token }) => {
 
       <div className="tdf-header">
         <div>
-          <h2>Title Defense Evaluation</h2>
+          <h2 style={{ fontFamily: "'Manrope', sans-serif" }}>Title Defense Evaluation</h2>
           {group && <p>{group.project || group.title} &mdash; {group.name || group.group}</p>}
         </div>
         <button className="tdf-rubric-btn" onClick={() => setShowRubric(!showRubric)}>
