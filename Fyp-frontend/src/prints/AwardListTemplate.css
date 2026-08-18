@@ -238,4 +238,15 @@
   .alt-table {
     font-size: 10px;
   }
+  .alt-toolbar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+  }
+  .alt-download-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
 }
