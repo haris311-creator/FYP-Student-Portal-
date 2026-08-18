@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { evaluationAPI } from '../utils/api';
 import { titleDefenseCriteria } from '../data/titleDefenseRubricData';
@@ -9,8 +9,14 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const [evalLinks, setEvalLinks] = useState([]);
+  const [loadingExisting, setLoadingExisting] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
+  const [adminEditMode, setAdminEditMode] = useState(false);
+
+  const [evalLink, setEvalLink] = useState(null);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [ecStatus, setEcStatus] = useState(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
 
   const [evaluatorName, setEvaluatorName] = useState('');
   const [selections, setSelections] = useState(
@@ -21,25 +27,91 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
   );
   const [comments, setComments] = useState('');
 
+  const currentUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user')) || {};
+    } catch (e) {
+      return {};
+    }
+  })();
+  const isAdmin = currentUser.user_type === 'admin';
+
   const buildEvalLink = (token) => `${window.location.origin}/evaluate/td/${token}`;
+
+  // Load existing evaluations (Project Committee submission + Evaluation Committee status) on mount
+  useEffect(() => {
+    const loadExisting = async () => {
+      if (!group?.id) {
+        setLoadingExisting(false);
+        return;
+      }
+      try {
+        const res = await evaluationAPI.getTitleDefenseByGroup(group.id);
+        const results = res?.data?.results || [];
+
+        const pcRecord = results.find((r) => r.role === 'project_committee');
+        const ecRecord = results.find((r) => r.role === 'evaluation_committee');
+
+        if (pcRecord && pcRecord.is_submitted) {
+          setEvaluatorName(pcRecord.evaluator_name || '');
+          const loadedMarks = pcRecord.criteria_marks || {};
+          setMarks((prev) => ({ ...prev, ...loadedMarks }));
+          const derivedSelections = {};
+          titleDefenseCriteria.forEach((row, idx) => {
+            const val = parseFloat(loadedMarks[idx]);
+            derivedSelections[idx] = !isNaN(val) ? Math.round((val / row.maxMarks) * 5) : null;
+          });
+          setSelections((prev) => ({ ...prev, ...derivedSelections }));
+          setComments(pcRecord.comments || '');
+          setIsLocked(true);
+        }
+
+        if (ecRecord) {
+          setEvalLink({
+            token: ecRecord.evaluation_token,
+            link: buildEvalLink(ecRecord.evaluation_token),
+            submitted: ecRecord.is_submitted
+          });
+        }
+
+        fetchStatus();
+      } catch (err) {
+        console.error('Error loading existing title defense evaluation:', err);
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+    loadExisting();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group?.id]);
+
+  const fetchStatus = async () => {
+    if (!group?.id) return;
+    setLoadingStatus(true);
+    try {
+      const res = await evaluationAPI.getTitleDefenseStatus(group.id);
+      setEcStatus(res?.data || null);
+    } catch (err) {
+      setEcStatus(null);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
 
   const handleGenerateLink = async () => {
     setGeneratingLink(true);
     try {
       const res = await evaluationAPI.createTitleDefenseSession(group?.id);
-      const token = res?.data?.token || res?.data?.evaluation_token;
-      const link = token ? buildEvalLink(token) : null;
-      if (link) {
-        setEvalLinks(prev => [...prev, { token, link, generated_at: new Date().toLocaleString(), status: 'active' }]);
+      const token = res?.data?.token;
+      if (token) {
+        const link = res?.data?.link || buildEvalLink(token);
+        setEvalLink({ token, link, submitted: false });
         navigator.clipboard?.writeText(link);
         toast.success('Evaluation link generated and copied!');
+        fetchStatus();
       }
     } catch (err) {
-      const testToken = `td-${group?.id || 'demo'}-${Date.now()}`;
-      const link = buildEvalLink(testToken);
-      setEvalLinks(prev => [...prev, { token: testToken, link, generated_at: new Date().toLocaleString(), status: 'active' }]);
-      navigator.clipboard?.writeText(link);
-      toast.success('Evaluation link generated and copied! (demo mode)');
+      toast.error(err.response?.data?.error || 'Failed to generate evaluation link.');
     } finally {
       setGeneratingLink(false);
     }
@@ -50,7 +122,10 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
     toast.success('Link copied!');
   };
 
+  const readOnly = isLocked && !(isAdmin && adminEditMode);
+
   const handleRadio = (cIdx, value) => {
+    if (readOnly) return;
     setSelections((prev) => ({ ...prev, [cIdx]: value }));
     setMarks((prev) => ({
       ...prev,
@@ -59,6 +134,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
   };
 
   const handleManual = (cIdx, value) => {
+    if (readOnly) return;
     const max = titleDefenseCriteria[cIdx].maxMarks;
     const num = parseFloat(value);
     const newSelections = { ...selections };
@@ -82,22 +158,32 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
     setSubmitting(true);
     try {
       const payload = {
-        group_id: group?.id,
-        role: 'projectCommittee',
+        group: group?.id,
+        role: 'project_committee',
         evaluator_name: evaluatorName,
         criteria_marks: marks,
         raw_total: rawTotal,
-        converted_marks: parseFloat(convertedMarks),
-        comments
+        comments,
+        is_submitted: true
       };
-      console.log('Submitting title defense evaluation:', payload);
+      await evaluationAPI.submitTitleDefense(payload);
       setSubmitted(true);
+      setIsLocked(true);
+      setAdminEditMode(false);
     } catch (err) {
-      toast.error('Failed to submit. Please try again.');
+      toast.error(err.response?.data?.error || 'Failed to submit. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (loadingExisting) {
+    return (
+      <div className="tdf-container">
+        <p style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>Loading...</p>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -147,48 +233,93 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
         </table>
       </div>
 
+      {isLocked && (
+        <div style={{
+          background: '#fef9c3', border: '1px solid #fde047', borderRadius: '8px',
+          padding: '12px 16px', marginBottom: '16px', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px'
+        }}>
+          <span style={{ fontSize: '13px', color: '#854d0e' }}>
+            {adminEditMode
+              ? 'Admin edit mode — you can modify this submitted evaluation.'
+              : 'This evaluation has already been submitted and is read-only.'}
+          </span>
+          {isAdmin && (
+            <button
+              onClick={() => setAdminEditMode((prev) => !prev)}
+              style={{
+                background: adminEditMode ? '#64748b' : '#1e3a8a', color: 'white', border: 'none',
+                padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              {adminEditMode ? 'Cancel Edit' : 'Edit (Admin)'}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Evaluation Committee Link */}
       <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', marginBottom: '20px', overflow: 'hidden' }}>
         <div style={{ padding: '20px' }}>
           <h3 style={{ margin: '0 0 8px', fontSize: '15px', fontWeight: 600, color: '#1e3a8a' }}>
-            Committee Evaluation Links
+            Evaluation Committee Link (5%)
           </h3>
           <p style={{ margin: '0 0 14px', fontSize: '12px', color: '#64748b' }}>
-            Generate unique links for evaluation committee members. Each link can be used once and is shared via WhatsApp or Email.
+            Generate a unique link for the Evaluation Committee. The link can be used only once.
           </p>
-          <button className="gmp-evaluate-btn" onClick={handleGenerateLink} disabled={generatingLink}>
-            {generatingLink ? 'Generating...' : 'Generate New Link'}
-          </button>
 
-          {evalLinks.length > 0 && (
-            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {evalLinks.map((item, idx) => (
-                <div key={idx} style={{
-                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
-                  background: '#f0f9ff', borderLeft: '3px solid #3b82f6', borderRadius: '6px', padding: '10px 14px'
-                }}>
-                  <code style={{ flex: 1, fontSize: '12px', color: '#1e3a8a', wordBreak: 'break-all', minWidth: '200px' }}>
-                    {item.link}
-                  </code>
-                  <span style={{
-                    fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '12px',
-                    background: '#fef9c3', color: '#854d0e', whiteSpace: 'nowrap'
-                  }}>
-                    {item.status}
-                  </span>
-                  <button
-                    onClick={() => copyLink(item.link)}
-                    style={{
-                      background: 'white', border: '1px solid #bfdbfe', color: '#1e3a8a',
-                      padding: '5px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 500,
-                      cursor: 'pointer', whiteSpace: 'nowrap'
-                    }}
-                  >
-                    Copy
-                  </button>
-                </div>
-              ))}
+          {loadingStatus ? (
+            <p style={{ fontSize: '12px', color: '#64748b' }}>Loading status...</p>
+          ) : ecStatus?.submitted > (evalLink ? 0 : -1) && evalLink?.submitted ? null : null}
+
+          {evalLink?.submitted ? (
+            <div style={{
+              background: '#f0fdf4', borderLeft: '3px solid #22c55e', borderRadius: '6px',
+              padding: '10px 14px', fontSize: '13px', color: '#166534', fontWeight: 600
+            }}>
+              &#10003; Evaluation Committee has submitted their evaluation.
             </div>
+          ) : evalLink ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+                background: '#f0f9ff', borderLeft: '3px solid #3b82f6', borderRadius: '6px', padding: '10px 14px'
+              }}>
+                <code style={{ flex: 1, fontSize: '12px', color: '#1e3a8a', wordBreak: 'break-all', minWidth: '200px' }}>
+                  {evalLink.link}
+                </code>
+                <span style={{
+                  fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '12px',
+                  background: '#fef9c3', color: '#854d0e', whiteSpace: 'nowrap'
+                }}>
+                  active
+                </span>
+                <button
+                  onClick={() => copyLink(evalLink.link)}
+                  style={{
+                    background: 'white', border: '1px solid #bfdbfe', color: '#1e3a8a',
+                    padding: '5px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 500,
+                    cursor: 'pointer', whiteSpace: 'nowrap'
+                  }}
+                >
+                  Copy
+                </button>
+                <button
+                  onClick={fetchStatus}
+                  style={{
+                    background: 'white', border: '1px solid #cbd5e1', color: '#475569',
+                    padding: '5px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: 500,
+                    cursor: 'pointer', whiteSpace: 'nowrap'
+                  }}
+                >
+                  Refresh Status
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="gmp-evaluate-btn" onClick={handleGenerateLink} disabled={generatingLink}>
+              {generatingLink ? 'Generating...' : 'Generate Evaluation Link'}
+            </button>
           )}
         </div>
       </div>
@@ -245,6 +376,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
                     placeholder="Enter evaluator's full name"
                     value={evaluatorName}
                     onChange={(e) => setEvaluatorName(e.target.value)}
+                    disabled={readOnly}
                   />
                 </td>
               </tr>
@@ -288,6 +420,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
                         value={level}
                         checked={selections[cIdx] === level}
                         onChange={() => handleRadio(cIdx, level)}
+                        disabled={readOnly}
                       />
                     </td>
                   ))}
@@ -301,6 +434,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
                       value={marks[cIdx]}
                       onChange={(e) => handleManual(cIdx, e.target.value)}
                       placeholder={`/${row.maxMarks}`}
+                      disabled={readOnly}
                     />
                   </td>
                 </tr>
@@ -332,6 +466,7 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
                     placeholder="Any additional remarks..."
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
+                    disabled={readOnly}
                   />
                 </td>
               </tr>
@@ -341,8 +476,8 @@ const TitleDefenseEvaluationForm = ({ group, onClose }) => {
       </div>
 
       <div className="tdf-actions">
-        <button className="tdf-submit-btn" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? 'Submitting...' : 'Submit Evaluation'}
+        <button className="tdf-submit-btn" onClick={handleSubmit} disabled={submitting || readOnly}>
+          {submitting ? 'Submitting...' : isLocked && adminEditMode ? 'Update Evaluation' : 'Submit Evaluation'}
         </button>
         <button className="tdf-cancel-btn" onClick={onClose}>Cancel</button>
       </div>

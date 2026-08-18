@@ -13,6 +13,7 @@ from .models import (
     ReportEvaluation,
     PresentationEvaluation,
     FinalEvaluationResult,
+    TitleDefenseEvaluation,
 )
 from .serializers import (
     EvaluationCriteriaSerializer,
@@ -22,6 +23,8 @@ from .serializers import (
     PresentationEvaluationSerializer,
     PublicPresentationEvaluationSerializer,
     FinalEvaluationResultSerializer,
+    TitleDefenseEvaluationSerializer,
+    PublicTitleDefenseEvaluationSerializer,
 )
 from projects.models import ProjectGroup, GroupMember
 
@@ -117,7 +120,6 @@ class SessionalEvaluationViewSet(viewsets.ModelViewSet):
 
         user = request.user
         if user.user_type == 'student':
-            from projects.models import GroupMember
             if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
                 return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
             evaluations = SessionalEvaluation.objects.filter(group_id=group_id)
@@ -187,7 +189,6 @@ class MeetingLogEvaluationViewSet(viewsets.ModelViewSet):
 
         user = request.user
         if user.user_type == 'student':
-            from projects.models import GroupMember
             if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
                 return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
             evaluations = MeetingLogEvaluation.objects.filter(group_id=group_id)
@@ -279,7 +280,6 @@ class ReportEvaluationViewSet(viewsets.ModelViewSet):
 
         user = request.user
         if user.user_type == 'student':
-            from projects.models import GroupMember
             if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
                 return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
             evaluations = ReportEvaluation.objects.filter(group_id=group_id)
@@ -368,20 +368,15 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
         
         user = request.user
         if user.user_type == 'student':
-            from projects.models import GroupMember
             if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
                 return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
-        
-        if user.user_type == 'student':
-            evaluations = PresentationEvaluation.objects.filter(
-                group_id=group_id,
-                is_submitted=True
-            ).select_related('group')
-        else:
-            evaluations = self.get_queryset().filter(
-                group_id=group_id,
-                is_submitted=True
-            ).select_related('group')
+
+        # Admin & Committee dono ko group ki SAARI submitted evaluations dikhni chahiye
+        # (chahe kisi ne bhi submit ki ho), taake pata chal sake evaluation ho chuki hai ya nahi.
+        evaluations = PresentationEvaluation.objects.filter(
+            group_id=group_id,
+            is_submitted=True
+        ).select_related('group')
         
         serializer = self.get_serializer(evaluations, many=True)
         
@@ -444,7 +439,7 @@ class PresentationEvaluationViewSet(viewsets.ModelViewSet):
         Generate unique evaluation token for external evaluator
         """
         from django.shortcuts import get_object_or_404
-        from projects.models import ProjectGroup
+
         
         group_id = request.data.get('group_id')
         if not group_id:
@@ -722,4 +717,249 @@ class FinalEvaluationResultViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({
             'count': len(groups_data),
             'results': list(groups_data.values())
+        })
+
+
+
+
+# =============================================================================
+# TITLE DEFENSE EVALUATION
+# =============================================================================
+class TitleDefenseEvaluationViewSet(viewsets.ModelViewSet):
+    """
+    Title Defense evaluation - exactly ONE record per (group, role).
+    role='project_committee': submitted by any logged-in committee/admin member via portal.
+    role='evaluation_committee': submitted via public token link.
+    Once submitted, read-only for committee members; only admin can overwrite.
+    """
+    queryset = TitleDefenseEvaluation.objects.all()
+    serializer_class = TitleDefenseEvaluationSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrCommittee]
+
+    def get_permissions(self):
+        if self.action == 'by_group':
+            return [IsAuthenticated()]
+        return [permission() for permission in self.permission_classes]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Project Committee submission (or admin override).
+        get-or-create by (group, role) instead of blind insert.
+        """
+        group_id = request.data.get('group')
+        role = request.data.get('role', 'project_committee')
+
+        if not group_id:
+            return Response({'error': 'group is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        existing = TitleDefenseEvaluation.objects.filter(group_id=group_id, role=role).first()
+
+        if existing and existing.is_submitted and request.user.user_type != 'admin':
+            return Response(
+                {'error': 'This evaluation has already been submitted and is read-only. Only admin can edit it.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        instance = existing or TitleDefenseEvaluation(group_id=group_id, role=role)
+
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        instance.evaluator = request.user
+        instance.evaluator_name = serializer.validated_data.get('evaluator_name', instance.evaluator_name)
+        instance.criteria_marks = serializer.validated_data.get('criteria_marks', instance.criteria_marks or {})
+        instance.raw_total = serializer.validated_data.get('raw_total', instance.raw_total or 0)
+        instance.comments = serializer.validated_data.get('comments', instance.comments)
+        instance.is_submitted = serializer.validated_data.get('is_submitted', instance.is_submitted)
+        instance.calculate_converted()
+        instance.save()
+
+        return Response(
+            TitleDefenseEvaluationSerializer(instance).data,
+            status=status.HTTP_201_CREATED if not existing else status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['get'])
+    def by_group(self, request):
+        """Get both role evaluations for a group (used for status/lock display)."""
+        group_id = request.query_params.get('group_id')
+        if not group_id:
+            return Response({'error': 'group_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        if user.user_type == 'student':
+            if not GroupMember.objects.filter(group_id=group_id, student=user).exists():
+                return Response({'error': 'Not authorized for this group'}, status=status.HTTP_403_FORBIDDEN)
+
+        evaluations = TitleDefenseEvaluation.objects.filter(group_id=group_id)
+        serializer = self.get_serializer(evaluations, many=True)
+        return Response({'count': evaluations.count(), 'results': serializer.data})
+
+    @action(detail=False, methods=['get'])
+    def status(self, request):
+        """GET /api/evaluations/title-defense/status/?group_id=X"""
+        group_id = request.query_params.get('group_id')
+        if not group_id:
+            return Response({'error': 'group_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        submitted_count = TitleDefenseEvaluation.objects.filter(
+            group_id=group_id, is_submitted=True
+        ).count()
+
+        return Response({'submitted': submitted_count, 'total': 2})
+
+    @action(detail=False, methods=['post'])
+    def create_session(self, request):
+        """
+        Generate (or return existing, unsubmitted) public link for the Evaluation Committee.
+        """
+        group_id = request.data.get('group_id')
+        if not group_id:
+            return Response({'error': 'group_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            group = ProjectGroup.objects.get(id=group_id)
+        except ProjectGroup.DoesNotExist:
+            return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        evaluation, created = TitleDefenseEvaluation.objects.get_or_create(
+            group=group,
+            role='evaluation_committee',
+            defaults={'is_submitted': False}
+        )
+
+        if evaluation.is_submitted:
+            return Response(
+                {'error': 'Evaluation Committee has already submitted its evaluation for this group.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        token = str(evaluation.evaluation_token)
+        frontend_url = settings.FRONTEND_URL
+        evaluation_link = f"{frontend_url}/evaluate/td/{token}"
+
+        return Response({
+            'token': token,
+            'link': evaluation_link,
+            'evaluation_id': evaluation.id,
+            'message': 'Evaluation link generated successfully'
+        })
+
+    @action(detail=False, methods=['get'], url_path='award-list')
+    def award_list(self, request):
+        """
+        GET /api/evaluations/title-defense/award-list/?semester=Fall 2024
+        Get Title Defense results for award list generation
+        """
+        semester = request.query_params.get('semester')
+        
+        queryset = TitleDefenseEvaluation.objects.filter(is_submitted=True)
+        if semester:
+            queryset = queryset.filter(group__semester=semester)
+        
+        # Group by project
+        groups_data = {}
+        for td_eval in queryset:
+            group_id = td_eval.group.id
+            if group_id not in groups_data:
+                groups_data[group_id] = {
+                    'group_number': td_eval.group.group_number,
+                    'project_title': td_eval.group.project_title,
+                    'supervisor': td_eval.group.supervisor.full_name if td_eval.group.supervisor else 'N/A',
+                    'semester': td_eval.group.semester,
+                    'evaluations': []
+                }
+            
+            groups_data[group_id]['evaluations'].append({
+                'role': td_eval.get_role_display(),
+                'evaluator_name': td_eval.evaluator_name,
+                'raw_total': float(td_eval.raw_total or 0),
+                'converted_marks': float(td_eval.converted_marks or 0),
+                'is_submitted': td_eval.is_submitted
+            })
+        
+        # Calculate total marks for each group (sum of both roles)
+        results = []
+        for group_id, data in groups_data.items():
+            total_marks = sum(eval['converted_marks'] for eval in data['evaluations'])
+            results.append({
+                'group_number': data['group_number'],
+                'project_title': data['project_title'],
+                'supervisor': data['supervisor'],
+                'semester': data['semester'],
+                'total_marks': round(total_marks, 2),
+                'max_marks': 10,
+                'evaluations': data['evaluations']
+            })
+        
+        # Sort by total marks (descending)
+        results.sort(key=lambda x: x['total_marks'], reverse=True)
+        
+        return Response({
+            'count': len(results),
+            'results': results
+        })
+
+
+class PublicTitleDefenseEvaluationView(APIView):
+    """
+    Public evaluation endpoint for the Evaluation Committee link (no authentication required).
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        evaluation = get_object_or_404(TitleDefenseEvaluation, evaluation_token=token)
+
+        if evaluation.is_submitted:
+            return Response(
+                {'error': 'This evaluation link has already been used'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        group = evaluation.group
+        return Response({
+            'group': {
+                'id': group.id,
+                'group_number': group.group_number or 'N/A',
+                'project': group.project_title or 'Untitled Project',
+                'project_title': group.project_title or 'Untitled Project',
+                'name': f"Group {group.group_number}" if group.group_number else 'Unknown Group',
+                'supervisor': group.supervisor.full_name if group.supervisor else 'Not Assigned',
+                'phase': group.get_fydp_phase_display() if hasattr(group, 'get_fydp_phase_display') else group.fydp_phase or 'FYP-1',
+                'semester': group.semester or 'Fall 2024',
+                'members': [
+                    {
+                        'id': m.id,
+                        'name': f"{m.student.first_name} {m.student.last_name}".strip() or m.student.email,
+                        'odoo_id': m.odoo_id or (m.student.student_id if m.student else 'N/A')
+                    }
+                    for m in group.members.all()
+                ]
+            },
+            'evaluation_token': str(evaluation.evaluation_token)
+        })
+
+    def post(self, request, token):
+        evaluation = get_object_or_404(TitleDefenseEvaluation, evaluation_token=token)
+
+        if evaluation.is_submitted:
+            return Response(
+                {'error': 'This evaluation link has already been used'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = PublicTitleDefenseEvaluationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        evaluation.evaluator_name = serializer.validated_data['evaluator_name']
+        evaluation.criteria_marks = serializer.validated_data['criteria_marks']
+        evaluation.raw_total = serializer.validated_data['raw_total']
+        evaluation.comments = serializer.validated_data.get('comments', '')
+        evaluation.is_submitted = True
+        evaluation.calculate_converted()
+        evaluation.save()
+
+        return Response({
+            'message': 'Evaluation submitted successfully',
+            'data': TitleDefenseEvaluationSerializer(evaluation).data
         })

@@ -44,6 +44,7 @@ function App() {
         {/* Public Evaluation Route */}
         <Route path="/evaluate/td/:token" element={<PublicTitleDefensePage />} />
         <Route path="/evaluate/:token" element={<PublicEvaluationPage />} />
+        <Route path="/evaluate/td/:token" element={<PublicTitleDefensePage />} />
 
         {/*  Admin Group Approvals Route - FIXED */}
         <Route

@@ -8,6 +8,8 @@ from .views import (
     PresentationEvaluationViewSet,
     FinalEvaluationResultViewSet,
     PublicPresentationEvaluationView,
+    TitleDefenseEvaluationViewSet,
+    PublicTitleDefenseEvaluationView,
 )
 
 router = DefaultRouter()
@@ -16,6 +18,7 @@ router.register(r'sessional', SessionalEvaluationViewSet, basename='sessional-ev
 router.register(r'meeting-logs', MeetingLogEvaluationViewSet, basename='meeting-log-evaluation')
 router.register(r'reports', ReportEvaluationViewSet, basename='report-evaluation')
 router.register(r'presentations', PresentationEvaluationViewSet, basename='presentation-evaluation')
+router.register(r'title-defense', TitleDefenseEvaluationViewSet, basename='title-defense-evaluation')
 router.register(r'final-results', FinalEvaluationResultViewSet, basename='final-result')
 
 urlpatterns = [
@@ -25,4 +28,8 @@ urlpatterns = [
     path('public/presentation/<uuid:token>/', 
          PublicPresentationEvaluationView.as_view(), 
          name='public-presentation-evaluation'),
+
+    path('public/title-defense/<uuid:token>/', 
+         PublicTitleDefenseEvaluationView.as_view(), 
+         name='public-title-defense-evaluation'),
 ]

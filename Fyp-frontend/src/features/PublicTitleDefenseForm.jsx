@@ -53,12 +53,11 @@ const PublicTitleDefenseForm = ({ group, token }) => {
         evaluator_name: evaluatorName,
         criteria_marks: marks,
         raw_total: rawTotal,
-        converted_marks: parseFloat(convertedMarks),
         comments
       });
       setSubmitted(true);
     } catch (err) {
-      setSubmitted(true);
+      toast.error(err.response?.data?.error || 'Failed to submit evaluation. Please try again.');
     } finally {
       setSubmitting(false);
     }

@@ -6,6 +6,7 @@ from .models import (
     ReportEvaluation,
     PresentationEvaluation,
     FinalEvaluationResult,
+    TitleDefenseEvaluation,
 )
 from projects.models import ProjectGroup, GroupMember
 from accounts.models import CustomUser
@@ -149,6 +150,47 @@ class PublicPresentationEvaluationSerializer(serializers.Serializer):
         for student_id, marks in value.items():
             if marks < 0 or marks > 5:
                 raise serializers.ValidationError(f"Viva marks must be between 0 and 5")
+        return value
+
+
+
+class TitleDefenseEvaluationSerializer(serializers.ModelSerializer):
+    group_number = serializers.CharField(source='group.group_number', read_only=True)
+    role_display = serializers.CharField(source='get_role_display', read_only=True)
+
+    class Meta:
+        model = TitleDefenseEvaluation
+        fields = [
+            'id', 'evaluation_token', 'group', 'group_number', 'role', 'role_display',
+            'evaluator', 'evaluator_name', 'criteria_marks', 'raw_total',
+            'converted_marks', 'comments', 'is_submitted',
+            'evaluated_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'evaluation_token', 'converted_marks', 'evaluated_at', 'updated_at'
+        ]
+
+    def validate(self, data):
+        is_submitted = data.get('is_submitted', False)
+        if is_submitted:
+            raw_total = data.get('raw_total', 0)
+            if raw_total < 0 or raw_total > 40:
+                raise serializers.ValidationError({
+                    'raw_total': "Must be between 0 and 40"
+                })
+        return data
+
+
+class PublicTitleDefenseEvaluationSerializer(serializers.Serializer):
+    """Serializer for public Evaluation Committee link (no auth required)"""
+    evaluator_name = serializers.CharField(max_length=200)
+    criteria_marks = serializers.JSONField()
+    raw_total = serializers.DecimalField(max_digits=5, decimal_places=2)
+    comments = serializers.CharField(required=False, allow_blank=True)
+
+    def validate_raw_total(self, value):
+        if value < 0 or value > 40:
+            raise serializers.ValidationError("Must be between 0 and 40")
         return value
 
 

@@ -303,3 +303,67 @@ class FinalEvaluationResult(models.Model):
         )
         self.is_passed = self.total_marks >= self.passing_marks
         return self.total_marks
+
+
+
+
+
+
+class TitleDefenseEvaluation(models.Model):
+    """
+    FYDP Title Defense evaluation. Exactly ONE evaluation per role per group:
+    - 'project_committee' (5%): filled by any one logged-in committee member.
+    - 'evaluation_committee' (5%): filled via public link by an external/committee evaluator.
+    Combined total out of 10. Independent of the 100-mark FYDP-1 FinalEvaluationResult.
+    """
+    ROLE_CHOICES = [
+        ('project_committee', 'Project Committee'),
+        ('evaluation_committee', 'Evaluation Committee'),
+    ]
+
+    # Unique token for the public (Evaluation Committee) link
+    evaluation_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
+    group = models.ForeignKey(ProjectGroup, on_delete=models.CASCADE, related_name='title_defense_evaluations')
+    role = models.CharField(max_length=25, choices=ROLE_CHOICES)
+
+    evaluator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='conducted_title_defense_evaluations'
+    )
+    evaluator_name = models.CharField(max_length=200, blank=True)
+
+    # 8 criteria, each out of 5 (raw total out of 40)
+    criteria_marks = models.JSONField(default=dict, blank=True)
+    raw_total = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        validators=[MinValueValidator(0), MaxValueValidator(40)],
+        null=True, blank=True, default=0
+    )
+    # Converted to out of 5 (5%)
+    converted_marks = models.DecimalField(
+        max_digits=4, decimal_places=2,
+        validators=[MinValueValidator(0), MaxValueValidator(5)],
+        null=True, blank=True, default=0
+    )
+
+    comments = models.TextField(blank=True)
+    is_submitted = models.BooleanField(default=False)
+    evaluated_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['group', 'role']
+        ordering = ['-evaluated_at']
+
+    def __str__(self):
+        return f"{self.group.group_number} - Title Defense ({self.get_role_display()})"
+
+    def calculate_converted(self):
+        """Raw total (out of 40) -> converted marks (out of 5)"""
+        raw = float(self.raw_total or 0)
+        self.converted_marks = round((raw / 40) * 5, 2)
+        return self.converted_marks

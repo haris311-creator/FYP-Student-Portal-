@@ -333,4 +333,18 @@ export const evaluationAPI = {
   calculateFinalMarks: (groupId) => api.post('/evaluations/final-results/calculate/', { group_id: groupId }),
   getFinalResults: () => api.get('/evaluations/final-results/'),
   getAwardList: (semester, phase) => api.get(`/evaluations/final-results/award_list/?semester=${semester}&fydp_phase=${phase}`),
+
+
+  // Title Defense
+  getTitleDefenseByGroup: (groupId) => api.get(`/evaluations/title-defense/by_group/?group_id=${groupId}`),
+  getTitleDefenseStatus: (groupId) => api.get(`/evaluations/title-defense/status/?group_id=${groupId}`),
+  submitTitleDefense: (data) => api.post('/evaluations/title-defense/', data),
+  createTitleDefenseSession: (groupId) => api.post('/evaluations/title-defense/create_session/', { group_id: groupId }),
+
+  // Public Title Defense (no auth)
+  getPublicTitleDefense: (token) =>
+    axios.get(`${API_BASE_URL}/evaluations/public/title-defense/${token}/`),
+  submitPublicTitleDefense: (token, data) =>
+    axios.post(`${API_BASE_URL}/evaluations/public/title-defense/${token}/`, data),
+
 };

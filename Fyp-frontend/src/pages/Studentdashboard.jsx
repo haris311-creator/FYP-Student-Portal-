@@ -855,6 +855,30 @@ const renderProjectProgress = () => {
             {myMeetingsData?.attendance?.length || 0}
           </p>
         </div>
+        
+        {/* Proposal Deadline */}
+        {proposalDeadline && (
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
+              Proposal Deadline
+            </p>
+            <p style={{ fontWeight: '700', color: new Date(proposalDeadline.deadline_date) < new Date() ? '#ef4444' : '#000000', fontSize: '1.05rem', margin: 0 }}>
+              {new Date(proposalDeadline.deadline_date).toLocaleString()}
+            </p>
+          </div>
+        )}
+
+        {/* Report Deadline */}
+        {reportDeadline && (
+          <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px'}}>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.5rem 0', textTransform: 'uppercase', fontWeight: '600' }}>
+              Report Deadline
+            </p>
+            <p style={{ fontWeight: '700', color: new Date(reportDeadline.deadline_date) < new Date() ? '#ef4444' : '#000000', fontSize: '1.05rem', margin: 0 }}>
+              {new Date(reportDeadline.deadline_date).toLocaleString()}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Progress Section */}

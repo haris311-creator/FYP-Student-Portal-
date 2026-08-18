@@ -107,15 +107,28 @@ const GroupMarksPage = ({ group, onBack }) => {
   }, [group?.id]);
 
   useEffect(() => {
-    const fetchTDData = async () => {
-      if (!group?.id) return;
-      try {
-        const res = await evaluationAPI.getTitleDefenseStatus(group.id);
-        setTdData(res?.data || null);
-      } catch { setTdData(null); }
-    };
-    fetchTDData();
-  }, [group?.id]);
+  const fetchTDData = async () => {
+    if (!group?.id) return;
+    try {
+      const res = await evaluationAPI.getTitleDefenseByGroup(group.id);
+      const evaluations = res.data?.results || [];
+      
+      // Calculate grand total
+      const grandTotal = evaluations.reduce((sum, e) => {
+        return sum + parseFloat(e.converted_marks || 0);
+      }, 0);
+      
+      setTdData({
+        evaluations: evaluations,
+        grand_total: grandTotal.toFixed(2)
+      });
+    } catch (err) {
+      console.error('Failed to fetch TD data:', err);
+      setTdData(null);
+    }
+  };
+  fetchTDData();
+}, [group?.id]);
 
   const generateEvalLink = async () => {
     setGeneratingLink(true);
@@ -529,7 +542,12 @@ const GroupMarksPage = ({ group, onBack }) => {
               <div key={idx} style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:'8px', padding:'16px', marginBottom:'16px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
                   <h4 style={{ margin:0, color:'#1e3a8a' }}>
-                    {ev.evaluator_name || `Evaluator ${idx + 1}`} — <span style={{ fontSize:'12px', color:'#64748b' }}>{ev.role === 'projectCommittee' ? 'Project Committee' : 'Evaluation Committee'}</span>
+                    {ev.evaluator_name || `Evaluator ${idx + 1}`} — 
+                    <span style={{ fontSize:'12px', color:'#64748b' }}>
+                      {/* ✅ Fix role display */}
+                      {ev.role === 'project_committee' ? 'Project Committee' : 
+                      ev.role === 'evaluation_committee' ? 'Evaluation Committee' : ev.role_display}
+                    </span>
                   </h4>
                   <button
                     onClick={() => { setSelectedTDEvalIdx(idx); setShowTDPrint(true); }}

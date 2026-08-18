@@ -553,11 +553,16 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
         """Check if user is admin"""
         if not hasattr(request.user, 'user_type') or request.user.user_type != 'admin':
             raise PermissionDenied("Only admin users can access this endpoint")
+
+    def check_admin_or_committee_permission(self, request):
+        """Check if user is admin or committee (for read-only actions)"""
+        if not hasattr(request.user, 'user_type') or request.user.user_type not in ['admin', 'committee']:
+            raise PermissionDenied("Only admin or committee users can access this endpoint")
     
     @action(detail=False, methods=['get'])
     def pending(self, request):
         """GET /api/projects/admin/approval/pending/"""
-        self.check_admin_permission(request)
+        self.check_admin_or_committee_permission(request)
         
         pending_groups = ProjectGroup.objects.filter(
             status='pending_approval'
@@ -576,7 +581,7 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path='all')
     def all_groups(self, request):
         """GET /api/projects/admin/approval/all/"""
-        self.check_admin_permission(request)
+        self.check_admin_or_committee_permission(request)
         
         groups = ProjectGroup.objects.filter(
             status__in=['idea_pitch', 'approved', 'proposal_approved', 'in_progress', 'completed']
@@ -709,7 +714,7 @@ class AdminGroupApprovalViewSet(viewsets.ViewSet):
     @action(detail=True, methods=['get'])
     def details(self, request, pk=None):
         """GET /api/projects/admin/approval/{id}/details/"""
-        self.check_admin_permission(request)
+        self.check_admin_or_committee_permission(request)
         
         try:
             group = ProjectGroup.objects.select_related(
