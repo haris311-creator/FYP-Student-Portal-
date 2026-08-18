@@ -1,6 +1,4 @@
-/* =========================================
-   1. GLOBAL LAYOUT & RESET
-   ========================================= */
+
 *{
   box-sizing: border-box;
 }
@@ -406,7 +404,7 @@
    6. BUTTONS & ALERTS
    ========================================= */
 .btn-add {
-  background: #10b981;
+  background: #1e3a8a;
   color: white;
   border: none;
   padding: 12px 32px;
@@ -1215,7 +1213,7 @@
   .btn-submit,
   .btn-add,
   .btn-remove {
-    min-height: 44px;
+    min-height: 18px;
   }
   
   /* Remove hover effects on touch */

@@ -764,7 +764,7 @@ useEffect(() => {
             {formData.members.map((member, index) => (
               <div key={index} className="member-card">
                 <div className="member-header">
-                  <span className="badge" style={{ background: index === 0 ? '#1e3a8a' : '#64748b' }}>
+                  <span className="badge" >
                     {index === 0 ? ' Group Lead' : ` Member ${index}`}
                   </span>
                   {index > 0 && (<button type="button" className="btn-remove" onClick={() => removeMember(index)}>✕</button>)}
