@@ -5,6 +5,50 @@
   box-sizing: border-box;
 }
 
+.status-card,
+.task-card,
+.member-card,
+.material-card,
+.placeholder-card,
+.remark-card,
+.form-section,
+.pr-status-card,
+.pr-remarks,
+.pr-file,
+.pr-upload,
+.pr-blocked,
+.pr-deadline,
+.pr-late,
+.meeting-section-card,
+.attendance-card-mobile,
+.pr-info-box {
+  overflow: hidden;
+}
+
+.status-card p, .status-card h3,
+.task-card p, .task-card h3,
+.member-card p, .member-card h3, .member-card h4,
+.material-card p, .material-card h4,
+.placeholder-card p,
+.remark-card p, .remark-card h3,
+.form-section p, .form-section h3, .form-section h4,
+.pr-status-card p, .pr-status-card h3, .pr-status-card h4,
+.pr-remarks p,
+.pr-file p, .pr-file button,
+.pr-upload p, .pr-upload h4,
+.pr-blocked p,
+.pr-deadline p, .pr-deadline span,
+.pr-late p,
+.meeting-section-card p, .meeting-section-card h3,
+.attendance-card-mobile span, .attendance-card-mobile p,
+.pr-info-box p,
+.content-area p, .content-area h2,
+.alert p, .alert span,
+.data-table td, .data-table th {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
 .dashboard-container {
   display: flex;
   min-height: 100vh;
@@ -105,6 +149,21 @@
   }
 }
 
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.sidebar-header h3 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
 /* =========================================
    2.1 SIDEBAR NAVIGATION (ADD THIS)
    ========================================= */
@@ -181,6 +240,7 @@
 }
 
 .content-area h2 {
+  font-family: 'Manrope', sans-serif;
   font-size: 1.75rem;
   font-weight: 700;
   color: #0f172a;
@@ -188,6 +248,13 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.content-area h3 {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #0f172a;
 }
 
 /* =========================================
@@ -203,6 +270,7 @@
 }
 
 .form-section h3 {
+  font-family: 'Manrope', sans-serif;
   font-size: 1.125rem;
   font-weight: 600;
   color: #1e293b;
@@ -430,6 +498,13 @@
   border-left: 4px solid #1e3a8a;
 }
 
+.status-card h3 {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
 .status-badge {
   display: inline-block;
   padding: 5px 4px;
@@ -479,7 +554,9 @@
 .material-info h4 {
   margin: 0 0 0.25rem;
   color: #0f172a;
+  font-family: 'Manrope', sans-serif;
   font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .log-table-container {
@@ -602,6 +679,9 @@
   color: #374151;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-width: 300px;
 }
 
 .data-table tbody tr {
@@ -685,10 +765,11 @@
 }
 
 .attendance-title-card h3 {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1e40af;
+    margin: 0;
+    font-family: 'Manrope', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
 }
 
 /* =========================================
@@ -718,7 +799,7 @@
 .task-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-left: 4px solid #1e40af;
+  border-left: 4px solid #1e3a8a;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.5rem;
   border-radius: 10px;
@@ -727,15 +808,18 @@
 
 .task-card h3 {
    margin: 0 0 0.5rem 0;
+  font-family: 'Manrope', sans-serif;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #1e40af;
+  color: #0f172a;
 }
 
 .task-card p {
   font-size: 0.95rem;
   color: #334155;
   margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 
@@ -757,10 +841,10 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
-.remark-supervisor { border-left-color: #1e40af; }
-.remark-admin { border-left-color: #7c3aed; }
+.remark-supervisor { border-left-color: #1e3a8a; }
+.remark-admin { border-left-color: #1e3a8a; }
 .remark-danger { border-left-color: #ef4444; background: #fef2f2; }
-.remark-task { border-left-color: #15803d; }
+.remark-task { border-left-color: #1e3a8a; }
 
 .remark-header {
   display: flex;
@@ -779,12 +863,13 @@
   flex-shrink: 0;
 }
 
-.remark-badge-supervisor { background: #eff6ff; color: #1e40af; }
-.remark-badge-admin { background: #f3e8ff; color: #6b21a8; }
+.remark-badge-supervisor { background: #eff6ff; color: #1e3a8a; }
+.remark-badge-admin { background: #eff6ff; color: #1e3a8a; }
 .remark-badge-danger { background: #fee2e2; color: #b91c1c; }
-.remark-badge-task { background: #dcfce7; color: #15803d; }
+.remark-badge-task { background: #eff6ff; color: #1e3a8a; }
 
 .remark-title {
+  font-family: 'Manrope', sans-serif;
   font-weight: 600;
   color: #1e293b;
   font-size: 0.9rem;
@@ -792,10 +877,9 @@
 
 .remark-text {
   margin: 0;
-  color: #334155;
-  font-size: 0.95rem;
+  color: #1e293b;
+  font-size: 0.9rem;
   line-height: 1.6;
-  font-style: italic;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -1235,5 +1319,327 @@
   .progress-item-badge {
     font-size: 0.7rem !important;
     padding: 0.2rem 0.6rem !important;
+  }
+}
+
+/* =========================================
+   23. MEETING LOGS & ATTENDANCE
+   ========================================= */
+.meeting-section-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #1e3a8a;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.meeting-section-card h3 {
+  margin: 0 0 1rem 0;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.attendance-cards-mobile {
+  display: none;
+}
+
+.attendance-card-mobile {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #1e3a8a;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.attendance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.attendance-card-number {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.attendance-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attendance-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.attendance-card-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.attendance-card-value {
+  font-size: 0.875rem;
+  color: #1e293b;
+  text-align: right;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .attendance-table-desktop {
+    display: none;
+  }
+  .attendance-cards-mobile {
+    display: block;
+  }
+  .meeting-section-card {
+    padding: 1rem;
+    border-left: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .attendance-table-desktop {
+    display: table;
+  }
+  .attendance-cards-mobile {
+    display: none !important;
+  }
+}
+
+/* =========================================
+   24. PROPOSAL & REPORT STATUS CARDS
+   ========================================= */
+.pr-status-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #1e3a8a;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.pr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.pr-header h3 {
+  margin: 0;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.pr-badge {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pr-badge-approved {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.pr-badge-default {
+  background: #1e3a8a;
+  color: #ffffff;
+}
+
+.pr-deadline {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 3px solid #1e3a8a;
+  background: #eff6ff;
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+
+.pr-deadline-passed {
+  background: #eff6ff;
+  border-left: 3px solid #ef4444;
+}
+
+.pr-deadline-passed .pr-deadline-text {
+  color: #ef4444;
+  font-weight: 600;
+  margin-left: 0.25rem;
+}
+
+.pr-late {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 3px solid #1e3a8a;
+  background: #eff6ff;
+}
+
+.pr-late p {
+  color: #1e3a8a;
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.pr-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.pr-info-grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.pr-info-box {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.pr-info-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0 0 0.35rem 0;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.pr-info-value {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.pr-info-value-lg {
+  font-size: 1.25rem;
+}
+
+.pr-remarks {
+  background: #eff6ff;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border-left: 3px solid #1e3a8a;
+}
+
+.pr-remarks-label {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.75rem;
+  color: #1e3a8a;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pr-remarks-text {
+  color: #1e293b;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.pr-file {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #1e3a8a;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.pr-file-label {
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pr-file-link {
+  background: none;
+  border: none;
+  color: #1e3a8a;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.pr-file-link:hover {
+  color: #1e40af;
+}
+
+.pr-upload {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+}
+
+.pr-upload h4 {
+  margin: 0 0 0.75rem 0;
+}
+
+.pr-upload-desc {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0 0 1rem 0;
+}
+
+.pr-blocked {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #64748b;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.pr-blocked p {
+  color: #475569;
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 600px) {
+  .pr-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .pr-info-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .pr-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 }
