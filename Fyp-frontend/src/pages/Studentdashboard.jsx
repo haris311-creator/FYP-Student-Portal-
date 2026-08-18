@@ -111,23 +111,29 @@ function StudentDashboard() {
 
   
 
+
   // Fetch Meetings & Attendance
   useEffect(() => {
-    if (hasSubmittedIdea && existingGroup) {
-      const fetchMyMeetings = async () => {
-        setLoadingMeetings(true);
-        try {
-          const res = await studentMeetingAPI.getMyMeetings();
-          setMyMeetingsData(res.data);
-        } catch (err) {
+  if (hasSubmittedIdea && existingGroup && 
+      ['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
+    const fetchMyMeetings = async () => {
+      setLoadingMeetings(true);
+      try {
+        const res = await studentMeetingAPI.getMyMeetings();
+        setMyMeetingsData(res.data);
+      } catch (err) {
+        if (process.env.NODE_ENV === 'development') {
           console.error("Error fetching meetings:", err);
-        } finally {
-          setLoadingMeetings(false);
         }
-      };
-      fetchMyMeetings();
-    }
-  }, [hasSubmittedIdea, existingGroup]);
+      } finally {
+        setLoadingMeetings(false);
+      }
+    };
+    fetchMyMeetings();
+  } else {
+    setMyMeetingsData(null);
+  }
+}, [hasSubmittedIdea, existingGroup]);
 
     // Fetch Proposal Data
   useEffect(() => {
@@ -333,7 +339,7 @@ useEffect(() => {
       };
       const res = await api.post('/projects/proposals/', payload);
       setProposalData(res.data);
-      setSuccess("Proposal draft created. Now upload the filled PDF file.");
+      setSuccess("Proposal draft created. Now upload the proposal file.");
     } catch (err) {
       console.error("Create failed:", err.response?.data || err.message);
       setError(err.response?.data?.detail || "Failed to create proposal draft.");
@@ -449,18 +455,17 @@ useEffect(() => {
 
 
   const renderMeetingLogs = () => {
-
-    if (!existingGroup || !['idea_pitch', 'proposal_pending', 'proposal_approved', 'in_progress', 'completed'].includes(existingGroup.status)) {
-      return (
-        <div className="content-area">
-          <h2>Meeting Logs & Attendance</h2>
-          <div className="status-card pending">
-            <h3>Group Approval Required</h3>
-            <p>Your group must be approved by the admin before meeting logs and attendance will be available.</p>
-          </div>
+  if (!existingGroup || existingGroup.status === 'pending_approval') {
+    return (
+      <div className="content-area">
+        <h2>Meeting Logs & Attendance</h2>
+        <div className="status-card pending">
+          <h3>Group Approval Required</h3>
+          <p>Your group is pending admin approval. Meeting logs and attendance will be available once your group is approved.</p>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
     if (loadingMeetings) return <div className="loading-spinner">Loading logs...</div>;
     
@@ -889,7 +894,8 @@ const renderProjectProgress = () => {
           {[
             { 
               label: 'Group Formation & Idea Pitch', 
-              status: existingGroup ? 'completed' : 'pending',
+              status: existingGroup?.status === 'pending_approval' ? 'pending' : 
+                      existingGroup ? 'completed' : 'pending',
               icon: '1'
             },
             { 

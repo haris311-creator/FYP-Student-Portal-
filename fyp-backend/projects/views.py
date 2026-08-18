@@ -165,7 +165,7 @@ class ProjectGroupViewSet(viewsets.ModelViewSet):
             if existing_membership:
                 member_errors.append({
                     "index": idx,
-                    "error": f"{user.first_name} {user.last_name} is already part of another group (Group {existing_membership.group.group_number or existing_membership.group.group_id})."
+                    "error": f"{user.first_name} {user.last_name} is already part of another group."
                 })
                 continue
 

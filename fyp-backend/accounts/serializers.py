@@ -350,19 +350,24 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     
     def validate(self, data):
         if data['new_password'] != data['confirm_password']:
-            raise serializers.ValidationError({"confirm_password": "Passwords do not match"})
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        
         try:
             uid = force_str(urlsafe_base64_decode(data['uid']))
             user = User.objects.get(pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            raise serializers.ValidationError({"uid": "Invalid user ID"})
+            raise serializers.ValidationError({
+                "non_field_errors": ["Invalid or expired reset link. Please request a new one."]
+            })
         
         if not default_token_generator.check_token(user, data['token']):
-            raise serializers.ValidationError({"token": "Invalid or expired token."})
+            raise serializers.ValidationError({
+                "non_field_errors": ["This reset link has already been used or has expired. Please request a new one."]
+            })
 
         if user.check_password(data['new_password']):
             raise serializers.ValidationError({
-                "new_password": "New password must be different from your current password."
+                "new_password": "You have recently used this password. Please choose a different password."
             })
         
         data['user'] = user

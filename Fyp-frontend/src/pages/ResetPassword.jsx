@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import './Login.css';
 
 function ResetPassword() {
+  // URL se uid aur token extract karein (e.g., /reset-password/:uid/:token)
   const { uid, token } = useParams();
   const navigate = useNavigate();
   
@@ -14,11 +15,27 @@ function ResetPassword() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Real-time password validation criteria
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    symbol: false
+  });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    setError('');
+  const handlePasswordChange = (e) => {
+    const password = e.target.value;
+    setFormData({...formData, new_password: password});
+    
+    setPasswordCriteria({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      symbol: /[^A-Za-z0-9]/.test(password)
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -27,15 +44,20 @@ function ResetPassword() {
     setSuccess('');
     setLoading(true);
 
+    if (!formData.new_password || !formData.confirm_password) {
+      setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
     if (formData.new_password !== formData.confirm_password) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
-    if (!passwordRegex.test(formData.new_password)) {
-      setError('Password must be at least 8 characters and include uppercase, lowercase, number, and symbol');
+    if (!Object.values(passwordCriteria).every(Boolean)) {
+      setError('Password does not meet all security requirements');
       setLoading(false);
       return;
     }
@@ -50,21 +72,28 @@ function ResetPassword() {
 
       setSuccess(response.data.message);
       
+      // 3 seconds baad login page par redirect karein
       setTimeout(() => {
         navigate('/login');
       }, 3000);
-
+      
     } catch (error) {
-      console.error('Password reset confirm error:', error);
+      console.error('Password reset error:', error);
       
       if (error.response && error.response.data) {
         const backendData = error.response.data;
         
-        if (backendData.errors) {
-          const firstError = Object.values(backendData.errors)[0];
-          setError(Array.isArray(firstError) ? firstError[0] : firstError);
-        } else if (backendData.message) {
-          setError(backendData.message);
+        // ✅ Backend errors ko properly parse karein
+        if (backendData.new_password) {
+          const msg = Array.isArray(backendData.new_password) ? backendData.new_password[0] : backendData.new_password;
+          setError(msg);
+        } else if (backendData.non_field_errors) {
+          const msg = Array.isArray(backendData.non_field_errors) ? backendData.non_field_errors[0] : backendData.non_field_errors;
+          setError(msg);
+        } else if (backendData.token) {
+          setError("This reset link has already been used or has expired. Please request a new one.");
+        } else if (backendData.detail) {
+          setError(backendData.detail);
         } else {
           setError('Failed to reset password. Please try again.');
         }
@@ -76,11 +105,12 @@ function ResetPassword() {
     }
   };
 
+  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
+
   return (
     <div className="login-page">
       <div className="login-container">
         <div className="login-card">
-
           <div className="login-logo">
             <h2>IQRA UNIVERSITY</h2>
             <p>Reset Password</p>
@@ -89,7 +119,20 @@ function ResetPassword() {
           <div className="login-divider" />
 
           <form onSubmit={handleSubmit} className="login-form">
-            {error && <div className="login-error">{error}</div>}
+            {error && (
+              <div className="login-error" style={{
+                background: '#fee2e2',
+                border: '1px solid #fecaca',
+                color: '#991b1b',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                textAlign: 'center',
+                marginBottom: '1rem'
+              }}>
+                {error}
+              </div>
+            )}
             
             {success && (
               <div style={{
@@ -102,8 +145,7 @@ function ResetPassword() {
                 textAlign: 'center',
                 marginBottom: '1rem'
               }}>
-                {success}<br />
-                <strong>Redirecting to login...</strong>
+                {success}
               </div>
             )}
 
@@ -111,45 +153,42 @@ function ResetPassword() {
               <label className="form-label">New Password</label>
               <input
                 type="password"
-                name="new_password"
                 value={formData.new_password}
-                onChange={handleChange}
+                onChange={handlePasswordChange}
                 className="form-input"
-                placeholder="Min 8 characters"
-                minLength="8"
+                placeholder="Enter new password"
                 required
                 disabled={success}
               />
-              {formData.new_password && (
-                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#64748b', lineHeight: '1.6' }}>
-                  <div style={{ color: formData.new_password.length >= 8 ? '#10b981' : '#ef4444' }}>
-                    {formData.new_password.length >= 8 ? '✓' : '✗'} At least 8 characters
-                  </div>
-                  <div style={{ color: /[A-Z]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
-                    {/[A-Z]/.test(formData.new_password) ? '✓' : '✗'} One uppercase letter
-                  </div>
-                  <div style={{ color: /[a-z]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
-                    {/[a-z]/.test(formData.new_password) ? '✓' : '✗'} One lowercase letter
-                  </div>
-                  <div style={{ color: /[0-9]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
-                    {/[0-9]/.test(formData.new_password) ? '✓' : '✗'} One number
-                  </div>
-                  <div style={{ color: /[^A-Za-z0-9]/.test(formData.new_password) ? '#10b981' : '#ef4444' }}>
-                    {/[^A-Za-z0-9]/.test(formData.new_password) ? '✓' : '✗'} One symbol (@, #, $, etc.)
-                  </div>
+              
+              {/* Password Criteria Checklist */}
+              <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', lineHeight: '1.8' }}>
+                <div style={{ color: passwordCriteria.length ? '#059669' : '#64748b' }}>
+                  {passwordCriteria.length ? '✓' : '○'} At least 8 characters
                 </div>
-              )}
+                <div style={{ color: passwordCriteria.uppercase ? '#059669' : '#64748b' }}>
+                  {passwordCriteria.uppercase ? '✓' : '○'} One uppercase letter
+                </div>
+                <div style={{ color: passwordCriteria.lowercase ? '#059669' : '#64748b' }}>
+                  {passwordCriteria.lowercase ? '✓' : '○'} One lowercase letter
+                </div>
+                <div style={{ color: passwordCriteria.number ? '#059669' : '#64748b' }}>
+                  {passwordCriteria.number ? '✓' : '○'} One number
+                </div>
+                <div style={{ color: passwordCriteria.symbol ? '#059669' : '#64748b' }}>
+                  {passwordCriteria.symbol ? '✓' : '○'} One symbol (@, #, $, etc.)
+                </div>
+              </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">Confirm New Password</label>
               <input
                 type="password"
-                name="confirm_password"
                 value={formData.confirm_password}
-                onChange={handleChange}
+                onChange={(e) => setFormData({...formData, confirm_password: e.target.value})}
                 className="form-input"
-                placeholder="Re-enter password"
+                placeholder="Confirm new password"
                 required
                 disabled={success}
               />
@@ -158,14 +197,20 @@ function ResetPassword() {
             <button 
               type="submit" 
               className="login-button" 
-              disabled={loading || success}
+              disabled={loading || success || !isPasswordValid}
+              style={{
+                opacity: (!isPasswordValid || success) ? 0.6 : 1,
+                cursor: (!isPasswordValid || success) ? 'not-allowed' : 'pointer'
+              }}
             >
               {loading ? 'Resetting...' : 'Reset Password'}
             </button>
           </form>
 
           <p className="login-info">
-            <Link to="/login" style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '600' }}>← Back to Login</Link>
+            <Link to="/login" style={{ color: '#1e3a8a', textDecoration: 'none', fontWeight: '600' }}>
+              ← Back to Login
+            </Link>
           </p>
 
         </div>
