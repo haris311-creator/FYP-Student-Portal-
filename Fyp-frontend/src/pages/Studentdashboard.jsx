@@ -1614,9 +1614,6 @@ const renderProjectProgress = () => {
         </nav>
       </aside>
 
-      {/*  Overlay Baad mein */}
-      <div className={`sidebar-overlay ${menuOpen ? 'active' : ''}`} onClick={() => setMenuOpen(false)} />
-
       {/* Main Content */}
       <main className="main-content">
         <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>☰ Menu</button>
@@ -1628,6 +1625,9 @@ const renderProjectProgress = () => {
         {activeTab === 'progress' && renderProjectProgress()} 
         {activeTab === 'materials' && renderMaterials()}
       </main>
+
+      {/*  Overlay - outside flex container */}
+      <div className={`sidebar-overlay ${menuOpen ? 'active' : ''}`} onClick={() => setMenuOpen(false)} />
     </div>
   );
 }

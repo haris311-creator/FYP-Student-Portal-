@@ -81,6 +81,7 @@ body {
 }
 
 .badge {
+  
   background: var(--primary-color, #1e3a8a);
   color: white;
   padding: 0.25rem 0.75rem;
@@ -103,12 +104,12 @@ body {
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 8px 13px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   transition: all 0.2s;
 }
 
@@ -128,12 +129,12 @@ body {
   background: #e5e7eb;
   color: #374151;
   border: none;
-  padding: 12px 32px;
+  padding: 8px 20px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   transition: all 0.2s;
 }
 

@@ -145,7 +145,7 @@
     box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
     font-weight: 600;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Manrope', sans-serif;
   }
 }
 
@@ -205,6 +205,7 @@
   word-wrap: break-word;
   line-height: 1.2;
   overflow-wrap: break-word;
+  font-family: 'Manrope', sans-serif;
 }
 
 .profile-role {
@@ -212,11 +213,13 @@
   color: rgba(255,255,255,0.9);
   margin: 2px 0 0 0;
   text-transform: capitalize;
+  font-family: 'Inter', sans-serif;
 }
 
 .profile-email {
   font-size: 0.7rem;
   color: #9ca3af;
+  font-family: 'Inter', sans-serif;
 }
 
 /* =========================================
@@ -241,6 +244,7 @@
   font-size: 0.95rem;
   transition: all 0.2s;
   text-align: left;
+  font-family: 'Manrope', sans-serif;
 }
 
 .nav-item:hover {
@@ -342,6 +346,7 @@
   gap: 0.75rem;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
 }
 
 .group-info {
@@ -361,6 +366,9 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  color: #0f172a;
 }
 
 .phase-badge {
@@ -369,6 +377,7 @@
   font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
 }
 
 
@@ -378,6 +387,7 @@
   color: #6b7280;
   font-size: 0.9rem;
   margin: 0 0 0.5rem 0;
+  font-family: 'Inter', sans-serif;
 }
 
 .group-members {
@@ -386,6 +396,7 @@
   gap: 0.5rem;
   font-size: 0.85rem;
   color: #4b5563;
+  font-family: 'Inter', sans-serif;
 }
 
 /* Right Side: Progress & Button */
@@ -407,11 +418,13 @@
   font-size: 0.8rem;
   color: #6b7280;
   margin-bottom: 0.375rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .progress-percentage {
   font-weight: 600;
   color: #1e3a8a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .progress-bar-container {
@@ -432,12 +445,12 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 8px 13px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   transition: all 0.2s;
 }
 
@@ -507,12 +520,14 @@
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 0.5rem 0;
+  font-family: 'Manrope', sans-serif;
 }
 
 .detail-subtitle {
   font-size: 1rem;
   color: #64748b;
   margin: 0;
+  font-family: 'Inter', sans-serif;
 }
 
 /* Detail Tabs */
@@ -531,6 +546,7 @@
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.2s;
+  font-family: 'Manrope', sans-serif;
 }
 
 .tab-btn:hover {
@@ -574,6 +590,7 @@
   margin: 0 0 1.25rem 0;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid #f1f5f9;
+  font-family: 'Manrope', sans-serif;
 }
 
 .detail-row {
@@ -592,12 +609,14 @@
   font-size: 0.85rem;
   color: #64748b;
   font-weight: 500;
+  font-family: 'Inter', sans-serif;
 }
 
 .detail-value {
   font-size: 0.95rem;
   color: #0f172a;
   font-weight: 600;
+  font-family: 'Inter', sans-serif;
 }
 
 /* Status Badges */
@@ -715,11 +734,13 @@
   font-size: 0.9rem;
   font-weight: 600;
   color: #0f172a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .member-role {
   font-size: 0.75rem;
   color: #64748b;
+  font-family: 'Inter', sans-serif;
 }
 
 .empty-members {
@@ -774,7 +795,7 @@
   margin-bottom: 1rem;
 }
 
-.card-header h3 { margin: 0; font-size: 1.1rem; color: #1e3a8a; }
+.card-header h3 { margin: 0; font-size: 1.1rem; color: #1e3a8a; font-family: 'Manrope', sans-serif; font-weight: 600; }
 
 .table-responsive { overflow-x: auto; }
 
@@ -791,21 +812,24 @@
   padding: 0.6rem;
   text-align: center;
   border: 1px solid #1e40af;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
 }
 
 .fp5-table td {
   padding: 0.6rem;
   text-align: center;
   border: 1px solid #e2e8f0;
+  font-family: 'Inter', sans-serif;
 }
 
 .att-p { background: #dcfce7; color: #15803d; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
 .att-a { background: #fee2e2; color: #dc2626; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
 .att-none { color: #cbd5e1; }
 
-.total-cell { font-weight: 700; color: #1e3a8a; }
+.total-cell { font-weight: 700; color: #1e3a8a; font-family: 'Manrope', sans-serif; }
 
-.meetings-grid-section h3 { margin: 0 0 1rem 0; font-size: 1.1rem; color: #1e3a8a; }
+.meetings-grid-section h3 { margin: 0 0 1rem 0; font-size: 1.1rem; color: #1e3a8a; font-family: 'Manrope', sans-serif; font-weight: 600; }
 
 .meetings-grid {
   display: grid;
@@ -834,9 +858,10 @@
   margin-bottom: 0.5rem;
 }
 
-.meeting-num { font-weight: 600; color: #0f172a; }
+.meeting-num { font-weight: 600; color: #0f172a; font-family: 'Manrope', sans-serif; font-size: 0.95rem; }
 
-.badge { 
+.badge {
+  font-family: 'Manrope', sans-serif; 
   font-size: 0.75rem;
   padding: 2px 8px;
   border-radius: 12px;
@@ -844,14 +869,15 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  flex-shrink: 0; /* Badge ko shrink hone se bachaye */
-  white-space: nowrap; /* Text wrap na ho */ 
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .badge-green { background: #dcfce7; color: #166534; }
 .badge-blue { background: #1e3a8a; color: #ffffff; }
 
-.meeting-card-body p { margin: 0.2rem 0; font-size: 0.8rem; color: #64748b; }
-.meeting-task { color: #374151 !important; }
+.meeting-card-body p { margin: 0.2rem 0; font-size: 0.8rem; color: #64748b; font-family: 'Inter', sans-serif; }
+.meeting-date { font-family: 'Inter', sans-serif; }
+.meeting-task { color: #374151 !important; font-family: 'Inter', sans-serif; }
 
 /* Mobile View */
 @media (max-width: 768px) {
@@ -906,15 +932,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e2e8f0;
+
+
 }
 
 .form-header h3 {
   margin: 0;
   font-size: 1.3rem;
   color: #1e3a8a;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
 }
 
 .close-form-btn {
@@ -926,6 +953,7 @@
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   transition: all 0.2s;
+  font-family: 'Manrope', sans-serif;
 }
 
 .close-form-btn:hover {
@@ -955,16 +983,18 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
+  font-family: 'Inter', sans-serif;
 }
 
 .form-info-value {
   font-size: 0.95rem;
   color: #0f172a;
   font-weight: 600;
+  font-family: 'Manrope', sans-serif;
 }
 
 .mform-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .mform-label {
@@ -973,6 +1003,7 @@
   font-weight: 600;
   color: #374151;
   margin-bottom: 0.5rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .required {
@@ -986,7 +1017,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 0.95rem;
-  font-family: inherit;
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s;
 }
 
@@ -1008,6 +1039,7 @@
   border-radius: 8px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .prev-task-label {
@@ -1015,6 +1047,7 @@
   color: #92400e;
   font-weight: 600;
   margin-bottom: 0.75rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .prev-task-status-row {
@@ -1035,6 +1068,7 @@
   font-size: 0.9rem;
   color: #374151;
   cursor: pointer;
+  font-family: 'Inter', sans-serif;
 }
 
 .radio-label input[type="radio"] {
@@ -1049,6 +1083,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 1rem;
+  font-family: 'Inter', sans-serif;
 }
 
 .attendance-check-row {
@@ -1073,11 +1108,13 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: #0f172a;
+  font-family: 'Manrope', sans-serif;
 }
 
 .att-member-id {
   font-size: 0.8rem;
   color: #64748b;
+  font-family: 'Inter', sans-serif;
 }
 
 .att-toggle {
@@ -1095,6 +1132,7 @@
   cursor: pointer;
   transition: all 0.2s;
   color: #64748b;
+  font-family: 'Manrope', sans-serif;
 }
 
 .att-btn:hover {
@@ -1106,6 +1144,7 @@
   border-color: #86efac;
   color: #15803d;
   font-weight: 600;
+  font-family: 'Manrope', sans-serif;
 }
 
 .att-btn-absent {
@@ -1113,15 +1152,15 @@
   border-color: #fca5a5;
   color: #dc2626;
   font-weight: 600;
+  font-family: 'Manrope', sans-serif;
 }
 
 .mform-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+
+
 }
 
 .submit-btn {
@@ -1133,7 +1172,7 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   white-space: nowrap;
   transition: all 0.2s;
 }
@@ -1149,6 +1188,41 @@
   transform: none;
 }
 
+.review-btn-primary {
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  transition: all 0.2s;
+}
+
+.review-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.review-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  transition: all 0.2s;
+}
+
+.review-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
 .back-btn {
   background: #f1f5f9;
   color: #475569;
@@ -1161,6 +1235,7 @@
   white-space: nowrap;
   text-align: center;
   transition: all 0.2s;
+  font-family: 'Manrope', sans-serif;
 }
 
 .back-btn:hover {
@@ -1283,4 +1358,6 @@
   margin: 0;
   font-size: 1.1rem;
   color: #1e3a8a;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
 }

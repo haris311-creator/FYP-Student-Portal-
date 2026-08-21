@@ -507,7 +507,7 @@ const handleReportReviewSubmit = async () => {
                   </div>
                 </div>
 <div style={{ marginTop: '1rem', textAlign: 'right' }}>
-                  <button className="review-btn-primary" style={{ marginTop: '1rem' }}>Review</button>
+                  <button className="review-btn-primary">Review</button>
                 </div>
               </div>
             ))}
@@ -556,7 +556,7 @@ const handleReportReviewSubmit = async () => {
                   </div>
                 </div>
                 <div style={{ marginTop: '1rem', textAlign: 'right' }}>
-                  <button className="review-btn-primary" style={{ marginTop: '1rem' }}>Review</button>
+                  <button className="review-btn-primary">Review</button>
                 </div>
               </div>
             ))}
@@ -575,7 +575,7 @@ const handleReportReviewSubmit = async () => {
             <button className="close-form-btn" onClick={() => setSelectedReport(null)}>&#10005;</button>
           </div>
 
-          <div style={{ padding: '1rem 0' }}>
+          <div>
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>{selectedReport.project_title}</h4>
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
@@ -591,40 +591,26 @@ const handleReportReviewSubmit = async () => {
               {selectedReport.turnitin_similarity_score > 0 && (
                 <div style={{ padding: '0.75rem', background: '#f0fdf4', borderRadius: '6px', marginBottom: '1rem' }}>
                   <p style={{ fontSize: '0.875rem', color: '#065f46', margin: 0 }}>
-                    Turnitin Score: {selectedReport.turnitin_similarity_score}% 
+                    Turnitin Score: {selectedReport.turnitin_similarity_score}%
                   </p>
                 </div>
               )}
 
-              {selectedReport.report_file ? (
-                <button
-                  onClick={() => handleFileDownload(selectedReport.report_file)}
-                  className="submit-btn"
-                  style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
-                >
-                  Download Uploaded Report
-                </button>
-              ) : (
-                <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
-                  Warning: No file uploaded by students.
-                </div>
-              )}
+             
             </div>
 
-<div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Your Decision</h4>
-
-            <div className="mform-group" style={{ marginBottom: '1rem' }}>
-              <label className="mform-label">Action</label>
-              <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
-                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
-                    type="radio"
-                    name="reportReviewAction"
-                    value="approve"
-                    checked={reportReviewForm.action === 'approve'}
-                    onChange={e => setReportReviewForm({ ...reportReviewForm, action: e.target.value })}
-                /> Approve (Send to Admin)
+            <div>
+              <div className="mform-group" style={{ marginBottom: '1rem' }}>
+                <label className="mform-label">Action</label>
+                <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                  <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="radio"
+                      name="reportReviewAction"
+                      value="approve"
+                      checked={reportReviewForm.action === 'approve'}
+                      onChange={e => setReportReviewForm({ ...reportReviewForm, action: e.target.value })}
+                    /> Approve (Send to Admin)
                   </label>
                   <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input
@@ -654,6 +640,19 @@ const handleReportReviewSubmit = async () => {
           </div>
 
           <div className="mform-actions">
+             {selectedReport.report_file ? (
+                <button
+                  onClick={() => handleFileDownload(selectedReport.report_file)}
+                  className="submit-btn"
+                  style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+                >
+                  Download 
+                </button>
+              ) : (
+                <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                  Warning: No file uploaded by students.
+                </div>
+              )}
             <button
               className="review-btn-primary"
               onClick={handleReportReviewSubmit}
@@ -680,30 +679,18 @@ const handleReportReviewSubmit = async () => {
             <button className="close-form-btn" onClick={() => setSelectedProposal(null)}>&#10005;</button>
           </div>
 
-          <div style={{ padding: '1rem 0' }}>
+          <div >
             <div style={{ marginBottom: '1.5rem' }}>
               <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>{selectedProposal.project_title}</h4>
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
                 Submitted on: {selectedProposal.submitted_at ? new Date(selectedProposal.submitted_at).toLocaleString() : 'N/A'}
               </p>
 
-              {selectedProposal.proposal_file ? (
-                <button
-                  onClick={() => handleFileDownload(selectedProposal.proposal_file)}
-                  className="submit-btn"
-                  style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
-                >
-                  Download Uploaded Proposal
-                </button>
-              ) : (
-                <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
-                  Warning: No file uploaded by students.
-                </div>
-              )}
+
             </div>
 
-<div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>Your Decision</h4>
+<div >
+           
 
             <div className="mform-group" style={{ marginBottom: '1rem' }}>
               <label className="mform-label">Action</label>
@@ -745,6 +732,19 @@ const handleReportReviewSubmit = async () => {
           </div>
 
           <div className="mform-actions">
+                          {selectedProposal.proposal_file ? (
+                <button
+                  onClick={() => handleFileDownload(selectedProposal.proposal_file)}
+                  className="submit-btn"
+                  style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+                >
+                  Download 
+                </button>
+              ) : (
+                <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                  Warning: No file uploaded by students.
+                </div>
+              )}
             <button
               className="review-btn-primary"
               onClick={handleReviewSubmit}
@@ -1114,7 +1114,7 @@ const handleReportReviewSubmit = async () => {
                             onClick={handleSubmitMeeting}
                             disabled={formLoading}
                           >
-                            {formLoading ? 'Saving...' : ' Save Meeting Minutes'}
+                            {formLoading ? 'Saving...' : ' Save '}
                           </button>
                           <button className="back-btn" onClick={closeForm}>
                             Cancel
