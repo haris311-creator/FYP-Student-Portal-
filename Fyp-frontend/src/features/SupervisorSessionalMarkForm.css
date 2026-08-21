@@ -2,7 +2,11 @@
   padding: 24px;
   background: #f0f4f8;
   min-height: 100%;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .ssm-header {
@@ -67,6 +71,9 @@
 /* Table Wrapper */
 .ssm-table-wrapper {
   overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 20px;
 }
 
 /* Rubric Table */
@@ -92,7 +99,7 @@
   vertical-align: top;
   color: #374151;
   line-height: 1.4;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-rubric-table tr:hover td {
@@ -226,7 +233,7 @@
   margin: 2px 0 0;
   font-size: 13px;
   color: #6b7280;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-total-box {
@@ -243,7 +250,7 @@
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-total-value {
@@ -365,7 +372,7 @@
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .ssm-comments textarea {
@@ -391,9 +398,11 @@
   display: flex;
   gap: 12px;
   justify-content: center;
+  flex-wrap: wrap;
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
+  overflow: hidden;
 }
 
 .ssm-submit-btn {
@@ -460,31 +469,77 @@
 
 @media (max-width: 768px) {
   .ssm-container {
-    padding: 16px;
+    padding: 12px;
   }
 
+  /* Header stacks on mobile */
   .ssm-header {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     align-items: flex-start;
+    padding: 16px;
+  }
+  .ssm-header h2 {
+    font-size: 18px;
+  }
+  .ssm-rubric-btn {
+    width: 100%;
+    text-align: center;
   }
 
-  .ssm-student-tabs {
-    flex-direction: column;
+  /* Remove negative margins and min-widths that were causing overflow */
+  .ssm-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 16px;
+    border-radius: 8px;
   }
 
-  .ssm-student-tab {
+  .ssm-rubric-table,
+  .ssm-marks-table {
     width: 100%;
   }
 
-  .ssm-actions {
-    flex-direction: column;
+  /* Student tabs: horizontal scroll instead of vertical stack */
+  .ssm-student-tabs {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+  .ssm-student-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 14px;
+    font-size: 13px;
+    width: auto;
   }
 
+  /* Student info: wrap gracefully */
+  .ssm-student-info {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .ssm-total-box {
+    margin-left: 0;
+    flex-direction: row;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* Actions: full width buttons stacked */
+  .ssm-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
   .ssm-submit-btn,
   .ssm-cancel-btn,
   .ssm-print-btn {
     width: 100%;
+    text-align: center;
   }
 }
 

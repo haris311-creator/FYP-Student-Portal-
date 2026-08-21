@@ -4,7 +4,7 @@
   display: flex;
   min-height: calc(100vh - 68px);
   background: #f0f4f8;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   position: relative;
 }
 
@@ -401,7 +401,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 0.95rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   color: #0f172a;
   background: #f8fafc;
   outline: none;

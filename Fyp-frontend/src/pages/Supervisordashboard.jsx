@@ -842,8 +842,8 @@ const handleReportReviewSubmit = async () => {
     if (loadingMeetings) return <div className="loading-spinner">Loading meetings data...</div>;
 
     return (
-      <div className="meetings-container">
-        <div className="attendance-sheet-card">
+      <div className="meetings-container" style={{ minWidth: 0, width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+        <div className="attendance-sheet-card" style={{ minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden' }}>
           <div className="card-header">
             <h3> Attendance Sheet (FP-5)</h3>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -871,7 +871,7 @@ const handleReportReviewSubmit = async () => {
             </div>
           </div>
           {attendanceData ? (
-            <div className="table-responsive">
+            <div className="table-responsive" style={{ maxWidth: '100%', width: '100%', overflowX: 'auto' }}>
               <table className="fp5-table">
                 <thead>
                   <tr>
@@ -904,7 +904,7 @@ const handleReportReviewSubmit = async () => {
           )}
         </div>
 
-        <div className="meetings-grid-section">
+        <div className="meetings-grid-section" style={{ minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           <div className="meetings-section-header">
             <h3>Meeting Minutes</h3>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1133,12 +1133,12 @@ const handleReportReviewSubmit = async () => {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container" style={{ overflowX: 'hidden' }}>
       <button className="mobile-menu-btn" onClick={() => setMenuOpen(true)}>
         ☰ Menu
       </button>
 
-      <div className="dashboard-body">
+      <div className="dashboard-body" style={{ minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
         <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h2 className="sidebar-title">Supervisor Portal</h2>
@@ -1175,7 +1175,7 @@ const handleReportReviewSubmit = async () => {
           </nav>
         </aside>
 
-        <main className="main-content">
+        <main className="main-content" style={{ minWidth: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
           {activeTab === 'overview' && renderOverview()}
 
           {activeTab === 'groupDetail' && selectedGroup && (

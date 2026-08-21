@@ -56,7 +56,7 @@ const PublicEvaluationPage = () => {
         justifyContent: 'center',
         minHeight: '100vh',
         background: '#f0f4f8',
-        fontFamily: 'Inter, sans-serif'
+        fontFamily: 'Manrope, sans-serif'
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
@@ -81,7 +81,7 @@ const PublicEvaluationPage = () => {
         justifyContent: 'center',
         minHeight: '100vh',
         background: '#f0f4f8',
-        fontFamily: 'Inter, sans-serif'
+        fontFamily: 'Manrope, sans-serif'
       }}>
         <div style={{
           background: 'white',

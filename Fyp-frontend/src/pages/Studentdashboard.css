@@ -52,7 +52,7 @@
   flex-direction: row !important;
   min-height: 100vh;
   background-color: #f8fafc;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   position: relative;
 }
 
@@ -309,7 +309,7 @@
   background: #f8fafc;
   outline: none;
   transition: all 0.2s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .form-input:focus,
