@@ -739,13 +739,13 @@ const handleAnnouncementSubmit = (e) => {
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
         <div className="meeting-form-container" style={{ maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderRadius: '12px', padding: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <h3 style={{ margin: 0, fontFamily: "'Manrope', sans-serif" }}>Final Proposal Review</h3>
             <button className="close-form-btn" onClick={() => setSelectedFinalProposal(null)}>X</button>
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>{selectedFinalProposal.project_title}</h4>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}>{selectedFinalProposal.project_title}</h4>
             <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
               Submitted on: {selectedFinalProposal.submitted_at ? new Date(selectedFinalProposal.submitted_at).toLocaleString() : 'N/A'}
             </p>
@@ -758,19 +758,7 @@ const handleAnnouncementSubmit = (e) => {
               </div>
             )}
 
-            {selectedFinalProposal.proposal_file ? (
-              <button 
-                onClick={() => handleFileDownload(selectedFinalProposal.proposal_file)}
-                className="submit-btn"
-                style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
-              >
-                Download Uploaded Proposal
-              </button>
-            ) : (
-              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
-                Warning: No file uploaded by students.
-              </div>
-            )}
+
           </div>
 
           <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
@@ -815,6 +803,19 @@ const handleAnnouncementSubmit = (e) => {
           </div>
 
           <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                        {selectedFinalProposal.proposal_file ? (
+              <button 
+                onClick={() => handleFileDownload(selectedFinalProposal.proposal_file)}
+                className="submit-btn"
+                style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+              >
+                Download Uploaded Proposal
+              </button>
+            ) : (
+              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
+                Warning: No file uploaded by students.
+              </div>
+            )}
             <button 
               className="submit-btn" 
               onClick={handleFinalReviewSubmit}
@@ -1037,90 +1038,75 @@ const handleDeleteDeadline = (id) => {
 
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-        <div className="meeting-form-container" style={{ maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto', background: 'white', borderRadius: '12px', padding: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h3 style={{ margin: 0, fontFamily: "'Manrope', sans-serif" }}>Final Report Review</h3>
+        <div className="meeting-form-container" style={{ maxWidth: '700px', width: '90%', background: 'white', borderRadius: '12px', padding: '1.25rem', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h3 style={{ margin: 0, fontFamily: "'Manrope', sans-serif", fontSize: '1.1rem' }}>Final Report Review</h3>
             <button className="close-form-btn" onClick={() => { setSelectedFinalReport(null); setTurnitinScore(''); }}>X</button>
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif" }}>{selectedFinalReport.project_title}</h4>
-            <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 1rem 0' }}>
+          <div style={{ marginBottom: '0.75rem' }}>
+            <h4 style={{ margin: '0 0 0.25rem 0', color: '#1e293b', fontFamily: "'Manrope', sans-serif", fontWeight: 600, fontSize: '0.95rem' }}>{selectedFinalReport.project_title}</h4>
+            <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 0.5rem 0' }}>
               Group: {selectedFinalReport.group_number} | Submitted: {selectedFinalReport.submitted_at ? new Date(selectedFinalReport.submitted_at).toLocaleString() : 'N/A'}
             </p>
             
             {selectedFinalReport.is_late && (
-              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
-                <p style={{ fontSize: '0.875rem', color: '#92400e', margin: 0, fontWeight: '600' }}>
+              <div style={{ padding: '0.4rem 0.6rem', background: '#fef3c7', borderRadius: '6px', marginBottom: '0.5rem', borderLeft: '3px solid #f59e0b', fontSize: '0.8rem', color: '#92400e', fontWeight: '600' }}>
                  Late Submission
-                </p>
               </div>
             )}
 
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ padding: '0.75rem', background: '#eff6ff', borderRadius: '6px' }}>
-                <p style={{ fontSize: '0.8rem', color: '#1e3a8a', margin: '0 0 0.25rem 0', fontWeight: '600' }}>Turnitin Score</p>
-                <p style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1e3a8a', margin: 0 }}>
-                  {selectedFinalReport.turnitin_similarity_score || 'Not set'}%
-                </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+              <div style={{ padding: '0.4rem 0.75rem', background: '#eff6ff', borderRadius: '6px', flexShrink: 0 }}>
+                <span style={{ fontSize: '0.7rem', color: '#1e3a8a', fontWeight: '600' }}>Turnitin: </span>
+                <span style={{ fontSize: '1rem', fontWeight: '700', color: '#1e3a8a' }}>
+                  {selectedFinalReport.turnitin_similarity_score || 'N/A'}%
+                </span>
               </div>
+              {selectedFinalReport.report_file ? (
+                <button 
+                  onClick={() => handleFileDownload(selectedFinalReport.report_file)}
+                  className="submit-btn"
+                  style={{ display: 'inline-block', padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                >
+                  Download Report
+                </button>
+              ) : (
+                <span style={{ fontSize: '0.8rem', color: '#92400e' }}>No file uploaded</span>
+              )}
             </div>
-
-            {selectedFinalReport.report_file ? (
-              <button 
-                onClick={() => handleFileDownload(selectedFinalReport.report_file)}
-                className="submit-btn"
-                style={{ display: 'inline-block', textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
-              >
-                Download Uploaded Report
-              </button>
-            ) : (
-              <div style={{ padding: '0.75rem', background: '#fef3c7', borderRadius: '6px', color: '#92400e' }}>
-                Warning: No file uploaded by students.
-              </div>
-            )}
           </div>
 
-          {/* Turnitin Score Update Section */}
-          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem', marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif" }}>Update Turnitin Score (Optional)</h4>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem', marginBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#374151', whiteSpace: 'nowrap' }}>Turnitin %:</label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 step="0.01"
-                placeholder="Enter Turnitin %"
+                placeholder="%"
                 value={turnitinScore}
                 onChange={e => setTurnitinScore(e.target.value)}
-                className="form-input"
-                style={{ flex: 1 }}
+                style={{ width: '80px', padding: '0.4rem 0.5rem', fontSize: '0.85rem', border: '1px solid #e2e8f0', borderRadius: '6px', outline: 'none' }}
               />
               <button
                 onClick={handleUpdateTurnitinScore}
                 disabled={!turnitinScore}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: '#1e3a8a',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: '600'
-                }}
+                style={{ padding: '0.4rem 0.75rem', background: '#1e3a8a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
               >
                 Update
               </button>
             </div>
           </div>
 
-          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', fontFamily: "'Manrope', sans-serif" }}>Your Final Decision</h4>
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '0.75rem' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', fontFamily: "'Manrope', sans-serif", fontSize: '0.95rem' }}>Your Final Decision</h4>
             
-            <div className="mform-group" style={{ marginBottom: '1rem' }}>
-              <label className="mform-label">Action</label>
+            <div className="mform-group" style={{ marginBottom: '0.5rem' }}>
+              <label className="mform-label" style={{ marginBottom: '0.25rem' }}>Action</label>
               <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
-                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
                   <input 
                     type="radio" 
                     name="finalReportReviewAction" 
@@ -1129,7 +1115,7 @@ const handleDeleteDeadline = (id) => {
                     onChange={e => setFinalReportReviewForm({ ...finalReportReviewForm, action: e.target.value })}
                   /> Final Approve
                 </label>
-                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label className="radio-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
                   <input 
                     type="radio" 
                     name="finalReportReviewAction" 
@@ -1141,8 +1127,8 @@ const handleDeleteDeadline = (id) => {
               </div>
             </div>
 
-            <div className="mform-group">
-              <label className="mform-label">
+            <div className="mform-group" style={{ marginBottom: '0.75rem' }}>
+              <label className="mform-label" style={{ marginBottom: '0.25rem' }}>
                 Remarks {finalReportReviewForm.action === 'reject' && <span className="required">*</span>}
               </label>
               <textarea
@@ -1150,12 +1136,13 @@ const handleDeleteDeadline = (id) => {
                 placeholder={finalReportReviewForm.action === 'approve' ? "Optional: Any final comments..." : "Required: Reason for rejection?"}
                 value={finalReportReviewForm.remarks}
                 onChange={e => setFinalReportReviewForm({ ...finalReportReviewForm, remarks: e.target.value })}
-                rows="4"
+                rows="2"
+                style={{ minHeight: '50px', resize: 'vertical' }}
               />
             </div>
           </div>
 
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
             <button 
               className="submit-btn" 
               onClick={handleFinalReportReviewSubmit}

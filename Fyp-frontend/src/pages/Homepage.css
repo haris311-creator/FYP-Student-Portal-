@@ -1,7 +1,7 @@
 .home-container {
   min-height: 100vh;
   background-color: #f0f4f8;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 /* Navbar heading — homepage only */
@@ -90,7 +90,7 @@
   transition: all 0.2s ease;
   border: none;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .hero-btn-primary:hover {

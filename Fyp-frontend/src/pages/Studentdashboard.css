@@ -49,9 +49,10 @@
 
 .dashboard-container {
   display: flex;
+  flex-direction: row !important;
   min-height: 100vh;
   background-color: #f8fafc;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   position: relative;
 }
 
@@ -59,25 +60,28 @@
    2. SIDEBAR STYLES (Desktop + Mobile)
    ========================================= */
 .sidebar {
-  /* Desktop Default */
   width: 240px;
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
-  position: fixed;
-  top: 68px;
-  height: calc(100vh - 68px);
-  z-index: 50;
   display: flex;
   flex-direction: column;
   padding-top: 1.5rem;
   padding-left: 1rem;
   padding-right: 1rem;
-  
-  /* Desktop par visible */
-  transform: translateX(0);
-  transition: transform 0.3s ease-in-out;
+  flex-shrink: 0;
+  overflow: hidden;
+  min-width: 0;
 }
-
+.supervisor-back-btn{
+    padding: 4px 15px;
+    border-radius: 7px;
+    color: white;
+    border: 2px transparent;
+    background-color: #1e3a8a;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+}
 /* Mobile View */
 @media (max-width: 768px) {
   .sidebar {
@@ -130,7 +134,7 @@
     box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
     font-weight: 600;
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Manrope', sans-serif;
     font-size: 0.9rem;
   }
 }
@@ -183,7 +187,7 @@
   font-size: 0.95rem;
   font-weight: 500;
   transition: all 0.2s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -211,10 +215,7 @@
    ========================================= */
 .main-content {
   flex: 1;
-  margin-left: 250px;
   padding: 2rem;
-  min-height: 100vh;
-  transition: margin-left 0.3s ease;
 }
 
 /* Mobile par full width */
@@ -308,7 +309,7 @@
   background: #f8fafc;
   outline: none;
   transition: all 0.2s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .form-input:focus,
@@ -406,12 +407,12 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 8px 20px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   transition: all 0.2s;
 }
 
@@ -424,12 +425,12 @@
   background: #1e3a8a;
   color: white;
   border: none;
-  padding: 12px 32px;
+  padding: 8px 20px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
   transition: all 0.2s;
   width: 100%;
   margin-top: 1rem;
@@ -1587,7 +1588,7 @@
   padding: 0;
   font-size: 0.9rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Manrope', sans-serif;
 }
 
 .pr-file-link:hover {
