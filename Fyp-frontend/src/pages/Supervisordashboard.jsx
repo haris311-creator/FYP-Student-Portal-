@@ -5,7 +5,7 @@ import SupervisorAttendancePrint from '../prints/SupervisorAttendancePrint';
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { supervisorAPI, meetingAPI, attendanceSheetAPI, proposalAPI, reportAPI, evaluationAPI } from '../utils/api';
-import './Supervisordashboard.css';
+import "./SupervisorDashboard.css";
 
 function SupervisorDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
