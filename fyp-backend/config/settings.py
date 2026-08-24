@@ -92,15 +92,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default='fyp_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
+    'default': dj_database_url.config(
+        default=config(
+            'DATABASE_URL',
+            default=f"postgresql://"
+                    f"{config('DB_USER', default='postgres')}:"
+                    f"{config('DB_PASSWORD', default='')}@"
+                    f"{config('DB_HOST', default='localhost')}:"
+                    f"{config('DB_PORT', default='5432')}/"
+                    f"{config('DB_NAME', default='fyp_db')}"
+        ),
+        conn_max_age=600,
+    )
 }
 
 
@@ -212,7 +218,7 @@ REST_FRAMEWORK = {
         'login': 'none',      # Max 10 login attempts per hour per IP
         'admin': 'none',     # Max 20000 admin actions per hour per IP
     },
-    # ✅ PAGINATION ADD KIYA
+    #  PAGINATION ADD KIYA
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,  # 20 records per page
 }
