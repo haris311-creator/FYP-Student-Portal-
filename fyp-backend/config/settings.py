@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary_storage',
+    'cloudinary',
     
     # Third party apps
     'rest_framework',
@@ -95,20 +97,28 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 import dj_database_url
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config(
-            'DATABASE_URL',
-            default=f"postgresql://"
-                    f"{config('DB_USER', default='postgres')}:"
-                    f"{config('DB_PASSWORD', default='')}@"
-                    f"{config('DB_HOST', default='localhost')}:"
-                    f"{config('DB_PORT', default='5432')}/"
-                    f"{config('DB_NAME', default='fyp_db')}"
-        ),
-        conn_max_age=600,
-    )
-}
+DATABASE_URL = config('DATABASE_URL', default=None)
+
+if DATABASE_URL:
+    # Production (Heroku/Neon/Supabase)
+    DATABASES = {
+        'default': dj_database_url.config(
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    # Local Development (individual variables use karein)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='fyp_db'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
 
 # Password validation
@@ -178,14 +188,11 @@ CORS_ALLOWED_ORIGINS = config(
 )
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
-    "http://192.168.100.7:5173",
-    "https://fyp-student-portal-production.up.railway.app",
-]
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='http://localhost:5173,http://127.0.0.1:5173',
+    cast=Csv()
+)
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -234,6 +241,18 @@ REST_FRAMEWORK = {
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+USE_CLOUDINARY = config('USE_CLOUDINARY', default=False, cast=bool)
+
+if USE_CLOUDINARY:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.RawMediaCloudinaryStorage'
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
+        'API_KEY': config('CLOUDINARY_API_KEY', default=''),
+        'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+    }
+# Agar USE_CLOUDINARY False hai to Django khud-ba-khud apni default
+# FileSystemStorage use karega, jo MEDIA_ROOT (local 'media' folder) mein save karti hai.
 
 
 # ============================================
@@ -303,16 +322,14 @@ SECURE_BROWSER_XSS_FILTER = True
 # Referrer policy - privacy ke liye
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
-# SSL redirect (Production mein True karein, development mein False rakhein)
-SECURE_SSL_REDIRECT = False  # Development ke liye False, Production mein True
 
 # HSTS (HTTP Strict Transport Security) - Production mein uncomment karein
 # SECURE_HSTS_SECONDS = 31536000  # 1 year
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SECURE_HSTS_PRELOAD = True
 
-# Cookie security (Production mein uncomment karein)
-# CSRF_COOKIE_SECURE = True
-# SESSION_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+SESSION_COOKIE_SECURE = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
