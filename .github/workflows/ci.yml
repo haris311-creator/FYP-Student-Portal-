@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          cd fyp-backend
           pip install -r requirements.txt
 
       - name: Django system check
@@ -34,10 +34,13 @@ jobs:
           SECRET_KEY: "ci-dummy-secret-key-only-for-testing"
 
       - name: Run tests
-        run: python manage.py test
+        run: |
+          cd fyp-backend
+          python manage.py test
         env:
           DEBUG: "False"
           SECRET_KEY: "ci-dummy-secret-key-only-for-testing"
+          DATABASE_URL: postgresql://neondb_owner:npg_v8KBOxkqUc4o@ep-steep-butterfly-b3kxrntb.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 
   frontend:
     name: Frontend (React + Vite)
