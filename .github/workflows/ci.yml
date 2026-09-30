@@ -36,7 +36,6 @@ jobs:
         env:
           DEBUG: "False"
           SECRET_KEY: "ci-dummy-secret-key-only-for-testing"
-          DATABASE_URL: "postgresql://neondb_owner:npg_v8KBOxkqUc4o@ep-steep-butterfly-b3kxrntb.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 
   frontend:
     name: Frontend (React + Vite)
